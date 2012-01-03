@@ -20,6 +20,7 @@ OBJECTS=\
  $(OUTDIR_OBJ)\input-buffer.obj \
  $(OUTDIR_OBJ)\message-loop.obj \
  $(OUTDIR_OBJ)\var-database.obj \
+ $(OUTDIR_OBJ)\mcast-sender-state-machine.obj \
  $(OUTDIR_OBJ)\mcast-receiver-state-machine.obj \
  $(OUTDIR_OBJ)\mcastui.res
 
