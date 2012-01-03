@@ -3,7 +3,12 @@
 APP_NAME=mcastui
 #----- OUTDIR_OBJ is defined in WIN32.MAK This is the name of the destination directory-------
         
-all: $(OUTDIR)\$(APP_NAME).exe $(OUTDIR)\ut-fifo-circular-buffer.exe $(OUTDIR)\ut-input-buffer.exe $(OUTDIR)\sender.exe $(OUTDIR)\receiver.exe
+all: $(OUTDIR)\$(APP_NAME).exe $(OUTDIR)\ut-fifo-circular-buffer.exe $(OUTDIR)\ut-var-database.exe $(OUTDIR)\ut-input-buffer.exe $(OUTDIR)\sender.exe $(OUTDIR)\receiver.exe
+	@echo $(OUTDIR)\ut-fifo-circular-buffer.exe
+	@echo $(OUTDIR)\ut-var-database.exe
+	$(OUTDIR)\ut-var-database.exe
+	@echo $(OUTDIR)\ut-input-buffer.exe
+	
 DXLIB="C:\Program Files\Microsoft DirectX SDK (June 2010)\Lib\x86"
 
 !include "outdir.mk"
@@ -93,6 +98,9 @@ $(OUTDIR_OBJ)\ut-input-buffer.obj: ut-input-buffer.c input-buffer.h $(OUTDIR_OBJ
 $(OUTDIR_OBJ)\ut-fifo-circular-buffer.obj: ut-fifo-circular-buffer.c $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
+$(OUTDIR_OBJ)\ut-var-database.obj: ut-var-database.c $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
+    $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+
 # Tests
 $(OUTDIR)\ut-fifo-circular-buffer.exe: $(OUTDIR_OBJ)\fifo-circular-buffer.obj $(OUTDIR_OBJ)\ut-fifo-circular-buffer.obj $(OUTDIR_OBJ)\timeofday.obj
 	@ECHO $@
@@ -102,6 +110,10 @@ $(OUTDIR)\ut-input-buffer.exe: $(OUTDIR_OBJ)\input-buffer.obj $(OUTDIR_OBJ)\ut-i
 	@ECHO $@
 	$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$@.map /PDB:$(OUTDIR_OBJ)\ut-fifo-circular-buffer.pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
 
+$(OUTDIR)\ut-var-database.exe: $(OUTDIR_OBJ)\var-database.obj $(OUTDIR_OBJ)\ut-var-database.obj
+	@ECHO $@
+	$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$@.map /PDB:$(OUTDIR_OBJ)\ut-var-database.pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
+	
 # Build rule for EXE
 $(OUTDIR)\$(APP_NAME).exe: $(OBJECTS)
 	@ECHO $@

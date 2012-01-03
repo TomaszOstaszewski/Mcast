@@ -14,7 +14,6 @@
 #include "winsock_adapter.h"
 #include "mcast-sender-state-machine.h"
 
-
 /*!
  *
  */
@@ -67,7 +66,6 @@ typedef struct data_send_descriptor {
     uint8_t const * p_current_pos_;
     DWORD           dw_chunk_send_timeout_;
     HANDLE          h_stop_event_;
-    HANDLE          h_thread_;
     struct mcast_connection *       p_conn_;
     struct master_riff_chunk *    p_master_riff_;
 } data_send_descriptor_t;
@@ -182,9 +180,11 @@ static data_send_descriptor_t * start_sending(struct mcast_connection * p_connec
         p_send_data->p_master_riff_ = g_pWavChunk;
         if (NULL != p_send_data->h_stop_event_)
         {
+            HANDLE hThread;
             ResetEvent(p_send_data->h_stop_event_);
-            p_send_data->h_thread_ = CreateThread(NULL, 0, SendThreadProc, p_send_data, 0, NULL);
+            hThread = CreateThread(NULL, 0, SendThreadProc, p_send_data, 0, NULL);
             debug_outputln("%s %d : %p", __FILE__, __LINE__, p_send_data);
+            CloseHandle(hThread);
             return p_send_data;
         }
         HeapFree(GetProcessHeap(), 0, p_send_data);
@@ -201,7 +201,6 @@ static void stop_sending(struct sender_sending_data * p_sending)
 {
     debug_outputln("%s %d : %p", __FILE__, __LINE__, p_sending);
     SetEvent(p_sending->sender_->h_stop_event_);   
-    CloseHandle(p_sending->sender_->h_thread_);
     CloseHandle(p_sending->sender_->h_stop_event_);
     HeapFree(GetProcessHeap(), 0, p_sending->sender_);
     p_sending->sender_ = NULL;

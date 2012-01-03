@@ -27,6 +27,8 @@
  */
 static receiver_state_t g_state;
 
+static var_database_t g_var_database;
+
 /**
  * @brief
  */
@@ -50,11 +52,11 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
     item.count_     = DATA_ITEM_SIZE;
     /* Add another reference to the data structures used below.
      * The enclosing data structure may become invalid right after external client signals h_stop_event */
-    conn = get_var(GLOBAL_MCAST_CONNECTION); /**< \todo Add 'add_ref' here */
+    conn = get_var(g_var_database, GLOBAL_MCAST_CONNECTION); /**< \todo Add 'add_ref' here */
     assert(NULL != conn);
-    fifo = get_var(GLOBAL_FIFO_QUEUE); /**< \todo Add 'add_ref' here */
+    fifo = get_var(g_var_database, GLOBAL_FIFO_QUEUE); /**< \todo Add 'add_ref' here */
     assert(NULL != fifo);
-    h_stop_event = get_var(GLOBAL_RCV_EVENT);
+    h_stop_event = get_var(g_var_database, GLOBAL_RCV_EVENT);
     /* Along similiar lines - duplicate handle to the stop event. Another thread may call 'CloseHandle' on it, 
      * effectively invalidating it. Calling 'DuplicateHandle' is a precaution for such a condition */
     bDupResult = DuplicateHandle(GetCurrentProcess(), h_stop_event, GetCurrentProcess(), &h_stop_event, 0, FALSE, DUPLICATE_SAME_ACCESS);
@@ -112,40 +114,42 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
 static int handle_rcvstop_internal(void)
 {
     HANDLE h_stop_event;
-    h_stop_event = get_var(GLOBAL_RCV_EVENT);
+	assert(g_var_database);
+    h_stop_event = get_var(g_var_database, GLOBAL_RCV_EVENT);
     assert (NULL != h_stop_event);
     SetEvent(h_stop_event);
-    release_ref(GLOBAL_RCV_EVENT);
+    release_ref(g_var_database, GLOBAL_RCV_EVENT);
     return 0;
 }
 
 static int handle_mcastjoin_internal(void)
 {
-    if (NULL == get_var(GLOBAL_MCAST_CONNECTION))
+	assert(g_var_database);
+    if (NULL == get_var(g_var_database, GLOBAL_MCAST_CONNECTION))
     {
         struct mcast_connection * p_mcast_conn;
         p_mcast_conn = setup_multicast_2(DEFAULT_MCASTADDRV4, DEFAULT_MCASTPORT);
         assert(NULL != p_mcast_conn);
-        set_var(GLOBAL_MCAST_CONNECTION, p_mcast_conn);
+        set_var(g_var_database, GLOBAL_MCAST_CONNECTION, p_mcast_conn);
     }
-    add_ref(GLOBAL_MCAST_CONNECTION);
+    add_ref(g_var_database, GLOBAL_MCAST_CONNECTION);
     return 0;
 }
 
 static int handle_mcastleave_internal(void)
 {
     struct mcast_connection * p_mcast_conn;
-    assert(NULL != get_var(GLOBAL_MCAST_CONNECTION));
-    p_mcast_conn = get_var(GLOBAL_MCAST_CONNECTION);
+    assert(NULL != get_var(g_var_database, GLOBAL_MCAST_CONNECTION));
+    p_mcast_conn = get_var(g_var_database, GLOBAL_MCAST_CONNECTION);
     close_multicast(p_mcast_conn);
-    release_ref(GLOBAL_MCAST_CONNECTION);
+    release_ref(g_var_database, GLOBAL_MCAST_CONNECTION);
     return 0;
 }
 
 static int handle_stop_internal(void)
 {
     DSOUNDPLAY player;
-    player = get_var(GLOBAL_PLAYER);
+    player = get_var(g_var_database, GLOBAL_PLAYER);
     assert(NULL != player);
     if (NULL != player)
     {
@@ -159,26 +163,26 @@ static int handle_stop_internal(void)
 static int handle_play_internal(HWND hMainWnd)
 {
     DSOUNDPLAY player;
-    player = get_var(GLOBAL_PLAYER);
+    player = get_var(g_var_database, GLOBAL_PLAYER);
     debug_outputln("%s %d", __FILE__, __LINE__);
     if (NULL == player)
     {
-        WAVEFORMATEX * p_wfex = get_var(GLOBAL_WFEX);
-        struct fifo_circular_buffer * fifo = get_var(GLOBAL_FIFO_QUEUE);
+        WAVEFORMATEX * p_wfex = get_var(g_var_database, GLOBAL_WFEX);
+        struct fifo_circular_buffer * fifo = get_var(g_var_database, GLOBAL_FIFO_QUEUE);
         debug_outputln("%s %d", __FILE__, __LINE__);
         assert(NULL != p_wfex);
         if (NULL == fifo)
         {
             debug_outputln("%s %d", __FILE__, __LINE__);
             fifo = fifo_circular_buffer_create();
-            set_var(GLOBAL_FIFO_QUEUE, fifo);
-            add_ref(GLOBAL_FIFO_QUEUE);
+            set_var(g_var_database, GLOBAL_FIFO_QUEUE, fifo);
+            add_ref(g_var_database, GLOBAL_FIFO_QUEUE);
         }
         assert(NULL != fifo);
         player = dsoundplayer_create(hMainWnd, p_wfex, fifo);
-        set_var(GLOBAL_PLAYER, player);
+        set_var(g_var_database, GLOBAL_PLAYER, player);
     }
-    add_ref(GLOBAL_PLAYER);
+    add_ref(g_var_database, GLOBAL_PLAYER);
     dsoundplayer_play(player);    
     return 0;
 }
@@ -188,25 +192,31 @@ static int handle_rcvstart_internal(void)
     HANDLE h_stop_event;
     HANDLE h_rcv_thread;
     struct fifo_circular_buffer * fifo;
-    h_stop_event = get_var(GLOBAL_RCV_EVENT);
+    h_stop_event = get_var(g_var_database, GLOBAL_RCV_EVENT);
     if (NULL == h_stop_event)
     {
         HANDLE h_stop_event =  CreateEvent(NULL, TRUE, FALSE, "recv-event-0");
-        set_var(GLOBAL_RCV_EVENT, (void*)h_stop_event);
-        add_ref(GLOBAL_RCV_EVENT); 
+        set_var(g_var_database, GLOBAL_RCV_EVENT, (void*)h_stop_event);
+        add_ref(g_var_database, GLOBAL_RCV_EVENT); 
     }
-    fifo = get_var(GLOBAL_FIFO_QUEUE);
+    fifo = get_var(g_var_database, GLOBAL_FIFO_QUEUE);
     if (NULL == fifo)
     {
         debug_outputln("%s %d", __FILE__, __LINE__);
         fifo = fifo_circular_buffer_create();
-        set_var(GLOBAL_FIFO_QUEUE, fifo);
-        add_ref(GLOBAL_FIFO_QUEUE);
+        set_var(g_var_database, GLOBAL_FIFO_QUEUE, fifo);
+        add_ref(g_var_database, GLOBAL_FIFO_QUEUE);
     }
     ResetEvent(h_stop_event);
     h_rcv_thread = CreateThread(NULL, 0, ReceiverThreadProc, NULL, 0, NULL);
     CloseHandle(h_rcv_thread);
     return 0;
+}
+
+void receiver_init(var_database_t database)
+{
+	g_var_database = database;
+	assert(g_var_database);
 }
 
 /*!
