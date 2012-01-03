@@ -1,3 +1,8 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/*!
+ * @file var-database.c
+ * @author T. Ostaszewski 
+ */ 
 #include "pcc.h"
 #include "var-database.h"
 #include "dsoundplay.h"
@@ -11,7 +16,6 @@ typedef struct state_longevity_data {
     void *  p_var_; /**< State variable instance. */
     void (*p_dctor_)(void * );  /**< State dctor */
 } state_longevity_data_t;
-
 
 /**
  * @brief  
