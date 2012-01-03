@@ -1,3 +1,8 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/*!
+ * @file var-database.c
+ * @author T. Ostaszewski 
+ */ 
 #include "pcc.h"
 #include "var-database.h"
 #include "dsoundplay.h"
@@ -11,7 +16,6 @@ typedef struct state_longevity_data {
     void *  p_var_; /**< State variable instance. */
     void (*p_dctor_)(void * );  /**< State dctor */
 } state_longevity_data_t;
-
 
 /**
  * @brief  
@@ -65,6 +69,15 @@ void garbage_collect(void)
                 case GLOBAL_PLAYER:
                     dsoundplayer_destroy(globals_table[*p_begin].p_var_);
                     break;
+				case GLOBAL_SENDER_SETTINGS:
+				case GLOBAL_SENDER_MCAST_CONN:
+				case GLOBAL_SENDER_MASTER_RIFF:
+				case GLOBAL_SENDER_STOP_EVENT:
+				case GLOBAL_SENDER_SEND_PARAMS:
+					assert(0);
+					break;
+				default:
+					break;
             }
             globals_table[*p_begin].p_var_ = NULL;
         }
