@@ -15,6 +15,7 @@
 #include "wave_utils.h"
 #include "var-database.h"
 #include "mcast-receiver-state-machine.h"
+#include "message-loop.h"
 
 /**
  *  @brief
@@ -191,10 +192,8 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                     copy_waveformatex_2_WAVEFORMATEX(p_wfex, &g_pWavChunk->format_chunk_.format_);
                 }
             } 
-            UpdateUI(hDlg);
             return TRUE;
         case WM_INITMENUPOPUP:
-            UpdateUI(hDlg);
             debug_outputln("%s %5.5d", __FILE__, __LINE__);
             break;
         case WM_COMMAND:
@@ -208,46 +207,55 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                     {
                         debug_outputln("%s %5.5d", __FILE__, __LINE__);
                     }
-                    UpdateUI(hDlg);
                     break;
                 case ID_RECEIVER_JOINMCAST:
                     handle_mcastjoin();
-                    UpdateUI(hDlg);
                     break;
                 case ID_RECEIVER_LEAVEMCAST:
                     handle_mcastleave();
-                    UpdateUI(hDlg);
                     break;
                 case ID_RECEIVER_PLAY:
                     handle_play(g_hMainWnd);
-                    UpdateUI(hDlg);
                     break;
                 case ID_RECEIVER_STOP:
                     handle_stop();
-                    UpdateUI(hDlg);
                     break;
                 case ID_RECEIVER_STARTRCV:
                     handle_rcvstart();
-                    UpdateUI(hDlg);
                     break;
                 case ID_RECEIVER_STOPRCV:
                     handle_rcvstop();
-                    UpdateUI(hDlg);
                     break;
                 case IDOK:
-                    EndDialog(hDlg, IDOK);
-                    break;
                 case IDCANCEL:
-                    EndDialog(hDlg, IDCANCEL);
+                    EndDialog(hDlg, wParam);
+                    PostQuitMessage(0);
                     break;
             }
             return TRUE;
-        case WM_TIMER:
-            UpdateUI(hDlg);
+        case WM_DESTROY:
+            PostQuitMessage(0);
             break;
     } 
-    garbage_collect();
     return FALSE;
+}
+
+/**
+ * @brief
+ * @details
+ */
+static long int on_idle(long int count)
+{
+    switch (count)
+    {
+        case 0:
+            UpdateUI(g_hMainWnd);
+            return 1;
+        default:
+            garbage_collect();
+            return 0;
+    }
+    return 0;
 }
 
 /**
@@ -256,7 +264,6 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
  */
 int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    INT_PTR dialog_result;
     HRESULT hr;
     WSADATA wsd;
     int	rc;
@@ -273,8 +280,10 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return FALSE;
     //required to use the common controls
     InitCommonControls();
-    /* Perform initializations that apply to a specific instance */
-    dialog_result = DialogBox(hInstance, MAKEINTRESOURCE(IDD_MAIN_RECEIVER), NULL, ReceiverDlgProc);
-    return (int)dialog_result;
+    g_hMainWnd = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_MAIN_RECEIVER), NULL, ReceiverDlgProc);
+    if (NULL == g_hMainWnd)
+        return (-1);
+    message_loop(g_hMainWnd, &on_idle);
+    return (int)0;
 }
 

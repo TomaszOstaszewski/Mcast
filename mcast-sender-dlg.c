@@ -15,6 +15,7 @@
 #include "dsoundplay.h"
 #include "wave_utils.h"
 #include "winsock_adapter.h"
+#include "message-loop.h"
 
 /*!
  * 
@@ -111,6 +112,8 @@ sender_state_t g_state;
  * 
  */
 void * g_state_data[SENDER_LAST];
+
+HWND g_hMainWnd;
 
 /*!
  *
@@ -375,7 +378,6 @@ static int leave_mcast_0(struct sender_mcastjoined_data * p_mcastjoined)
 
 /**
  * @brief
- * 
  */
 INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
@@ -505,10 +507,9 @@ INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM l
                     UpdateUI(hDlg);
                     break;
                 case IDOK:
-                    EndDialog(hDlg, IDOK);
-                    break;
-                case IDCANCEL:
-                    EndDialog(hDlg, IDCANCEL);
+                case IDCANCEL: 
+                    EndDialog(hDlg, wParam);
+                    PostQuitMessage(0);
                     break;
             }
             return TRUE;
@@ -516,12 +517,22 @@ INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM l
     return FALSE;
 }
 
+static long int on_idle(long int count)
+{
+    static int nCounter = 0;
+    if (nCounter % 8192 == 0)
+    {
+        debug_outputln("%s %d : %d", __FILE__, __LINE__, count);
+    }
+    return 0;
+}
+
+
 int PASCAL WinMain(  HINSTANCE hInstance,
         HINSTANCE hPrevInstance,
         LPSTR lpCmdLine,
         int nCmdShow)
 {
-    INT_PTR dialog_result;
     HRESULT hr;
     WSADATA             wsd;
     int	rc;
@@ -529,17 +540,17 @@ int PASCAL WinMain(  HINSTANCE hInstance,
     /* Init Winsock */
     if ((rc = WSAStartup(MAKEWORD(1, 1), &wsd)) != 0)
         return FALSE;
-
     /* Init COM */
     hr = CoInitializeEx(0, COINIT_APARTMENTTHREADED);
     if (FAILED(hr))
         return FALSE;
-
     g_hInst = hInstance;
     //required to use the common controls
     InitCommonControls();
-    /* Perform initializations that apply to a specific instance */
-    dialog_result = DialogBox(hInstance, MAKEINTRESOURCE(IDD_MAIN_SENDER), NULL, SenderDlgProc);
-    return (int)dialog_result;
+    g_hMainWnd = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_MAIN_SENDER), NULL, SenderDlgProc);
+    if (NULL == g_hMainWnd)
+        return (-1);
+    message_loop(g_hMainWnd, &on_idle);
+    return (int)0;
 }
 
