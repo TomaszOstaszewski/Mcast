@@ -69,6 +69,15 @@ void garbage_collect(void)
                 case GLOBAL_PLAYER:
                     dsoundplayer_destroy(globals_table[*p_begin].p_var_);
                     break;
+				case GLOBAL_SENDER_SETTINGS:
+				case GLOBAL_SENDER_MCAST_CONN:
+				case GLOBAL_SENDER_MASTER_RIFF:
+				case GLOBAL_SENDER_STOP_EVENT:
+				case GLOBAL_SENDER_SEND_PARAMS:
+					assert(0);
+					break;
+				default:
+					break;
             }
             globals_table[*p_begin].p_var_ = NULL;
         }
