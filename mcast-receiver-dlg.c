@@ -28,11 +28,6 @@ master_riff_chunk_t *   g_pWavChunk;
 static HINSTANCE   g_hInst;
 
 /**
- * @brief
- */
-static HWND     g_hMainWnd;
-
-/**
  * @brief Main UI update function.
  * @details Updates the UI widgets state so they reflect the internal state of the program.
  * @param[in] hDlg - a handle to the window to be updated
@@ -182,7 +177,6 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
         case WM_INITDIALOG:
             {
                 int result;
-                g_hMainWnd = hDlg;
                 result = init_master_riff(&g_pWavChunk, g_hInst, MAKEINTRESOURCE(IDR_0_1));
                 assert(0 == result);
                 if (0 == result)
@@ -215,7 +209,7 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                     handle_mcastleave();
                     break;
                 case ID_RECEIVER_PLAY:
-                    handle_play(g_hMainWnd);
+                    handle_play(hDlg);
                     break;
                 case ID_RECEIVER_STOP:
                     handle_stop();
@@ -244,12 +238,12 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
  * @brief
  * @details
  */
-static long int on_idle(long int count)
+static long int on_idle(HWND hWnd, long int count)
 {
     switch (count)
     {
         case 0:
-            UpdateUI(g_hMainWnd);
+            UpdateUI(hWnd);
             return 1;
         default:
             return 0;
@@ -263,6 +257,7 @@ static long int on_idle(long int count)
  */
 int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+    HWND hMainDlg;
     HRESULT hr;
     WSADATA wsd;
     int	rc;
@@ -276,10 +271,10 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     g_hInst = hInstance;
     //required to use the common controls
     InitCommonControls();
-    g_hMainWnd = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_MAIN_RECEIVER), NULL, ReceiverDlgProc);
-    if (NULL == g_hMainWnd)
+    hMainDlg = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_MAIN_RECEIVER), NULL, ReceiverDlgProc);
+    if (NULL == hMainDlg)
         return (-1);
-    message_loop(g_hMainWnd, &on_idle);
+    message_loop(hMainDlg, &on_idle);
     return (int)0;
 }
 

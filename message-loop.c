@@ -40,7 +40,7 @@ WPARAM message_loop(HWND hWnd, P_ON_IDLE idle_func)
         while (bIdle && !PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
         {
             // call OnIdle while in bIdle state
-            if (!(*idle_func)(lIdleCount++))
+            if (!(*idle_func)(hWnd, lIdleCount++))
                 break;
         }
         // phase2: pump messages while available

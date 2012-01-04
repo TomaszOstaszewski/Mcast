@@ -6,7 +6,7 @@
 /*!
  * @brief 
  */
-typedef long int (*P_ON_IDLE)(long int count);
+typedef long int (*P_ON_IDLE)(HWND hWnd, long int count);
 
 /*!
  * @brief 
