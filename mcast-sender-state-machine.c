@@ -1,6 +1,12 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @file mcast-sender-state-machine.c
+ * @brief Multicast sender state machine.
+ * @details A sender operats using a state machine. This state machine 
+ * is quite simple and rudimentary, but nevertheless it gives a fairly good
+ * reliability and readibility. Instead of tons of if...else on the various
+ * variables, there's just one check for state and then, if the test yields ok,
+ * an action is perfomed.
  * @author T. Ostaszewski 
  * @date 04-Jan-2012
  */ 
@@ -62,7 +68,6 @@ static master_riff_chunk_t * g_pWavChunk;
  * @brief 
  */
 static sender_state_t g_state;
-
 
 /*!
  * @brief

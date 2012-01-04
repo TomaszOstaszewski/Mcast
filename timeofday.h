@@ -1,10 +1,13 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /**
- * @file timezone.h
+ * @file timeofday.h
  * @author T. Ostaszewski
  * @date 04-Jan-2012
- * @brief 
- * @details 
+ * @brief Windows wrappers for POSIX time routines.
+ * @details It looks like the mighty Windows lacks the gettimeofday() function.
+ * A little bit of internet search fills that gap. The result is that very file with
+ * forward declarations. See the actual implementation.
+ * @sa timeofday.c
  */
 
 #if !defined TIME_OF_DAY_H

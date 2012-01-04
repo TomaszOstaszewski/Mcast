@@ -271,12 +271,13 @@ static long int on_idle(HWND hWnd, long int count)
 }
 
 /**
- * @brief
- * @details
+ * @brief Recievers entry point.
+ * @details This is the entry point of the receivers application.
  * @param hInstance
  * @param hPrevInstance
  * @param lpCmdLine
  * @param nCmdShow
+ * @return
  */
 int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {

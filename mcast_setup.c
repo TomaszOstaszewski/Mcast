@@ -1,26 +1,19 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /**
  * @file mcast_setup.c
- * @brief This sample illustrates IP multicasting using the Winsock 1
- * method of joining and leaving an multicast group.  
- * @details This sample may be invoked as either a sender or a receiver. This sample works
- * with both IPv4 and IPv6 multicasting but does not include support
- * for the IPv4 source multicasting.
- * One of the advantages of using the setsockopt over WSAJoinLeaf is
+ * @brief Helper routines for joining and leaving an multicast group.  
+ * @details One of the advantages of using the setsockopt over WSAJoinLeaf is
  * the ability to join multiple multicast groups on a single socket
  * which is not possible with WSAJoinLeaf.
  *
- * Also note that because we include winsock2.h we must link with
+ * @attention Also note that because we include winsock2.h we must link with
  * ws2_32.lib and not with wsock32.lib.
- *
  *
  * This sample uses the new getaddrinfo/getnameinfo functions which are new to 
  * Windows XP. To run this sample on older OSes, include the following header
  * file which makes it work automagically.
  * @author T. Ostaszewski
  * @date 04-Jan-2012
- * @brief 
- * @details 
  */
 
 #include "pcc.h"
@@ -33,9 +26,6 @@
 #include "resolve.h"
 #include "debug_helpers.h"
 
-// Sample: IPv4/6 Multicasting using Setsockopt
-//
-// Purpose:
 typedef enum device_type { 
 	BRICK_DEVICE,
 	NGCH_DEVICE
