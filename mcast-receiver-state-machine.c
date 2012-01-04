@@ -56,6 +56,9 @@ static WAVEFORMATEX * g_wfex;
  */
 static HANDLE g_hStopEvent;
  
+/**
+ * @brief
+ */
 static DWORD WINAPI ReceiverThreadProc(LPVOID param)
 {
     uint16_t count;
@@ -111,6 +114,9 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
     return 0;
 }
 
+/**
+ * @brief
+ */
 static int handle_rcvstart_internal(void)
 {
     HANDLE h_rcv_thread;
@@ -136,58 +142,96 @@ static int handle_rcvstart_internal(void)
     return -1;
 }
 
+/**
+ * @brief
+ */
 static int handle_rcvstop_internal(void)
 {
     assert (NULL != g_hStopEvent);
-    SetEvent(g_hStopEvent);
-	CloseHandle(g_hStopEvent);
-	g_hStopEvent = NULL;
-    return 0;
+    if (NULL != g_hStopEvent)
+    {
+        SetEvent(g_hStopEvent);
+        CloseHandle(g_hStopEvent);
+        g_hStopEvent = NULL;
+        return 0;
+    }
+    return -1;
 }
 
+/**
+ * @brief
+ */
 static int handle_mcastjoin_internal(void)
 {
 	int result;
 	assert(g_conn == NULL);
 	g_conn = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_connection));
 	assert(NULL != g_conn);
-	result = setup_multicast_3(DEFAULT_MCASTADDRV4, DEFAULT_MCASTPORT, g_conn);
-	assert(0 == result);
-	if (0 != result)
-	{
-		HeapFree(GetProcessHeap(), 0, g_conn);
-		g_conn = NULL;
-	}
-	return result;
+    if (NULL != g_conn)
+    {
+        result = setup_multicast_3(DEFAULT_MCASTADDRV4, DEFAULT_MCASTPORT, g_conn);
+        assert(0 == result);
+        if (0 == result)
+        {
+            return 0;
+        }
+        HeapFree(GetProcessHeap(), 0, g_conn);
+        g_conn = NULL;
+    }
+    return -1;
 }
 
+/**
+ * @brief
+ */
 static int handle_mcastleave_internal(void)
 {
-	assert(NULL != g_conn);
-	close_multicast(g_conn);
-	HeapFree(GetProcessHeap(), 0, g_conn);
-	g_conn = NULL;
-    return 0;
+    assert(NULL != g_conn);
+    if (NULL != g_conn)
+    {
+        close_multicast(g_conn);
+        HeapFree(GetProcessHeap(), 0, g_conn);
+        g_conn = NULL;
+        return 0;
+    }
+    return -1;
 }
 
+/**
+ * @brief
+ */
 static int handle_stop_internal(void)
 {
     assert(NULL != g_player);
-	dsoundplayer_stop(g_player);    
-	dsoundplayer_destroy(g_player);
-	g_player = NULL;
-	return 0;
+    if (NULL != g_player)
+    {
+        dsoundplayer_stop(g_player);    
+        dsoundplayer_destroy(g_player);
+        g_player = NULL;
+        return 0;
+    }
+    return -1;
 }
 
+/**
+ * @brief
+ */
 static int handle_play_internal(HWND hMainWnd)
 {
-	assert(NULL == g_player);
-	assert(NULL != g_wfex);
-	assert(NULL != g_fifo);
-	g_player = dsoundplayer_create(hMainWnd, g_wfex, g_fifo);
-	assert(NULL != g_player);
-	dsoundplayer_play(g_player);    
-	return 0;
+    assert(NULL == g_player);
+    assert(NULL != g_wfex);
+    assert(NULL != g_fifo);
+    if (NULL == g_player && NULL != g_wfex && NULL != g_fifo)
+    {
+        g_player = dsoundplayer_create(hMainWnd, g_wfex, g_fifo);
+        assert(NULL != g_player);
+        if (NULL != g_player)
+        {
+            dsoundplayer_play(g_player);    
+            return 0;
+        }
+    }
+    return -1;
 }
 
 void receiver_init(WAVEFORMATEX * p_wfex)
@@ -196,25 +240,22 @@ void receiver_init(WAVEFORMATEX * p_wfex)
 	g_fifo = fifo_circular_buffer_create();
 }
 
-/*!
- * @brief
- */
 void handle_play(HWND hMainWnd)
 {
     if (RECEIVER_MCASTJOINED == g_state)
     {
-        handle_play_internal(hMainWnd);
-        g_state = RECEIVER_MCASTJOINED_PLAYING;
+        if (0 ==handle_play_internal(hMainWnd))
+            g_state = RECEIVER_MCASTJOINED_PLAYING;
     }
     else if (RECEIVER_INITIAL == g_state)
     {
-        handle_play_internal(hMainWnd);
-        g_state = RECEIVER_PLAYING;
+        if (0 == handle_play_internal(hMainWnd))
+            g_state = RECEIVER_PLAYING;
     }
     else if (RECEIVER_RECEIVING == g_state)
     {
-        handle_play_internal(hMainWnd);
-        g_state = RECEIVER_RECEIVING_PLAYING;
+        if (0 == handle_play_internal(hMainWnd))
+            g_state = RECEIVER_RECEIVING_PLAYING;
     }
     else
     {
@@ -222,55 +263,40 @@ void handle_play(HWND hMainWnd)
     }
 }
 
-/*!
- * @brief
- */
 void handle_stop(void)
 {
     if (RECEIVER_PLAYING == g_state)
     {
         if  (0 == handle_stop_internal())
-        {
-            debug_outputln("%s %d", __FILE__, __LINE__);
             g_state = RECEIVER_INITIAL;
-        }
     }
     else if (RECEIVER_RECEIVING_PLAYING == g_state)
     {
         if  (0 == handle_stop_internal())
-        {
-            debug_outputln("%s %d", __FILE__, __LINE__);
             g_state = RECEIVER_RECEIVING;
-        }
     }
     else if (RECEIVER_MCASTJOINED_PLAYING == g_state)
     {
         if  (0 == handle_stop_internal())
-        {
-            debug_outputln("%s %d", __FILE__, __LINE__);
             g_state = RECEIVER_MCASTJOINED;
-        }
     }
     else
     {
         debug_outputln("%s %5.5d", __FILE__, __LINE__);
     }
 }
- 
-/*!
- * @brief
- */
+
 void handle_rcvstart(void)
 {
     if (RECEIVER_MCASTJOINED == g_state)
     {
-        handle_rcvstart_internal();
-        g_state = RECEIVER_RECEIVING;
+        if (0 == handle_rcvstart_internal())
+            g_state = RECEIVER_RECEIVING;
     } 
     else if (RECEIVER_MCASTJOINED_PLAYING == g_state)
     {
-        handle_rcvstart_internal();
-        g_state = RECEIVER_RECEIVING_PLAYING;
+        if (0 == handle_rcvstart_internal())
+            g_state = RECEIVER_RECEIVING_PLAYING;
     }
     else
     {
@@ -278,20 +304,17 @@ void handle_rcvstart(void)
     }
 }
 
-/*!
- * @brief
- */
 void handle_rcvstop(void)
 {
     if (RECEIVER_RECEIVING_PLAYING == g_state)
     {
-        handle_rcvstop_internal();
-        g_state = RECEIVER_MCASTJOINED_PLAYING;
+        if (0 == handle_rcvstop_internal())
+            g_state = RECEIVER_MCASTJOINED_PLAYING;
     }
     else if (RECEIVER_RECEIVING == g_state)
     {
-        handle_rcvstop_internal();
-        g_state = RECEIVER_MCASTJOINED;
+        if (0 == handle_rcvstop_internal())
+            g_state = RECEIVER_MCASTJOINED;
     }
     else
     {
@@ -299,20 +322,17 @@ void handle_rcvstop(void)
     }
 }
 
-/*!
- * @brief
- */
 void handle_mcastjoin(void)
 {
     if (RECEIVER_INITIAL == g_state)
     {
-        handle_mcastjoin_internal();
-        g_state = RECEIVER_MCASTJOINED;
+        if (0 == handle_mcastjoin_internal())
+            g_state = RECEIVER_MCASTJOINED;
     }
     else if (RECEIVER_PLAYING == g_state)
     {
-        handle_mcastjoin_internal();
-        g_state = RECEIVER_MCASTJOINED_PLAYING;
+        if (0 == handle_mcastjoin_internal())
+            g_state = RECEIVER_MCASTJOINED_PLAYING;
     }
     else
     {
@@ -320,20 +340,17 @@ void handle_mcastjoin(void)
     }
 }
 
-/*!
- * @brief
- */
 void handle_mcastleave(void)
 {
     if (RECEIVER_MCASTJOINED == g_state)
     {
-        handle_mcastleave_internal();
-        g_state = RECEIVER_INITIAL; 
+        if (0 == handle_mcastleave_internal())
+            g_state = RECEIVER_INITIAL; 
     }
     else if (RECEIVER_MCASTJOINED_PLAYING == g_state)
     {
-        handle_mcastleave_internal();
-        g_state = RECEIVER_PLAYING;
+        if (0 == handle_mcastleave_internal())
+            g_state = RECEIVER_PLAYING;
     }
     else
     {
@@ -341,9 +358,6 @@ void handle_mcastleave(void)
     }
 }
 
-/**
- * @brief
- */
 receiver_state_t receiver_get_state(void)
 {
     return g_state;
