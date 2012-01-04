@@ -32,7 +32,6 @@ static HINSTANCE   g_hInst;
  */
 static HWND     g_hMainWnd;
 
-
 /**
  * @brief Main UI update function.
  * @details Updates the UI widgets state so they reflect the internal state of the program.

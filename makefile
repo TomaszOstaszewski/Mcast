@@ -119,13 +119,13 @@ $(OUTDIR)\$(APP_NAME).exe: $(OBJECTS)
 	@ECHO $@
 	$(link) $(ldebug) $(guiflags) /LIBPATH:$(DXLIB) /MAP:$@.map /PDB:$(OUTDIR_OBJ)\$(@B).pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
 
-$(OUTDIR)\receiver.exe: $(OUTDIR_OBJ)\mcastui.res $(OUTDIR_OBJ)\mcast-receiver-dlg.obj $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\input-buffer.obj $(OUTDIR_OBJ)\fifo-circular-buffer.obj $(OUTDIR_OBJ)\dsoundplay.obj $(OUTDIR_OBJ)\mcast_setup.obj $(OUTDIR_OBJ)\winsock_adapter.obj $(OUTDIR_OBJ)\wave_utils.obj $(OUTDIR_OBJ)\conn_data.obj $(OUTDIR_OBJ)\mcast_utils.obj $(OUTDIR_OBJ)\conn_table.obj $(OUTDIR_OBJ)\tei.obj $(OUTDIR_OBJ)\timeofday.obj $(OUTDIR_OBJ)\resolve.obj $(OUTDIR_OBJ)\var-database.obj $(OUTDIR_OBJ)\message-loop.obj  $(OUTDIR_OBJ)\mcast-receiver-state-machine.obj   
+$(OUTDIR)\receiver.exe: $(OUTDIR_OBJ)\mcastui.res $(OUTDIR_OBJ)\mcast-receiver-dlg.obj $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\input-buffer.obj $(OUTDIR_OBJ)\fifo-circular-buffer.obj $(OUTDIR_OBJ)\dsoundplay.obj $(OUTDIR_OBJ)\mcast_setup.obj $(OUTDIR_OBJ)\winsock_adapter.obj $(OUTDIR_OBJ)\wave_utils.obj $(OUTDIR_OBJ)\conn_data.obj $(OUTDIR_OBJ)\mcast_utils.obj $(OUTDIR_OBJ)\conn_table.obj $(OUTDIR_OBJ)\tei.obj $(OUTDIR_OBJ)\timeofday.obj $(OUTDIR_OBJ)\resolve.obj $(OUTDIR_OBJ)\message-loop.obj  $(OUTDIR_OBJ)\mcast-receiver-state-machine.obj   
 	@ECHO $@
-	$(link) $(ldebug) $(guiflags) /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map /PDB:$(OUTDIR_OBJ)\$(@B).pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
+	$(link) $(ldebug) $(guiflags) /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
 
 $(OUTDIR)\sender.exe: $(OUTDIR_OBJ)\mcastui.res $(OUTDIR_OBJ)\tei.obj $(OUTDIR_OBJ)\conn_table.obj $(OUTDIR_OBJ)\conn_data.obj $(OUTDIR_OBJ)\timeofday.obj $(OUTDIR_OBJ)\mcast_utils.obj $(OUTDIR_OBJ)\resolve.obj $(OUTDIR_OBJ)\mcast_setup.obj $(OUTDIR_OBJ)\mcast-sender-dlg.obj $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\message-loop.obj $(OUTDIR_OBJ)\wave_utils.obj $(OUTDIR_OBJ)\mcast-sender-state-machine.obj
 	@ECHO $@
-	$(link) $(ldebug) $(guiflags) /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map /PDB:$(OUTDIR_OBJ)\$(@B).pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
+	$(link) $(ldebug) $(guiflags) /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
 
 #--------------------- Clean Rule --------------------------------------------------------
 # Rules for cleaning out those old files
