@@ -18,7 +18,7 @@
  * Windows XP. To run this sample on older OSes, include the following header
  * file which makes it work automagically.
  * @author T. Ostaszewski
- * @date 04-Jan-2011
+ * @date 04-Jan-2012
  * @brief 
  * @details 
  */

@@ -2,7 +2,7 @@
 /**
  * @file mcast-receiver-dlg.c
  * @author T. Ostaszewski
- * @date 04-Jan-2011
+ * @date 04-Jan-2012
  * @brief Receiver's entry point.
  * @details This file contains the receiver's dialog front end. This is
  * where the UI meets the internal state management.
