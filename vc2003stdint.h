@@ -1,6 +1,6 @@
 /**
  * @file vc2003stdint.h
- * @briefISO C9x  7.18  Integer types <stdint.h>
+ * @brief ISO C9x  7.18  Integer types <stdint.h>
  * @details Based on ISO/IEC SC22/WG14 9899 Committee draft (SC22 N2794)
  * @attention THIS SOFTWARE IS NOT COPYRIGHTED
  * This source code is offered for use in the public domain. You may
