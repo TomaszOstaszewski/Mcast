@@ -275,9 +275,6 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     if (FAILED(hr))
         return FALSE;
     g_hInst = hInstance;
-    rc = init_master_riff(&g_pWavChunk, g_hInst, MAKEINTRESOURCE(IDR_0_1));
-    if (0 != rc)
-        return FALSE;
     //required to use the common controls
     InitCommonControls();
     g_hMainWnd = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_MAIN_RECEIVER), NULL, ReceiverDlgProc);
