@@ -44,13 +44,6 @@
  */
 #define DEFAULT_CHUNK_SEND_TIMEOUT (85)
 
-/**
- * 
- */
-static sender_state_t g_state;
-
-extern master_riff_chunk_t * g_pWavChunk;
-
 /*!
  * @brief
  * @details
@@ -63,9 +56,11 @@ typedef struct mcast_settings {
 } mcast_settings_t;
 
 /*!
- * @brief
+ * @brief 
  */
-struct mcast_settings * g_settings;
+static sender_state_t g_state;
+
+extern master_riff_chunk_t * g_pWavChunk;
 
 /*!
  * @brief
@@ -158,6 +153,10 @@ static struct mcast_settings * get_mcast_settings(void)
     return &g_settings;
 }
 
+/**
+ * @brief
+ * @param
+ */
 static int sender_handle_mcastjoin_internal(void)
 {
     assert(NULL == g_conn);
@@ -177,6 +176,10 @@ static int sender_handle_mcastjoin_internal(void)
     return (-1);
 }
 
+/**
+ * @brief
+ * @param
+ */
 static int sender_handle_mcastleave_internal(void)
 {
     int result;
@@ -186,6 +189,10 @@ static int sender_handle_mcastleave_internal(void)
     return 0;
 }
 
+/**
+ * @brief
+ * @param
+ */
 static int sender_handle_startsending_internal(void)
 {
     HANDLE h_stop_event;
@@ -207,6 +214,10 @@ static int sender_handle_startsending_internal(void)
     return -1;
 }
 
+/**
+ * @brief
+ * @param
+ */
 static int sender_handle_stopsending_internal(void)
 {
     SetEvent(g_hStopEvent);   
