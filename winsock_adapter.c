@@ -3,7 +3,7 @@
 /**
  * @file winsock_adapter.c
  * @author T.Ostaszewski 
- * @date
+ * @date 04-Jan-2012
  * @brief
  * @details
  */

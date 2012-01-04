@@ -2,8 +2,8 @@
 
 /**
  * @file perf-counter-itf.h
- * @author
- * @date
+ * @author T.Ostaszewski
+ * @date 04-Jan-2012
  * @brief
  * @details
  */

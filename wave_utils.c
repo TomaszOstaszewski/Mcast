@@ -3,7 +3,7 @@
 /**
  * @file wave_utils.c
  * @author T.Ostaszewski 
- * @date
+ * @date 04-Jan-2012
  * @brief
  * @details
  */

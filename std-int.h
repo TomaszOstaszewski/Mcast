@@ -3,7 +3,7 @@
 /**
  * @file std-int.h
  * @author T.Ostaszewski 
- * @date
+ * @date 04-Jan-2012
  * @brief Universal wrapper for <stdint.h> which is not available on Microsoft Visual prior to 2010.
  * @details Insted of including standard <stdint.h>, just include this file. The right version of the
  * stdint.h file (either vendor provided or home made wrapper) will be included, depending on the
