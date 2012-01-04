@@ -1,10 +1,10 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /**
  * @file mcast-sender-dlg.c
- * @author
- * @date
- * @brief
- * @details
+ * @author T.Ostaszewski
+ * @date 03-Jan-2011
+ * @brief Sender dialog application main file.
+ * @details 
  */
 #include "pcc.h"
 #include "mcastui.h"
@@ -19,18 +19,20 @@
 #include "mcast-sender-state-machine.h"
 
 /**
- * @brief 
+ * @brief Global Application instance.
+ * @details Required for various Windows related stuff.
  */
-HINSTANCE   g_hInst;
+static HINSTANCE   g_hInst;
 
 /**
  * @brief 
  */
-master_riff_chunk_t * g_pWavChunk;
+static master_riff_chunk_t * g_pWavChunk;
 
 /**
- * @brief
- *
+ * @brief Updates the UI with application state.
+ * @param Just sets the focus to various controls and 
+ * lights them up or ghosts them out.
  */
 static void UpdateUI(HWND hDlg)
 {
@@ -65,6 +67,7 @@ static void UpdateUI(HWND hDlg)
                 EnableWindow(hLeaveMcast, FALSE);
                 EnableWindow(hStartSendingBtn, FALSE);
                 EnableWindow(hStopSendingBtn, FALSE);
+                SetFocus(hSettingsBtn);
                 break;
             case SENDER_MCAST_JOINED:
                 EnableMenuItem(hMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
@@ -77,6 +80,7 @@ static void UpdateUI(HWND hDlg)
                 EnableWindow(hLeaveMcast, TRUE);
                 EnableWindow(hStartSendingBtn, TRUE);
                 EnableWindow(hStopSendingBtn, FALSE);
+                SetFocus(hStartSendingBtn);
                 break;
             case SENDER_SENDING:
                 EnableMenuItem(hMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
@@ -89,6 +93,7 @@ static void UpdateUI(HWND hDlg)
                 EnableWindow(hLeaveMcast, FALSE);
                 EnableWindow(hStartSendingBtn, FALSE);
                 EnableWindow(hStopSendingBtn, TRUE);
+                SetFocus(hStopSendingBtn);
                 break;
             default:
                 break;
@@ -97,11 +102,42 @@ static void UpdateUI(HWND hDlg)
     }
 }
 
+/**
+ * @brief Multicast settings dialog message processing routine.
+ * @details Processes the messages for the dialog, mainly the WM_COMMAND type.
+ * @param hDlg
+ * @param uMessage
+ * @param wParam
+ * @param lParam
+ * @return  
+ */
+static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
+{
+    switch (uMessage)
+    {
+        case WM_COMMAND:
+            switch(wParam)
+            {
+                case IDCANCEL:
+                case IDOK:
+                    EndDialog(hDlg, wParam);
+                    break;
+            }
+            return TRUE;
+    }
+    return FALSE;
+}
 
 /**
- * @brief
+ * @brief Sender dialog message processing routine.
+ * @details Processes the messages for the dialog, mainly the WM_COMMAND type.
+ * @param hDlg
+ * @param uMessage
+ * @param wParam
+ * @param lParam
+ * @return  
  */
-INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
     sender_state_t curr_state;
     switch (uMessage)
@@ -117,14 +153,17 @@ INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM l
             switch(wParam)
             {
                 case ID_SENDER_SETTINGS:
-                    curr_state = sender_get_current_state();
-                    if (SENDER_INITIAL == curr_state)
                     {
-                        /* Open up the settings dialog with the MCAST settings parameters */
-                    }
-                    else
-                    {
-                        debug_outputln("%s %5.5d", __FILE__, __LINE__);
+                        curr_state = sender_get_current_state();
+                        if (SENDER_INITIAL == curr_state)
+                        {
+                            /* Open up the settings dialog with the MCAST settings parameters */
+                            DialogBox(g_hInst, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), hDlg, McastSettingsProc);
+                        }
+                        else
+                        {
+                            debug_outputln("%s %5.5d", __FILE__, __LINE__);
+                        }
                     }
                     break;
                 case ID_SENDER_JOINMCAST:
@@ -150,6 +189,18 @@ INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM l
     return FALSE;
 }
 
+/**
+ * @brief Idle processing routine.
+ * @details This routine will be called each time there is 
+ * no message in the message queue. When it returns a non-zero value,
+ * it will be called again, and so on, unless a message shows up in the message
+ * queue, or it returns 0. 
+ * @param hWnd
+ * @param count
+ * @return When it returns 0, it wont' be called again until a message shows up
+ * in the message queue and its processed. When it returns a non-zero, it may be called again,
+ * unless a message shows up in the message queue.
+ */
 static long int on_idle(HWND hWnd, long int count)
 {
     switch (count)
@@ -163,8 +214,16 @@ static long int on_idle(HWND hWnd, long int count)
     return 0;
 }
 
-
-int PASCAL WinMain(  HINSTANCE hInstance,
+/*!
+ * @brief Windows entry point.
+ * @details
+ * @param hInstance
+ * @param hPrevInstance
+ * @param lpCmdLine
+ * @param nCmdShow
+ * @return
+ */
+int PASCAL WinMain(HINSTANCE hInstance,
         HINSTANCE hPrevInstance,
         LPSTR lpCmdLine,
         int nCmdShow)

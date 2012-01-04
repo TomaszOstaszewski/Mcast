@@ -2,6 +2,7 @@
 #define MCAST_RECEIVER_STATE_093A307A_2B03_4C05_8350_E3ED8C52A126
 
 #include <windows.h>
+
 /**
  * @brief Describes possible states for the receiver.
  * @details
@@ -13,9 +14,11 @@ typedef enum receiver_state {
     RECEIVER_MCASTJOINED_PLAYING = 3, /**< Playing data from the buffer and joined multicast group. */
     RECEIVER_RECEIVING_PLAYING = 4, /**< Receiving data into buffer and playing data from the buffer. */
     RECEIVER_RECEIVING = 5, /**< Receiving data into buffer. */
-    RECEIVER_STATE_LAST = 6 /**< Tags last possible state, used to set bounds on the array of data associated with each state. */
 } receiver_state_t;
 
+/*!
+ * @brief
+ */
 receiver_state_t receiver_get_state(void);
 
 /*!

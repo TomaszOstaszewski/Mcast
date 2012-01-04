@@ -9,19 +9,44 @@
 #include <windows.h>
 #include "wave_utils.h"
 
+/*!
+ * @brief Describes a sender state.
+ */
 typedef enum sender_state { 
-    SENDER_INITIAL = 0,
-    SENDER_MCAST_JOINED = 1,
-    SENDER_SENDING = 2,
-    SENDER_LAST = 3
+    SENDER_INITIAL = 0,         /*!< Initial state, no sending, no receiving. */
+    SENDER_MCAST_JOINED = 1,    /*!< Sender successfully joined a multicast group. */
+    SENDER_SENDING = 2,         /*!< Sender sending data. */
 } sender_state_t;
 
+/*! 
+ * @brief Returns current sender state.
+ */
 sender_state_t sender_get_current_state(void);
 
+/*! 
+ * @brief 
+ */
 void sender_initialize(master_riff_chunk_t * p_wav_chunk);
+
+/*! 
+ * @brief
+ */
 void sender_handle_mcastjoin(void);
+
+/*! 
+ * @brief
+ */
 void sender_handle_mcastleave(void);
+
+/*! 
+ * @brief
+ */
 void sender_handle_startsending(void);
+
+/*! 
+ * @brief
+ */
 void sender_handle_stopsending(void);
 
 #endif /*!defined MCAST_SENDER_BF6FAC88_2286_488B_9256_997E81B13E49*/
+

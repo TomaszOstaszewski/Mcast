@@ -1,8 +1,20 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/**
+ * @file message-loop.c
+ * @author T.Ostaszewski
+ * @date 03-Jan-2011
+ * @brief Message loop helper routines.
+ * @details 
+ */
 #include "pcc.h"
 #include "message-loop.h"
 
 /*!
- * @brief 
+ * @brief Determines if the message is an idle message. 
+ * @detail An idle message is, for instance, a WM_MOUSEMOVE message
+ * that contains the very same coordinantes as the very previous WM_MOUSEMOVE.
+ * @param pMsg - a message to be tested for idleness.
+ * @retrun returns TRUE if the message is idle, FALSE otherwise.
  */
 static BOOL IsIdleMessage(MSG* pMsg)
 {
@@ -40,7 +52,7 @@ WPARAM message_loop(HWND hWnd, P_ON_IDLE idle_func)
         while (bIdle && !PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
         {
             // call OnIdle while in bIdle state
-            if (!(*idle_func)(hWnd, lIdleCount++))
+            if (idle_func && !(*idle_func)(hWnd, lIdleCount++))
                 break;
         }
         // phase2: pump messages while available

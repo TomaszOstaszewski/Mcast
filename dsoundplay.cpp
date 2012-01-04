@@ -1,5 +1,9 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
- * @file
+ * @file dsoundplay.cpp
+ * @author T. Ostaszewski
+ * @date 30-Nov-2010
+ * @brief DirectSound WAV playing file.
  */
 #include "pcc.h"
 #include "debug_helpers.h"
@@ -7,7 +11,6 @@
 #include "wave_utils.h"
 #include "fifo-circular-buffer.h"
 #include "input-buffer.h"
-
 
 /*!
  * @brief
@@ -24,6 +27,12 @@ struct dsound_data {
     struct fifo_circular_buffer * fifo_;
 };
 
+/**
+ * @brief Helper routine, gets the device capabilities.
+ * @param[in] lpdsb
+ * @return returns S_OK if succeeded, any other value indicates an error.
+ * @sa http://bit.ly/zP10oa
+ */
 static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER8 lpdsb)
 {
     DSBCAPS caps;
@@ -48,6 +57,14 @@ static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER8 lpdsb)
     return hr;
 }
 
+/**
+ * @brief Creates the buffer
+ * @param[in] dwOffset 
+ * @param[in] req_size
+ * @param[in] p_buffer - 
+ * @param[in] p_input_buffer_desc
+ * @return
+ */
 static HRESULT create_buffers(LPDIRECTSOUND8 p_direct_sound_8, 
         LPDIRECTSOUNDBUFFER * pp_primary_buffer, 
         LPDIRECTSOUNDBUFFER8 * pp_secondary_buffer, 
@@ -122,6 +139,7 @@ error:
 }
 
 /**
+ * @brief 
  * @param[in] dwOffset 
  * @param[in] req_size
  * @param[in] p_buffer - 
@@ -175,6 +193,9 @@ static HRESULT fill_buffer(DWORD dwOffset, DWORD req_size, LPDIRECTSOUNDBUFFER8 
     return hr;
 }
 
+/*!
+ * @brief
+ */
 static void play_data_chunk(struct dsound_data * p_ds_data) 
 {
     DWORD dwRead, dwWrite;
@@ -240,6 +261,9 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
     return;
 }
 
+/*!
+ * @brief
+ */
 static void CALLBACK sTimerCallback(UINT uTimerID, UINT uMsg, DWORD dwUser, 
         DWORD dw1 /* reserved - do not use */, 
         DWORD dw2 /* reserved * - do not use */) 
@@ -248,6 +272,9 @@ static void CALLBACK sTimerCallback(UINT uTimerID, UINT uMsg, DWORD dwUser,
     play_data_chunk(p_ds_data);
 }
 
+/*!
+ * @brief
+ */
 static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound_data * p_ds_data)
 {
     HRESULT hr;
@@ -312,7 +339,6 @@ extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, WAVEFORMATEX const * p_WFE,
 extern "C" void dsoundplayer_destroy(DSOUNDPLAY handle) 
 {
     struct dsound_data * p_retval = (struct dsound_data*)handle;
-    /*! \todo Add interface Release() here */
     HeapFree(GetProcessHeap(), 0, p_retval);
 }
 
