@@ -4,9 +4,8 @@
  * @author T. Ostaszewski 
  */ 
 #include "pcc.h"
+#include "debug_helpers.h"
 #include "var-database.h"
-#include "dsoundplay.h"
-#include "fifo-circular-buffer.h"
 
 /**
  * @brief 
@@ -17,86 +16,89 @@ typedef struct state_longevity_data {
     void (*p_dctor_)(void * );  /**< State dctor */
 } state_longevity_data_t;
 
-/**
- * @brief  
+/*!
+ * @brief
  */
-static state_longevity_data_t globals_table[GLOBAL_LAST];
+struct var_database {
+    state_longevity_data_t globals_table_[1];
+};
 
-/**
- * @brief  
- */
-void add_ref(global_variable_type_t e_state)
+var_database_t var_database_create(void)
 {
-    ++globals_table[e_state].ref_count_;     
+    struct var_database * p_database = (struct var_database *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(state_longevity_data_t)*GLOBAL_LAST);  
+    assert(NULL != p_database);
+    return p_database;
+} 
+
+void var_database_destroy(var_database_t p_database)
+{ 
+    HeapFree(GetProcessHeap(), 0, p_database);
 }
 
-/**
- * @brief  
- */
-void * get_var(global_variable_type_t e_state)
+void * get_var(var_database_t database, global_variable_type_t e_state)
 {
-    return globals_table[e_state].p_var_;
-}
-
-void garbage_collect(void)
-{
-    static global_variable_type_t all_vars[] = {
-        GLOBAL_MCAST_CONNECTION,
-        GLOBAL_FIFO_QUEUE,
-        GLOBAL_RCV_EVENT,
-        GLOBAL_RCV_THREAD,
-        GLOBAL_WFEX,
-    };
-    global_variable_type_t const * p_begin = &all_vars[0];
-    global_variable_type_t const * p_past_end = &all_vars[sizeof(all_vars)/sizeof(all_vars[0])];
-    for (; p_begin != p_past_end; ++p_begin)
+    assert(database);
+    if (0 != database->globals_table_[e_state].ref_count_)
     {
-        if (0 == globals_table[*p_begin].ref_count_ && NULL != globals_table[*p_begin].p_var_)
+        ++database->globals_table_[e_state].ref_count_;
+        return database->globals_table_[e_state].p_var_;
+    }
+    return NULL;
+}
+
+int set_var(var_database_t database, global_variable_type_t e_state, void * p_var, CLEANUP_FUNC p_cleanup)
+{
+    assert(database);
+    if (0 == database->globals_table_[e_state].ref_count_)
+    {
+        ++database->globals_table_[e_state].ref_count_;
+        database->globals_table_[e_state].p_var_ = p_var;
+        database->globals_table_[e_state].p_dctor_ = p_cleanup;
+        return 0;
+    }
+    return 1;
+}
+
+void release_ref(var_database_t database, global_variable_type_t e_state)
+{
+    assert(database);
+    if (database->globals_table_[e_state].ref_count_)
+    {
+        --database->globals_table_[e_state].ref_count_;     
+        if (0 == database->globals_table_[e_state].ref_count_ && NULL != database->globals_table_[e_state].p_dctor_)
         {
-            switch (*p_begin)
-            {
-                case GLOBAL_FIFO_QUEUE:
-                    fifo_circular_buffer_delete((struct fifo_circular_buffer*)globals_table[*p_begin].p_var_);
-                    break;
-                case GLOBAL_MCAST_CONNECTION:
-                case GLOBAL_WFEX:
-                    HeapFree(GetProcessHeap(), 0, globals_table[*p_begin].p_var_);
-                    break;
-                case GLOBAL_RCV_EVENT:
-                case GLOBAL_RCV_THREAD:
-                    CloseHandle((HANDLE)globals_table[*p_begin].p_var_);
-                    break;
-                case GLOBAL_PLAYER:
-                    dsoundplayer_destroy(globals_table[*p_begin].p_var_);
-                    break;
-				case GLOBAL_SENDER_SETTINGS:
-				case GLOBAL_SENDER_MCAST_CONN:
-				case GLOBAL_SENDER_MASTER_RIFF:
-				case GLOBAL_SENDER_STOP_EVENT:
-				case GLOBAL_SENDER_SEND_PARAMS:
-					assert(0);
-					break;
-				default:
-					break;
-            }
-            globals_table[*p_begin].p_var_ = NULL;
+            (*database->globals_table_[e_state].p_dctor_)(database->globals_table_[e_state].p_var_);
         }
     }
 }
 
-/**
- * @brief  
- */
-void * set_var(global_variable_type_t e_state, void * p_var)
+void garbage_collect(var_database_t database)
 {
-    return globals_table[e_state].p_var_ = p_var;
+#if 0
+    state_longevity_data_t * p_begin = database->globals_table_;
+    state_longevity_data_t const * const p_past_end = database->globals_table_ + GLOBAL_LAST;
+    assert(database);
+    for (; p_begin != p_past_end; ++p_begin)
+    {
+        if (0 == p_begin->ref_count_ && NULL != p_begin->p_var_)
+        {
+           (*p_begin->p_dctor_)(p_begin->p_var_);
+           p_begin->p_var_ = NULL;
+        }
+    }
+#endif
+    debug_outputln("%s "
+    "[%2.2u]=%2.2u "
+    "[%2.2u]=%2.2u "
+    "[%2.2u]=%2.2u "
+    "[%2.2u]=%2.2u "
+    "[%2.2u]=%2.2u ",
+    "GC collect",
+/*0*/    GLOBAL_MCAST_CONNECTION, database->globals_table_[GLOBAL_MCAST_CONNECTION].ref_count_,
+/*1*/    GLOBAL_FIFO_QUEUE,  database->globals_table_[GLOBAL_FIFO_QUEUE].ref_count_,
+/*2*/    GLOBAL_RCV_EVENT,   database->globals_table_[GLOBAL_RCV_EVENT].ref_count_,
+/*3*/    GLOBAL_WFEX,        database->globals_table_[GLOBAL_WFEX].ref_count_,
+/*4*/    GLOBAL_PLAYER,      database->globals_table_[GLOBAL_PLAYER].ref_count_
+    );
 }
 
-/**
- * @brief  
- */
-void release_ref(global_variable_type_t e_state)
-{
-    if ( globals_table[e_state].ref_count_)
-        --globals_table[e_state].ref_count_;     
-}

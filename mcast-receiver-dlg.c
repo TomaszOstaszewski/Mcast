@@ -32,6 +32,7 @@ static HINSTANCE   g_hInst;
  */
 static HWND     g_hMainWnd;
 
+
 /**
  * @brief Main UI update function.
  * @details Updates the UI widgets state so they reflect the internal state of the program.
@@ -184,12 +185,12 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                 int result;
                 g_hMainWnd = hDlg;
                 result = init_master_riff(&g_pWavChunk, g_hInst, MAKEINTRESOURCE(IDR_0_1));
+                assert(0 == result);
                 if (0 == result)
                 {
                     WAVEFORMATEX * p_wfex = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(WAVEFORMATEX)); 
-                    set_var(GLOBAL_WFEX, p_wfex);
-                    add_ref(GLOBAL_WFEX);
                     copy_waveformatex_2_WAVEFORMATEX(p_wfex, &g_pWavChunk->format_chunk_.format_);
+                    receiver_init(p_wfex);
                 }
             } 
             return TRUE;
@@ -252,7 +253,6 @@ static long int on_idle(long int count)
             UpdateUI(g_hMainWnd);
             return 1;
         default:
-            garbage_collect();
             return 0;
     }
     return 0;
@@ -275,9 +275,6 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     if (FAILED(hr))
         return FALSE;
     g_hInst = hInstance;
-    rc = init_master_riff(&g_pWavChunk, g_hInst, MAKEINTRESOURCE(IDR_0_1));
-    if (0 != rc)
-        return FALSE;
     //required to use the common controls
     InitCommonControls();
     g_hMainWnd = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_MAIN_RECEIVER), NULL, ReceiverDlgProc);

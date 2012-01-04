@@ -197,7 +197,6 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
             p_ds_data->buf_2_filled_ = TRUE, p_ds_data->buf_1_filled_ = FALSE;
             if (fifo_circular_buffer_get_items_count(p_ds_data->fifo_)>0)
             {
-                debug_outputln("%s %5.5d : %u", __FILE__, __LINE__, fifo_circular_buffer_get_items_count(p_ds_data->fifo_));
                 fifo_circular_buffer_fetch_item(p_ds_data->fifo_, &data);
             }
             else
@@ -214,7 +213,6 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
             p_ds_data->buf_1_filled_ = TRUE, p_ds_data->buf_2_filled_ = FALSE;
             if (fifo_circular_buffer_get_items_count(p_ds_data->fifo_)>0)
             {
-                debug_outputln("%s %5.5d : %u", __FILE__, __LINE__, fifo_circular_buffer_get_items_count(p_ds_data->fifo_));
                 fifo_circular_buffer_fetch_item(p_ds_data->fifo_, &data);
             }
             else
@@ -237,7 +235,7 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
     }   
     else
     {
-        debug_outputln("%s %d : %8.8x", __FILE__, __LINE__, hr);
+        //debug_outputln("%s %d : %8.8x", __FILE__, __LINE__, hr);
     }
     return;
 }

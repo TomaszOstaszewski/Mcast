@@ -1,3 +1,8 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/*!
+ * @file mcast-receiver-state-machine.c
+ * @author T. Ostaszewski 
+ */ 
 #include "pcc.h"
 #include "mcast-receiver-state-machine.h"
 #include "mcast_setup.h"
@@ -5,7 +10,6 @@
 #include "dsoundplay.h"
 #include "fifo-circular-buffer.h"
 #include "wave_utils.h"
-#include "var-database.h"
 
 /**
  * @brief
@@ -30,40 +34,42 @@ static receiver_state_t g_state;
 /**
  * @brief
  */
-receiver_state_t receiver_get_state(void)
-{
-    return g_state;
-}
+static struct mcast_connection * g_conn;
 
+/**
+ * @brief
+ */
+static struct fifo_circular_buffer * g_fifo;
+
+/**
+ * @brief
+ */
+static DSOUNDPLAY g_player;
+
+/**
+ * @brief
+ */
+static WAVEFORMATEX * g_wfex;
+
+/**
+ * @brief
+ */
+static HANDLE g_hStopEvent;
+ 
 static DWORD WINAPI ReceiverThreadProc(LPVOID param)
 {
-    uint16_t count = 0;
+    uint16_t count;
     struct data_item item;
     struct sockaddr_in sock_addr;
-    struct fifo_circular_buffer * fifo;
-    struct mcast_connection * conn;
     HANDLE h_stop_event;
-    BOOL bDupResult;
     socklen_t sock_addr_size;
     sock_addr_size  = sizeof(struct sockaddr_in);
     item.data_      = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, DATA_ITEM_SIZE);
     item.count_     = DATA_ITEM_SIZE;
-    /* Add another reference to the data structures used below.
-     * The enclosing data structure may become invalid right after external client signals h_stop_event */
-    conn = get_var(GLOBAL_MCAST_CONNECTION); /**< \todo Add 'add_ref' here */
-    assert(NULL != conn);
-    fifo = get_var(GLOBAL_FIFO_QUEUE); /**< \todo Add 'add_ref' here */
-    assert(NULL != fifo);
-    h_stop_event = get_var(GLOBAL_RCV_EVENT);
-    /* Along similiar lines - duplicate handle to the stop event. Another thread may call 'CloseHandle' on it, 
-     * effectively invalidating it. Calling 'DuplicateHandle' is a precaution for such a condition */
-    bDupResult = DuplicateHandle(GetCurrentProcess(), h_stop_event, GetCurrentProcess(), &h_stop_event, 0, FALSE, DUPLICATE_SAME_ACCESS);
-    if (FALSE == bDupResult)
-    {
-        debug_outputln("%s %d : %8.8u", __FILE__, __LINE__, GetLastError());
-        return -1;
-    }
-    for (; ; ++count)
+    assert(NULL != g_conn);
+    assert(NULL != g_fifo);
+	h_stop_event = (HANDLE)param;
+    for (count = 0; ; ++count)
     {
         int bytes_recevied;
         DWORD dwWaitResult;
@@ -73,7 +79,7 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
             /* Receive data from the socket until you receiving this WSAMSGSIZE error */
             do { 
                 bytes_recevied = recvfrom(
-                        conn->socket_,
+                        g_conn->socket_,
                         item.data_, 
                         item.count_, 
                         0,
@@ -82,19 +88,16 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
                         );
                 if (SOCKET_ERROR != bytes_recevied)
                 {
-                    debug_outputln("%s %d : %8.8u", __FILE__, __LINE__, bytes_recevied);
                     item.count_ = bytes_recevied;
-                    fifo_circular_buffer_push_item(fifo, &item);
+                    fifo_circular_buffer_push_item(g_fifo, &item);
                     break;
                 }
-                debug_outputln("%s %d : %8.8u", __FILE__, __LINE__, WSAGetLastError());
                 item.data_ = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, item.data_, item.count_ + DATA_ITEM_SIZE);
                 item.count_ += DATA_ITEM_SIZE;
             } while (WSAGetLastError() == WSAEMSGSIZE);
         }
         else if (WAIT_OBJECT_0 == dwWaitResult) /* Signaled - hence, the external enviroment has just requested termination */
         {
-            
             break;
         }
         else
@@ -103,110 +106,94 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
             break;
         }
     }
-    CloseHandle(h_stop_event);
-    HeapFree(GetProcessHeap(), 0, item.data_);
-    debug_outputln("%s %d : %8.8u", __FILE__, __LINE__, WSAGetLastError());
-    return 0;
-}
-
-static int handle_rcvstop_internal(void)
-{
-    HANDLE h_stop_event;
-    h_stop_event = get_var(GLOBAL_RCV_EVENT);
-    assert (NULL != h_stop_event);
-    SetEvent(h_stop_event);
-    release_ref(GLOBAL_RCV_EVENT);
-    return 0;
-}
-
-static int handle_mcastjoin_internal(void)
-{
-    if (NULL == get_var(GLOBAL_MCAST_CONNECTION))
-    {
-        struct mcast_connection * p_mcast_conn;
-        p_mcast_conn = setup_multicast_2(DEFAULT_MCASTADDRV4, DEFAULT_MCASTPORT);
-        assert(NULL != p_mcast_conn);
-        set_var(GLOBAL_MCAST_CONNECTION, p_mcast_conn);
-    }
-    add_ref(GLOBAL_MCAST_CONNECTION);
-    return 0;
-}
-
-static int handle_mcastleave_internal(void)
-{
-    struct mcast_connection * p_mcast_conn;
-    assert(NULL != get_var(GLOBAL_MCAST_CONNECTION));
-    p_mcast_conn = get_var(GLOBAL_MCAST_CONNECTION);
-    close_multicast(p_mcast_conn);
-    release_ref(GLOBAL_MCAST_CONNECTION);
-    return 0;
-}
-
-static int handle_stop_internal(void)
-{
-    DSOUNDPLAY player;
-    player = get_var(GLOBAL_PLAYER);
-    assert(NULL != player);
-    if (NULL != player)
-    {
-        dsoundplayer_stop(player);    
-        debug_outputln("%s %d", __FILE__, __LINE__);
-        return 0;
-    }
-    return -1;
-}
-
-static int handle_play_internal(HWND hMainWnd)
-{
-    DSOUNDPLAY player;
-    player = get_var(GLOBAL_PLAYER);
-    debug_outputln("%s %d", __FILE__, __LINE__);
-    if (NULL == player)
-    {
-        WAVEFORMATEX * p_wfex = get_var(GLOBAL_WFEX);
-        struct fifo_circular_buffer * fifo = get_var(GLOBAL_FIFO_QUEUE);
-        debug_outputln("%s %d", __FILE__, __LINE__);
-        assert(NULL != p_wfex);
-        if (NULL == fifo)
-        {
-            debug_outputln("%s %d", __FILE__, __LINE__);
-            fifo = fifo_circular_buffer_create();
-            set_var(GLOBAL_FIFO_QUEUE, fifo);
-            add_ref(GLOBAL_FIFO_QUEUE);
-        }
-        assert(NULL != fifo);
-        player = dsoundplayer_create(hMainWnd, p_wfex, fifo);
-        set_var(GLOBAL_PLAYER, player);
-    }
-    add_ref(GLOBAL_PLAYER);
-    dsoundplayer_play(player);    
+	CloseHandle(h_stop_event);
+	HeapFree(GetProcessHeap(), 0, item.data_);
     return 0;
 }
 
 static int handle_rcvstart_internal(void)
 {
-    HANDLE h_stop_event;
     HANDLE h_rcv_thread;
-    struct fifo_circular_buffer * fifo;
-    h_stop_event = get_var(GLOBAL_RCV_EVENT);
-    if (NULL == h_stop_event)
-    {
-        HANDLE h_stop_event =  CreateEvent(NULL, TRUE, FALSE, "recv-event-0");
-        set_var(GLOBAL_RCV_EVENT, (void*)h_stop_event);
-        add_ref(GLOBAL_RCV_EVENT); 
-    }
-    fifo = get_var(GLOBAL_FIFO_QUEUE);
-    if (NULL == fifo)
-    {
-        debug_outputln("%s %d", __FILE__, __LINE__);
-        fifo = fifo_circular_buffer_create();
-        set_var(GLOBAL_FIFO_QUEUE, fifo);
-        add_ref(GLOBAL_FIFO_QUEUE);
-    }
-    ResetEvent(h_stop_event);
-    h_rcv_thread = CreateThread(NULL, 0, ReceiverThreadProc, NULL, 0, NULL);
-    CloseHandle(h_rcv_thread);
+	HANDLE h_stop_event;
+	BOOL bDupResult;
+
+	assert(NULL == g_hStopEvent);
+	h_stop_event = CreateEvent(NULL, TRUE, FALSE, "recv-event-0");
+	if (NULL == h_stop_event)
+	{
+		return -1;
+	}
+    bDupResult = DuplicateHandle(GetCurrentProcess(), h_stop_event, GetCurrentProcess(), &g_hStopEvent, 0, FALSE, DUPLICATE_SAME_ACCESS);
+	if (bDupResult)
+	{
+		ResetEvent(g_hStopEvent);
+		/* Pass event copy to the receiver thread */
+		h_rcv_thread = CreateThread(NULL, 0, ReceiverThreadProc, h_stop_event, 0, NULL);
+		assert(NULL != h_rcv_thread);
+		CloseHandle(h_rcv_thread);
+		return 0;
+	}
+    return -1;
+}
+
+static int handle_rcvstop_internal(void)
+{
+    assert (NULL != g_hStopEvent);
+    SetEvent(g_hStopEvent);
+	CloseHandle(g_hStopEvent);
+	g_hStopEvent = NULL;
     return 0;
+}
+
+static int handle_mcastjoin_internal(void)
+{
+	int result;
+	assert(g_conn == NULL);
+	g_conn = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_connection));
+	assert(NULL != g_conn);
+	result = setup_multicast_3(DEFAULT_MCASTADDRV4, DEFAULT_MCASTPORT, g_conn);
+	assert(0 == result);
+	if (0 != result)
+	{
+		HeapFree(GetProcessHeap(), 0, g_conn);
+		g_conn = NULL;
+	}
+	return result;
+}
+
+static int handle_mcastleave_internal(void)
+{
+	assert(NULL != g_conn);
+	close_multicast(g_conn);
+	HeapFree(GetProcessHeap(), 0, g_conn);
+	g_conn = NULL;
+    return 0;
+}
+
+static int handle_stop_internal(void)
+{
+    assert(NULL != g_player);
+	dsoundplayer_stop(g_player);    
+	dsoundplayer_destroy(g_player);
+	g_player = NULL;
+	return 0;
+}
+
+static int handle_play_internal(HWND hMainWnd)
+{
+	assert(NULL == g_player);
+	assert(NULL != g_wfex);
+	assert(NULL != g_fifo);
+	g_player = dsoundplayer_create(hMainWnd, g_wfex, g_fifo);
+	assert(NULL != g_player);
+	dsoundplayer_play(g_player);    
+	return 0;
+}
+
+void receiver_init(WAVEFORMATEX * p_wfex)
+{
+	g_wfex = p_wfex;
+	g_fifo = fifo_circular_buffer_create();
 }
 
 /*!
@@ -352,5 +339,13 @@ void handle_mcastleave(void)
     {
         debug_outputln("%s %5.5d", __FILE__, __LINE__);
     }
+}
+
+/**
+ * @brief
+ */
+receiver_state_t receiver_get_state(void)
+{
+    return g_state;
 }
 
