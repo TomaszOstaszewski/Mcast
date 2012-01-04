@@ -1,3 +1,13 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file wave_utils.c
+ * @author T.Ostaszewski 
+ * @date
+ * @brief
+ * @details
+ */
+
 #include "pcc.h"
 #include "wave_utils.h"
 #include "debug_helpers.h"
@@ -69,9 +79,6 @@ WORD waveformatex_getBitsPerSample(WAVEFORMATEX const * p_wfe)
 	return p_wfe->wBitsPerSample;
 }
 
-/*!
- * 
- */
 void copy_waveformatex_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, const struct waveformatex * p_source)
 {
 	p_dest->wFormatTag 		= p_source->wFormatTag;
@@ -83,9 +90,6 @@ void copy_waveformatex_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, const struct wavefo
 	p_dest->cbSize 			= sizeof(WAVEFORMATEX);
 }
 
-/*!
- * 
- */
 int init_master_riff(PC_master_riff_chunk_t * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName)
 {
     HRSRC hRes;

@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file mcast_setup.h
+ * @author
+ * @date
+ * @brief
+ * @details
+ */
 #if !defined MCAST_SETUP_H_870702C0_B65B_4828_949C_490704388A28
 #define MCAST_SETUP_H_870702C0_B65B_4828_949C_490704388A28
 

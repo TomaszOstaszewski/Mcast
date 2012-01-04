@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file hello.h
+ * @author
+ * @date
+ * @brief
+ * @details
+ */
 #if !defined HELLO_H_F6C604C8_ED2D_4D24_8656_399A5E60B2B1
 #define HELLO_H_F6C604C8_ED2D_4D24_8656_399A5E60B2B1
 

@@ -13,6 +13,7 @@
 #if defined __cplusplus
 extern "C" {
 #endif 
+
 void copy_buffer(struct buffer_desc * p_output, struct buffer_desc * p_input, size_t data_size)
 {
     /* Adjust for input buffer boundaries. */ 

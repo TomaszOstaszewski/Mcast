@@ -1,15 +1,13 @@
-//
-// This file contains function prototypes for resolve.cpp
-//
-// Description:
-//    These are common routines for resolving and printing IPv4 and IPv6
-//    addresses.
-//
-// NOTE:
-//   From Network Programming for Microsoft Windows, Second Edition
-//   by Anthony Jones and James Ohlund.  Copyright 2002.
-//   Reproduced by permission of Microsoft Press.  All rights reserved.
-//
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file resolve.h
+ * @author T.Ostaszewski
+ * @date 04-Jan-2011
+ * @brief This file contains function prototypes for resolve.cpp
+ * @details These are common routines for resolving and printing IPv4 and IPv6   addresses.
+ */
+
 #ifndef _RESOLVE_H_
 #define _RESOLVE_H_
 

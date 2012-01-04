@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file mcast-receiver-state-machine.h
+ * @author
+ * @date
+ * @brief
+ * @details
+ */
 #if !defined MCAST_RECEIVER_STATE_093A307A_2B03_4C05_8350_E3ED8C52A126
 #define MCAST_RECEIVER_STATE_093A307A_2B03_4C05_8350_E3ED8C52A126
 

@@ -1,7 +1,7 @@
 /*!
  * @file input-buffer.h
- *
- *
+ * @author
+ * @date
  */
 #if !defined INPUT_BUFFER_H_0C38BAD3_65A3_4F18_AA8C_0428AB3293D7
 #define INPUT_BUFFER_H_0C38BAD3_65A3_4F18_AA8C_0428AB3293D7

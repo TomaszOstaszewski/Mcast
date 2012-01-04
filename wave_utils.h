@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file wave_utils.h
+ * @author
+ * @date
+ * @brief
+ * @details
+ */
 #if !defined WAVE_UTILS_16606182_713B_4823_B290_4BE6CBA65CCC
 #define WAVE_UTILS_16606182_713B_4823_B290_4BE6CBA65CCC
 
@@ -45,7 +54,7 @@ typedef struct wav_format_chunk {
 } wav_format_chunk_t; 
 
 /*!
- * 
+ * @brief 
  */
 typedef struct master_riff_chunk {
     uint8_t     ckid_[4];
@@ -59,12 +68,12 @@ typedef struct master_riff_chunk {
 } master_riff_chunk_t;
 
 /*!
- * 
+ * @brief
  */
 typedef master_riff_chunk_t * P_master_riff_chunk_t;
 
 /*!
- * 
+ * @brief 
  */
 typedef master_riff_chunk_t const * PC_master_riff_chunk_t;
 
@@ -76,11 +85,20 @@ DWORD waveformatex_getSamplesPerSec(WAVEFORMATEX const * p_wfe);
 DWORD waveformatex_getAvgBytesPerSec(WAVEFORMATEX const * p_wfe);
 WORD waveformatex_getBlockAlign(WAVEFORMATEX const * p_wfe);
 WORD waveformatex_getBitsPerSample(WAVEFORMATEX const * p_wfe);
+
+/*!
+ * @brief 
+ * @details
+ */
 void copy_waveformatex_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, const struct waveformatex * p_source);
 
-/**
- * @brief
- * @details 
+/*!
+ * @brief Loads the WAV file from the resources.
+ * @details  
+ * @param[out] pp_chunk
+ * @param[in] hModule
+ * @param[in] lpResName
+ * @return
  */
 int init_master_riff(PC_master_riff_chunk_t * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName);
 

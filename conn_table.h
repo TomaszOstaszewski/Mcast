@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file conn_table.h
+ * @author
+ * @date
+ * @brief
+ * @details
+ */
 #if !defined CONN_TABLE_H
 #define CONN_TABLE_H
 

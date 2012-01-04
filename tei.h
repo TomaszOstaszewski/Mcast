@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file tei.h
+ * @author
+ * @date
+ * @brief
+ * @details
+ */
 #if !defined TEI_H_385986D7_6A0D_4691_A83A_CBE6A3F07B7F
 #define TEI_H_385986D7_6A0D_4691_A83A_CBE6A3F07B7F
 
