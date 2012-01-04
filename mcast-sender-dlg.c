@@ -24,10 +24,8 @@
 HINSTANCE   g_hInst;
 
 /**
- * 
+ * @brief 
  */
-HWND g_hMainWnd;
-
 master_riff_chunk_t * g_pWavChunk;
 
 /**
@@ -105,16 +103,14 @@ static void UpdateUI(HWND hDlg)
  */
 INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
-    static struct conn_entry * p_info = NULL;
     sender_state_t curr_state;
     switch (uMessage)
     {
         case WM_INITDIALOG:
-            p_info = (struct conn_entry *)lParam;
             {
                 int result = init_master_riff(&g_pWavChunk, g_hInst, MAKEINTRESOURCE(IDR_0_1));
                 assert(0 == result);
-                sender_initialize();
+                sender_initialize(g_pWavChunk);
             }
             return TRUE;
        case WM_COMMAND:
@@ -154,12 +150,12 @@ INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM l
     return FALSE;
 }
 
-static long int on_idle(long int count)
+static long int on_idle(HWND hWnd, long int count)
 {
     switch (count)
     {
         case 0:
-            UpdateUI(g_hMainWnd);
+            UpdateUI(hWnd);
             return 1;
         default: 
             return 0;
@@ -173,6 +169,7 @@ int PASCAL WinMain(  HINSTANCE hInstance,
         LPSTR lpCmdLine,
         int nCmdShow)
 {
+    HWND hDlg;
     HRESULT hr;
     WSADATA             wsd;
     int	rc;
@@ -187,10 +184,10 @@ int PASCAL WinMain(  HINSTANCE hInstance,
     g_hInst = hInstance;
     //required to use the common controls
     InitCommonControls();
-    g_hMainWnd = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_MAIN_SENDER), NULL, SenderDlgProc);
-    if (NULL == g_hMainWnd)
+    hDlg = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_MAIN_SENDER), NULL, SenderDlgProc);
+    if (NULL == hDlg)
         return (-1);
-    message_loop(g_hMainWnd, &on_idle);
+    message_loop(hDlg, &on_idle);
     return (int)0;
 }
 
