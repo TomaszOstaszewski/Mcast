@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/**
+ * @file mcast_utils.c
+ * @author T. Ostaszewski
+ * @date 04-Jan-2012
+ * @brief 
+ * @details 
+ */
+
 #include "pcc.h"
 #include "mcast_utils.h"
 #include "resolve.h"

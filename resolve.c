@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/**
+ * @file recolve.c
+ * @author T. Ostaszewski
+ * @date 04-Jan-2012
+ * @brief 
+ * @details 
+ */
+
 //
 // Common routines for resolving addresses and hostnames
 //

@@ -2,7 +2,7 @@
 /**
  * @file message-loop.c
  * @author T.Ostaszewski
- * @date 03-Jan-2011
+ * @date 03-Jan-2012
  * @brief Message loop helper routines.
  * @details 
  */

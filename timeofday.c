@@ -1,3 +1,11 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/**
+ * @file timeofday.c
+ * @author T. Ostaszewski
+ * @date 04-Jan-2011
+ * @brief 
+ * @details 
+ */
 
 #include "pcc.h"
 #include "timeofday.h" //I've ommited this line.

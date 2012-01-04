@@ -1,6 +1,17 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/**
+ * @file conn_data.c
+ * @author T. Ostaszewski
+ * @date 04-Jan-2011
+ * @brief 
+ * @details 
+ */
 #include "conn_data.h"
 #include "conn_table.h"
 
+/**
+ * \brief 
+ */
 int is_hello_mine(struct conn_data * p_data)
 {
 	if (p_data->rec_data_len_ == sizeof(struct hello_packet) && 0 == memcmp(p_data->buffer_, &p_data->my_hello_, sizeof(struct hello_packet)))
@@ -10,6 +21,9 @@ int is_hello_mine(struct conn_data * p_data)
 	return 0;
 }
 
+/**
+ * \brief Helper function. Sends out the hello packet.
+ */
 size_t send_hello(struct conn_data * p_data)
 {
 	/* Here send hello packet again */
@@ -35,6 +49,9 @@ size_t update_missing(struct conn_data * p_data)
 	return purged_count;
 }
 
+/**
+ * \brief Helper function. Returns nonzero if there is new data on the socket.
+ */
 static int is_new_data(struct conn_data * p_conn_data, struct timeval * p_timeout)
 {
 	int nfds;
@@ -46,6 +63,9 @@ static int is_new_data(struct conn_data * p_conn_data, struct timeval * p_timeou
 	return select(nfds, &readfs, NULL, NULL, p_timeout);
 }
 
+/**
+ * \brief Update neighbours table - remove those that were missing for too long 
+ */
 size_t recv_hello(struct conn_data * p_data, struct timeval const * p_recv_timeout)
 {
 	struct timeval now;
@@ -69,6 +89,9 @@ size_t recv_hello(struct conn_data * p_data, struct timeval const * p_recv_timeo
 	return 0;
 }
 
+/**
+ * \brief Update neighbours table - add new entries.
+ */
 void update_new(struct conn_data * p_data, struct timeval const * p_purge_entry_timer_value)
 {
 	/* Update neighbours table - add or update those which report that are present */

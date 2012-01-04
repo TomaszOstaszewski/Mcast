@@ -1,3 +1,11 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/**
+ * @file conn_table.c
+ * @author T. Ostaszewski
+ * @date 04-Jan-2011
+ * @brief 
+ * @details 
+ */
 #include "winsock_adapter.h"
 #if defined WIN32
 #else
