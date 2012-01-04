@@ -114,7 +114,7 @@ INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM l
             {
                 int result = init_master_riff(&g_pWavChunk, g_hInst, MAKEINTRESOURCE(IDR_0_1));
                 assert(0 == result);
-                sender_initialize();
+                sender_initialize(g_pWavChunk);
             }
             return TRUE;
        case WM_COMMAND:

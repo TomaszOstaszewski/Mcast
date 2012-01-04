@@ -55,12 +55,13 @@ typedef struct mcast_settings {
     uint8_t     ttl_;
 } mcast_settings_t;
 
+static master_riff_chunk_t * g_pWavChunk;
+
 /*!
  * @brief 
  */
 static sender_state_t g_state;
 
-extern master_riff_chunk_t * g_pWavChunk;
 
 /*!
  * @brief
@@ -231,8 +232,9 @@ sender_state_t sender_get_current_state(void)
 	return g_state;
 }
 
-void sender_initialize(void)
+void sender_initialize(master_riff_chunk_t * p_wav_chunk)
 {
+    g_pWavChunk = p_wav_chunk;
 }
 
 void sender_handle_mcastjoin(void)
