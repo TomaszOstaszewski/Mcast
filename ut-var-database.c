@@ -43,16 +43,20 @@ static void test_001(void)
 {
 	struct var_database *p_database0, *p_database1;
     void *p_data0, *p_data1;
+    int result;
+
 	p_database0 = var_database_create();	
 	assert(NULL != p_database0);
 	p_database1 = var_database_create();	
 	assert(NULL != p_database1);
-    set_var(p_database0, GLOBAL_MCAST_CONNECTION, (void*)0xcafebabe);
+    result = set_var(p_database0, GLOBAL_MCAST_CONNECTION, (void*)0xcafebabe, NULL);
+    assert(0 == result);
     p_data0 = get_var(p_database0, GLOBAL_MCAST_CONNECTION);
     p_data1 = get_var(p_database1, GLOBAL_MCAST_CONNECTION);
     assert(NULL == p_data1);
     assert((void*)0xcafebabe == p_data0);
-    set_var(p_database1, GLOBAL_MCAST_CONNECTION, (void*)0xdeadbeef);
+    result = set_var(p_database1, GLOBAL_MCAST_CONNECTION, (void*)0xdeadbeef, NULL);
+    assert(0 == result);
     p_data0 = get_var(p_database0, GLOBAL_MCAST_CONNECTION);
     assert((void*)0xcafebabe == p_data0);
     p_data1 = get_var(p_database1, GLOBAL_MCAST_CONNECTION);
@@ -61,6 +65,9 @@ static void test_001(void)
 	var_database_destroy(p_database0);
 }
 
+/*!
+ * @test
+ */
 static void test_002(void)
 {
 }

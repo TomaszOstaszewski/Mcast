@@ -32,7 +32,6 @@ static HINSTANCE   g_hInst;
  */
 static HWND     g_hMainWnd;
 
-static var_database_t g_var_database;
 
 /**
  * @brief Main UI update function.
@@ -184,18 +183,14 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
         case WM_INITDIALOG:
             {
                 int result;
-                g_var_database = var_database_create(); 
-                assert(g_var_database);
-                receiver_init(g_var_database);
                 g_hMainWnd = hDlg;
                 result = init_master_riff(&g_pWavChunk, g_hInst, MAKEINTRESOURCE(IDR_0_1));
                 assert(0 == result);
                 if (0 == result)
                 {
                     WAVEFORMATEX * p_wfex = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(WAVEFORMATEX)); 
-                    set_var(g_var_database, GLOBAL_WFEX, p_wfex);
-                    add_ref(g_var_database, GLOBAL_WFEX);
                     copy_waveformatex_2_WAVEFORMATEX(p_wfex, &g_pWavChunk->format_chunk_.format_);
+                    receiver_init(p_wfex);
                 }
             } 
             return TRUE;
@@ -258,7 +253,6 @@ static long int on_idle(long int count)
             UpdateUI(g_hMainWnd);
             return 1;
         default:
-            garbage_collect(g_var_database);
             return 0;
     }
     return 0;

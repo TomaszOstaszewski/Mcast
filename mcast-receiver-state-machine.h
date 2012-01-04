@@ -1,7 +1,7 @@
 #if !defined MCAST_RECEIVER_STATE_093A307A_2B03_4C05_8350_E3ED8C52A126
 #define MCAST_RECEIVER_STATE_093A307A_2B03_4C05_8350_E3ED8C52A126
 
-#include "var-database.h"
+#include <windows.h>
 /**
  * @brief Describes possible states for the receiver.
  * @details
@@ -21,7 +21,7 @@ receiver_state_t receiver_get_state(void);
 /*!
  * @brief
  */
-void receiver_init(var_database_t database);
+void receiver_init(WAVEFORMATEX * p_wfex);
 
 /*!
  * @brief
