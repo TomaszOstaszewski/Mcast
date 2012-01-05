@@ -1,8 +1,6 @@
 # Lines starting with '#' are considered comments.
-# Ignore any file named foo.txt.
-foo.txt
 # Ignore (generated) html files,
-*.html
+doxy.warn
 # except foo.html which is maintained by hand.
 !foo.html
 # Ignore doxy generated documentation
