@@ -17,6 +17,7 @@
 #include "winsock_adapter.h"
 #include "message-loop.h"
 #include "mcast-sender-state-machine.h"
+#include "mcast-sender-settings-dlg.h"
 
 /**
  * @brief Global Application instance.
@@ -103,32 +104,6 @@ static void UpdateUI(HWND hDlg)
 }
 
 /**
- * @brief Multicast settings dialog message processing routine.
- * @details Processes the messages for the dialog, mainly the WM_COMMAND type.
- * @param hDlg
- * @param uMessage
- * @param wParam
- * @param lParam
- * @return  
- */
-static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
-{
-    switch (uMessage)
-    {
-        case WM_COMMAND:
-            switch(wParam)
-            {
-                case IDCANCEL:
-                case IDOK:
-                    EndDialog(hDlg, wParam);
-                    break;
-            }
-            return TRUE;
-    }
-    return FALSE;
-}
-
-/**
  * @brief Sender dialog message processing routine.
  * @details Processes the messages for the dialog, mainly the WM_COMMAND type.
  * @param hDlg
@@ -158,7 +133,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                         if (SENDER_INITIAL == curr_state)
                         {
                             /* Open up the settings dialog with the MCAST settings parameters */
-                            DialogBox(g_hInst, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), hDlg, McastSettingsProc);
+                            do_dialog(g_hInst, hDlg);
                         }
                         else
                         {
