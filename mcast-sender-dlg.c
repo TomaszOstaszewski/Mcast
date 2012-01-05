@@ -155,11 +155,13 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     break;
                 case IDOK:
                 case IDCANCEL: 
-                    EndDialog(hDlg, wParam);
-                    PostQuitMessage(0);
+                    DestroyWindow(hDlg);
                     break;
             }
             return TRUE;
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            break;
     } 
     return FALSE;
 }
