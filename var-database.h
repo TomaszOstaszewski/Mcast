@@ -3,6 +3,7 @@
 /*!
  * @file var-database.h
  * @author T. Ostaszewski 
+ * @date 04-Jan-2012
  */ 
 #if !defined VAR_DATABASE_37AEB355_DC9D_40B0_85A0_52DB8DDBB221
 #define VAR_DATABASE_37AEB355_DC9D_40B0_85A0_52DB8DDBB221

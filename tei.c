@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/**
+ * @file tei.c
+ * @author T. Ostaszewski
+ * @date 04-Jan-2012
+ * @brief 
+ * @details 
+ */
+
 #define _CRT_SECURE_NO_WARNINGS 
 #include <stdlib.h>
 #include <stdio.h>

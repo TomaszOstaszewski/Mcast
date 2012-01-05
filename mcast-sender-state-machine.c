@@ -1,7 +1,14 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @file mcast-sender-state-machine.c
+ * @brief Multicast sender state machine.
+ * @details A sender operats using a state machine. This state machine 
+ * is quite simple and rudimentary, but nevertheless it gives a fairly good
+ * reliability and readibility. Instead of tons of if...else on the various
+ * variables, there's just one check for state and then, if the test yields ok,
+ * an action is perfomed.
  * @author T. Ostaszewski 
+ * @date 04-Jan-2012
  */ 
 #include "pcc.h"
 #include "mcast-sender-state-machine.h"
@@ -61,7 +68,6 @@ static master_riff_chunk_t * g_pWavChunk;
  * @brief 
  */
 static sender_state_t g_state;
-
 
 /*!
  * @brief
@@ -229,7 +235,7 @@ static int sender_handle_stopsending_internal(void)
 
 sender_state_t sender_get_current_state(void)
 {
-	return g_state;
+    return g_state;
 }
 
 void sender_initialize(master_riff_chunk_t * p_wav_chunk)
@@ -239,53 +245,53 @@ void sender_initialize(master_riff_chunk_t * p_wav_chunk)
 
 void sender_handle_mcastjoin(void)
 {
-	if (SENDER_INITIAL == g_state)
-	{
-        sender_handle_mcastjoin_internal();
-        g_state = SENDER_MCAST_JOINED;
-	}
-	else
-	{
-		debug_outputln("%s %5.5d", __FILE__, __LINE__);
-	}
+    if (SENDER_INITIAL == g_state)
+    {
+        if (0 == sender_handle_mcastjoin_internal())
+            g_state = SENDER_MCAST_JOINED;
+    }
+    else
+    {
+        debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    }
 }
 
 void sender_handle_mcastleave(void)
 {
-	if (SENDER_MCAST_JOINED == g_state)
-	{
-        sender_handle_mcastleave_internal();
-		g_state = SENDER_INITIAL;
-	}
-	else
-	{
-		debug_outputln("%s %5.5d", __FILE__, __LINE__);
-	}
+    if (SENDER_MCAST_JOINED == g_state)
+    {
+        if (0 == sender_handle_mcastleave_internal())
+            g_state = SENDER_INITIAL;
+    }
+    else
+    {
+        debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    }
 }
 
 void sender_handle_startsending(void)
 {
-	if (SENDER_MCAST_JOINED == g_state)
-	{
-        sender_handle_startsending_internal();
-    	g_state = SENDER_SENDING;
-	}
-	else
-	{
-		debug_outputln("%s %5.5d", __FILE__, __LINE__);
-	}
+    if (SENDER_MCAST_JOINED == g_state)
+    {
+        if (0 == sender_handle_startsending_internal())
+            g_state = SENDER_SENDING;
+    }
+    else
+    {
+        debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    }
 }
 
 void sender_handle_stopsending(void)
 {
-	if (SENDER_SENDING == g_state)
-	{
-        sender_handle_stopsending_internal();
-		g_state = SENDER_MCAST_JOINED;
-	}
-	else
-	{
-		debug_outputln("%s %5.5d", __FILE__, __LINE__);
-	}
+    if (SENDER_SENDING == g_state)
+    {
+        if (0 == sender_handle_stopsending_internal())
+            g_state = SENDER_MCAST_JOINED;
+    }
+    else
+    {
+        debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    }
 }
 

@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file brick-state.h
+ * @author T.Ostaszewski
+ * @date 04-Jan-2012
+ * @brief
+ * @details
+ */
 #if !defined BRICK_STATE_4FCEAD32_CA4D_476C_931D_A6F69B5A2BC6
 #define BRICK_STATE_4FCEAD32_CA4D_476C_931D_A6F69B5A2BC6
 

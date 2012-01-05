@@ -1,5 +1,10 @@
-/*!
- * 
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/**
+ * @file ut-buffer-tests.c
+ * @author T. Ostaszewski
+ * @date 04-Jan-2012
+ * @brief 
+ * @details 
  */
 #include <stdio.h>
 #include <stdlib.h>
