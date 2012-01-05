@@ -133,7 +133,11 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                         if (SENDER_INITIAL == curr_state)
                         {
                             /* Open up the settings dialog with the MCAST settings parameters */
-                            do_dialog(g_hInst, hDlg);
+                            struct platform_specific_data platform = { g_hInst, hDlg };
+                            struct sender_settings settings = { 0 };
+                            debug_outputln("%s %d : %p %d %8.8x %d", __FILE__, __LINE__, &settings, settings.send_delay_, settings.ipv4_mcast_group_addr_, settings.mcast_port_);
+                            do_dialog(&platform, &settings);
+                            debug_outputln("%s %d : %d %8.8x %d", __FILE__, __LINE__, settings.send_delay_, settings.ipv4_mcast_group_addr_, settings.mcast_port_);
                         }
                         else
                         {
