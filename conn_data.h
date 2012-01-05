@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file conn_data.h
+ * @author T.Ostaszewski
+ * @date 04-Jan-2012
+ * @brief
+ * @details
+ */
 #if !defined CONN_DATA_B39001CA_1BC2_48A8_839A_610C6BE95714
 #define CONN_DATA_B39001CA_1BC2_48A8_839A_610C6BE95714
 
@@ -28,6 +37,5 @@ int is_hello_mine(struct conn_data * p_data);
 
 size_t update_missing(struct conn_data * p_data);
 void update_new(struct conn_data * p_data, struct timeval const * p_purge_entry_timer_value);
-//void update_new(struct conn_data * p_data, struct timeval const * p_new_data_timeout, struct timeval const * p_purge_entry_timer_value);
 
 #endif /* CONN_DATA_B39001CA_1BC2_48A8_839A_610C6BE95714 */

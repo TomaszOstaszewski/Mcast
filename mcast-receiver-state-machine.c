@@ -1,7 +1,14 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @file mcast-receiver-state-machine.c
+ * @brief Multicast receiver state machine.
+ * @details A reciever operats using a state machine. This state machine 
+ * is quite simple and rudimentary, but nevertheless it gives a fairly good
+ * reliability and readibility. Instead of tons of if...else on the various
+ * variables, there's just one check for state and then, if the test yields ok,
+ * an action is perfomed.
  * @author T. Ostaszewski 
+ * @date 04-Jan-2012
  */ 
 #include "pcc.h"
 #include "mcast-receiver-state-machine.h"

@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file winsock_adapter.h
+ * @author T.Ostaszewski
+ * @date 04-Jan-2012
+ * @brief
+ * @details
+ */
 #if !defined WINSOCK_ADAPTER_3EC3154C_246B_4F9B_9BC1_008BB70BC774
 #define WINSOCK_ADAPTER_3EC3154C_246B_4F9B_9BC1_008BB70BC774
 

@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file pcc.h
+ * @author T.Ostaszewski
+ * @date 04-Jan-2012
+ * @brief Pre compiled header file.
+ * @details
+ */
 #if !defined PCC_H_10C143CE_7FF9_4E22_8187_6EBF9DAEAA7B
 #define PCC_H_10C143CE_7FF9_4E22_8187_6EBF9DAEAA7B
 
