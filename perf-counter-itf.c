@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/**
+ * @file perf-counter-itf.c
+ * @author T. Ostaszewski
+ * @date 04-Jan-2012
+ * @brief 
+ * @details 
+ */
+
 #include "pcc.h"
 #include "perf-counter-itf.h"
 

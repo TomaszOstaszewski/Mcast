@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file mcastui.h
+ * @author T.Ostaszewski
+ * @date 04-Jan-2012
+ * @brief
+ * @details
+ */
 #ifndef WIN32
 
 #define GET_WM_COMMAND_ID(wp, lp)               (wp)

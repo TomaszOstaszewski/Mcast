@@ -1,3 +1,12 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file conn_entry.h
+ * @author T.Ostaszewski
+ * @date 04-Jan-2012
+ * @brief
+ * @details
+ */
 #if !defined CONN_ENTRY_B6C1F8A4_23E1_44FD_885B_5C3CB63D7FFF
 #define CONN_ENTRY_B6C1F8A4_23E1_44FD_885B_5C3CB63D7FFF
 

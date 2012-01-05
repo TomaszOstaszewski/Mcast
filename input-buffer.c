@@ -1,3 +1,11 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/**
+ * @file input-buffer.c
+ * @author T. Ostaszewski
+ * @date 04-Jan-2012
+ * @brief 
+ * @details 
+ */
 #include "pcc.h"
 #include <assert.h>
 #include "input-buffer.h"
@@ -5,6 +13,7 @@
 #if defined __cplusplus
 extern "C" {
 #endif 
+
 void copy_buffer(struct buffer_desc * p_output, struct buffer_desc * p_input, size_t data_size)
 {
     /* Adjust for input buffer boundaries. */ 

@@ -2,7 +2,7 @@
 /**
  * @file mcast-receiver-dlg.c
  * @author T. Ostaszewski
- * @date 04-Jan-2011
+ * @date 04-Jan-2012
  * @brief Receiver's entry point.
  * @details This file contains the receiver's dialog front end. This is
  * where the UI meets the internal state management.
@@ -270,12 +270,13 @@ static long int on_idle(HWND hWnd, long int count)
 }
 
 /**
- * @brief
- * @details
+ * @brief Recievers entry point.
+ * @details This is the entry point of the receivers application.
  * @param hInstance
  * @param hPrevInstance
  * @param lpCmdLine
  * @param nCmdShow
+ * @return
  */
 int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
