@@ -4,31 +4,28 @@
  * @author T.Ostaszewski
  * @date 03-Jan-2012
  * @brief Message loop helper routines.
- * @details 
+ * @details This file contains definitions of the message processing 
+ * routines used all over the place. Instead of copying them back and forth
+ * I decided to put them into a separate file for, excuse me, reuse. 
  */
 #include "pcc.h"
 #include "message-loop.h"
 
 /*!
  * @brief Determines if the message is an idle message. 
- * @detail An idle message is, for instance, a WM_MOUSEMOVE message
- * that contains the very same coordinantes as the very previous WM_MOUSEMOVE.
- * @param pMsg - a message to be tested for idleness.
- * @retrun returns TRUE if the message is idle, FALSE otherwise.
+ * @detail In general, messages which do not usually affect the state of the user interface and
+ * happen very often are checked for. For instance, those can be redundant WM_MOUSEMOVE and WM_NCMOUSEMOVE
+ * messages, whose parameters indicate that mouse move is at same position as last mouse move.
+ * @param pMsg a message to be tested for idleness.
+ * @return Returns FALSE if the message just dispatched <b>should not</b> cause idle processing function to be called.
  */
 static BOOL IsIdleMessage(MSG* pMsg)
 {
     static POINT m_ptCursorLast = { 0, 0 };
     static UINT m_nMsgLast = 0x00; 
-    // Return FALSE if the message just dispatched should _not_
-    // cause OnIdle to be run.  Messages which do not usually
-    // affect the state of the user interface and happen very
-    // often are checked for.
 
-    // redundant WM_MOUSEMOVE and WM_NCMOUSEMOVE
     if (pMsg->message == WM_MOUSEMOVE || pMsg->message == WM_NCMOUSEMOVE)
     {
-        // mouse move at same position as last mouse move?
         if (0 == memcmp( &m_ptCursorLast, &pMsg->pt, sizeof(POINT)) && pMsg->message == m_nMsgLast)
             return FALSE;
         memcpy(&m_ptCursorLast, &pMsg->pt, sizeof(POINT));// remember for next time
