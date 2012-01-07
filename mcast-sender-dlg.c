@@ -31,6 +31,11 @@ static HINSTANCE   g_hInst;
 static master_riff_chunk_t * g_pWavChunk;
 
 /**
+ * @brief 
+ */
+struct sender_settings g_settings;
+
+/**
  * @brief Updates the UI with application state.
  * @param Just sets the focus to various controls and 
  * lights them up or ghosts them out.
@@ -119,9 +124,9 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
     {
         case WM_INITDIALOG:
             {
-                int result = init_master_riff(&g_pWavChunk, g_hInst, MAKEINTRESOURCE(IDR_0_1));
+                int result = init_master_riff(&g_settings.chunk_, g_hInst, MAKEINTRESOURCE(IDR_0_1));
                 assert(0 == result);
-                sender_initialize(g_pWavChunk);
+                sender_initialize(&g_settings);
             }
             return TRUE;
        case WM_COMMAND:
@@ -134,10 +139,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                         {
                             /* Open up the settings dialog with the MCAST settings parameters */
                             struct platform_specific_data platform = { g_hInst, hDlg };
-                            struct sender_settings settings = { 0 };
-                            debug_outputln("%s %d : %p %d %8.8x %d", __FILE__, __LINE__, &settings, settings.send_delay_, settings.ipv4_mcast_group_addr_, settings.mcast_port_);
-                            do_dialog(&platform, &settings);
-                            debug_outputln("%s %d : %d %8.8x %d", __FILE__, __LINE__, settings.send_delay_, settings.ipv4_mcast_group_addr_, settings.mcast_port_);
+                            do_dialog(&platform, &g_settings);
                         }
                         else
                         {

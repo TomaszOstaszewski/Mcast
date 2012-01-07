@@ -20,6 +20,7 @@
 #include "wave_utils.h"
 #include "winsock_adapter.h"
 #include "mcast-sender-state-machine.h"
+#include "mcast-sender-settings.h"
 
 /*!
  *
@@ -238,9 +239,9 @@ sender_state_t sender_get_current_state(void)
     return g_state;
 }
 
-void sender_initialize(master_riff_chunk_t * p_wav_chunk)
+void sender_initialize(struct sender_settings * p_settings)
 {
-    g_pWavChunk = p_wav_chunk;
+    g_pWavChunk = p_settings->chunk_;
 }
 
 void sender_handle_mcastjoin(void)

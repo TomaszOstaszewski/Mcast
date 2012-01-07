@@ -27,10 +27,12 @@ typedef enum sender_state {
  */
 sender_state_t sender_get_current_state(void);
 
+struct sender_settings; 
+
 /*! 
  * @brief Initializes a sender state machine.
  */
-void sender_initialize(master_riff_chunk_t * p_wav_chunk);
+void sender_initialize(struct sender_settings * p_settings);
 
 /*! 
  * @brief Causes the sender to join multicast group (if not a member already or not sending already).:w

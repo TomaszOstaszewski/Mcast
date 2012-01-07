@@ -24,6 +24,11 @@
 #define DEFAULT_TTL    (8)
 
 
+static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
+{
+	return TRUE;
+} 
+
 /**
  * @brief Multicast settings dialog message processing routine.
  * @details Processes the messages for the dialog, mainly the WM_COMMAND type.
@@ -39,11 +44,12 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 	switch (uMessage)
 	{
 		case WM_INITDIALOG:
+			HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
 			p_settings = (struct sender_settings*)lParam;
 			p_settings->ipv4_mcast_group_addr_ = inet_addr(DEFAULT_MCASTADDRV4);
 			p_settings->mcast_port_ = 25000;
 			p_settings->send_delay_ = 88;
-			break;
+			return TRUE;
 		case WM_COMMAND:
 			switch(wParam)
 			{
