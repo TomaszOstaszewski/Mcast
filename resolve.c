@@ -167,7 +167,6 @@ struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int pr
             );
     if (rc != 0)
     {
-        //fprintf(stderr, "Invalid address %s, getaddrinfo failed: %d\n", addr, rc);
         return NULL;
     }
     return res;
