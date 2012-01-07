@@ -1,7 +1,12 @@
 # Lines starting with '#' are considered comments.
 # Ignore (generated) html files,
 doxy.warn
+cscope.out
+# Ignore (g)vim temporaries
+.*.swp
 # except foo.html which is maintained by hand.
 !foo.html
 # Ignore doxy generated documentation
 html/
+XP32_DEBUG/
+XP32_RETAIL/

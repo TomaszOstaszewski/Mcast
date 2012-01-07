@@ -12,82 +12,36 @@
  */ 
 #include "pcc.h"
 #include "mcast-sender-state-machine.h"
-#include "mcastui.h"
-#include "conn_data.h"
+
 #include "mcast_setup.h"
 #include "resource.h"
 #include "debug_helpers.h"
 #include "wave_utils.h"
-#include "winsock_adapter.h"
 #include "mcast-sender-state-machine.h"
+#include "mcast-sender-settings.h"
 
-/*!
- *
- */
-#define DEFAULT_MCASTADDRV4    "234.5.6.7"
-
-/*!
- *
- */
-#define DEFAULT_MCASTADDRV6    "ff12::1"
-
-/*!
- *
- */
-#define DEFAULT_MCASTPORT      "25000"
-
-/*!
- *
- */
-#define DEFAULT_TTL    (8)
-
-/*!
- * @brief 
- */
-#define DEFAULT_WAV_CHUNK_SIZE    (1024+256+128)
-
-/*!
- * 
- */
-#define DEFAULT_CHUNK_SEND_TIMEOUT (85)
-
-/*!
- * @brief
- * @details
- */
-typedef struct mcast_settings {
-    const char * ip4_addr_;
-    const char * ip6_addr_;
-    const char * port_;
-    uint8_t     ttl_;
-} mcast_settings_t;
-
-static master_riff_chunk_t * g_pWavChunk;
-
-/*!
- * @brief 
- */
-static sender_state_t g_state;
-
-/*!
- * @brief
- */
-uint8_t const * g_p_current_pos_;
-
-/*!
- * @brief
- */
-DWORD g_dw_chunk_send_timeout;
-
-/*!
- * @brief
- */
-HANDLE g_hStopEvent;
-
-/*!
- * @brief
- */
-struct mcast_connection * g_conn;
+struct mcast_sender { 
+    sender_state_t state_;
+    master_riff_chunk_t * chunk_;
+    struct mcast_connection * conn_;    
+    struct sender_settings * settings_;
+    /*!
+     * @brief
+     */
+    uint8_t const * p_current_pos_;
+    /*!
+     * @brief
+     */
+    DWORD chunk_send_timeout_;
+    /*!
+     * @brief
+     */
+    HANDLE hStopEvent_;
+    /*!
+     * @brief
+     */
+    HANDLE hStopEvent_thread_;
+};
 
 /*!
  * @brief
@@ -95,37 +49,40 @@ struct mcast_connection * g_conn;
 static DWORD WINAPI SendThreadProc(LPVOID param)
 {
     uint32_t max_offset;
+    struct mcast_sender * p_sender = (struct mcast_sender *)param;
     struct master_riff_chunk * p_master_riff;
     int8_t const * p_data_begin;
-    HANDLE h_stop_event;
     DWORD dwResult;
-    h_stop_event = (HANDLE)param;
-    p_master_riff = g_pWavChunk;
+    p_sender = (struct mcast_sender *)param;
+    assert(p_sender);
+    assert(p_sender->settings_);
+    p_master_riff = p_sender->settings_->chunk_;
+    assert(p_master_riff);
     p_data_begin = &p_master_riff->format_chunk_.subchunk_.samples8_[0];
     max_offset = p_master_riff->format_chunk_.subchunk_.subchunk_size_;
     for (;;)
     {
-        dwResult = WaitForSingleObject(h_stop_event, DEFAULT_CHUNK_SEND_TIMEOUT);
+        dwResult = WaitForSingleObject(p_sender->hStopEvent_thread_, p_sender->settings_->send_delay_);
         if (WAIT_TIMEOUT == dwResult)
         {
             int result;
-            uint32_t offset = g_p_current_pos_ - p_data_begin;
-            uint16_t chunk_size = DEFAULT_WAV_CHUNK_SIZE;
+            uint32_t offset = p_sender->p_current_pos_ - p_data_begin;
+            uint16_t chunk_size = p_sender->settings_->chunk_size_;
             if (offset + chunk_size > max_offset)
             {
                 chunk_size = max_offset - offset;
             }
-            result = sendto(g_conn->socket_, 
-                    (const char *)g_p_current_pos_, 
+            result = sendto(p_sender->conn_->socket_, 
+                    (const char *)p_sender->p_current_pos_, 
                     chunk_size,
                     0,
-                    g_conn->multiAddr_->ai_addr,
-                    (int) g_conn->multiAddr_->ai_addrlen
+                    p_sender->conn_->multiAddr_->ai_addr,
+                    (int) p_sender->conn_->multiAddr_->ai_addrlen
                     );
-            g_p_current_pos_+= chunk_size;
-            if ((uint32_t)(g_p_current_pos_ - p_data_begin) + chunk_size >= max_offset)
+            p_sender->p_current_pos_+= chunk_size;
+            if ((uint32_t)(p_sender->p_current_pos_ - p_data_begin) + chunk_size >= max_offset)
             {
-                g_p_current_pos_ = p_data_begin;
+                p_sender->p_current_pos_ = p_data_begin;
             }
         }
         else if (WAIT_OBJECT_0 == dwResult)
@@ -141,7 +98,8 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
             break;
         }
     }
-    CloseHandle(h_stop_event);
+    CloseHandle(p_sender->hStopEvent_thread_);
+    p_sender->hStopEvent_thread_ = NULL;
     return dwResult;
 }
 
@@ -149,36 +107,37 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
  * @brief
  * @param
  */
-static struct mcast_settings * get_mcast_settings(void)
+static int sender_handle_mcastjoin_internal(struct mcast_sender * p_sender)
 {
-    static struct mcast_settings  g_settings = {
-        DEFAULT_MCASTADDRV4,
-        DEFAULT_MCASTADDRV6,
-        DEFAULT_MCASTPORT,
-        DEFAULT_TTL
-    };
-    return &g_settings;
-}
-
-/**
- * @brief
- * @param
- */
-static int sender_handle_mcastjoin_internal(void)
-{
-    assert(NULL == g_conn);
-    g_conn = HeapAlloc(GetProcessHeap(), 0, sizeof(struct mcast_connection));
-    assert(NULL != g_conn);
-    if (NULL != g_conn)
+    assert(NULL == p_sender->conn_);
+    p_sender->conn_ = HeapAlloc(GetProcessHeap(), 0, sizeof(struct mcast_connection));
+    assert(NULL != p_sender->conn_);
+    if (NULL != p_sender->conn_)
     {
         int rc;
-        rc = setup_multicast_3(DEFAULT_MCASTADDRV4, DEFAULT_MCASTPORT, g_conn);
-        if (0 == rc)
+        char * psz_addr;
+        char psz_port[8] = { 0 };
+        struct in_addr * p_in_addr;
+        HRESULT hr;
+
+        p_in_addr =(struct in_addr *)&p_sender->settings_->ipv4_mcast_group_addr_;
+        psz_addr = inet_ntoa(*p_in_addr);
+        assert(psz_addr);
+        if (psz_addr)
         {
-            return 0;
+            hr = StringCchPrintf(psz_port, 8, "%5.5u", p_sender->settings_->mcast_port_);
+            if (SUCCEEDED(hr))
+            { 
+                debug_outputln("%s %d : %s:%s", __FILE__, __LINE__, psz_addr, psz_port);
+                rc = setup_multicast_3(psz_addr, psz_port, p_sender->conn_);
+                if (0 == rc)
+                {
+                    return 0;
+                }
+            }   
         }
-        HeapFree(GetProcessHeap(), 0, g_conn);
-        g_conn = NULL;
+        HeapFree(GetProcessHeap(), 0, p_sender->conn_);
+        p_sender->conn_ = NULL;
     }
     return (-1);
 }
@@ -187,12 +146,12 @@ static int sender_handle_mcastjoin_internal(void)
  * @brief
  * @param
  */
-static int sender_handle_mcastleave_internal(void)
+static int sender_handle_mcastleave_internal(struct mcast_sender * p_sender)
 {
     int result;
-    result = close_multicast(g_conn);
-    HeapFree(GetProcessHeap(), 0, g_conn);
-    g_conn = NULL;
+    result = close_multicast(p_sender->conn_);
+    HeapFree(GetProcessHeap(), 0, p_sender->conn_);
+    p_sender->conn_ = NULL;
     return 0;
 }
 
@@ -200,23 +159,23 @@ static int sender_handle_mcastleave_internal(void)
  * @brief
  * @param
  */
-static int sender_handle_startsending_internal(void)
+static int sender_handle_startsending_internal(struct mcast_sender * p_sender)
 {
-    HANDLE h_stop_event;
-    assert(NULL == g_hStopEvent);
-    h_stop_event = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (NULL != h_stop_event)
+    assert(NULL == p_sender->hStopEvent_);
+    p_sender->hStopEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (NULL != p_sender->hStopEvent_)
     {
         BOOL bDupResult; 
-        bDupResult = DuplicateHandle(GetCurrentProcess(), h_stop_event, GetCurrentProcess(), &g_hStopEvent, 0, FALSE, DUPLICATE_SAME_ACCESS);
+        bDupResult = DuplicateHandle(GetCurrentProcess(), p_sender->hStopEvent_, GetCurrentProcess(), &p_sender->hStopEvent_thread_, 0, FALSE, DUPLICATE_SAME_ACCESS);
         if (bDupResult)
         {
             HANDLE hSenderThread;
-            hSenderThread = CreateThread(NULL, 0, SendThreadProc, h_stop_event, 0, NULL);
+            hSenderThread = CreateThread(NULL, 0, SendThreadProc, p_sender, 0, NULL);
             CloseHandle(hSenderThread);
             return 0;
         }
-        CloseHandle(h_stop_event);
+        CloseHandle(p_sender->hStopEvent_);
+        p_sender->hStopEvent_ = NULL;
     }
     return -1;
 }
@@ -225,30 +184,39 @@ static int sender_handle_startsending_internal(void)
  * @brief
  * @param
  */
-static int sender_handle_stopsending_internal(void)
+static int sender_handle_stopsending_internal(struct mcast_sender * p_sender)
 {
-    SetEvent(g_hStopEvent);   
-    CloseHandle(g_hStopEvent);
-    g_hStopEvent = NULL;
+    SetEvent(p_sender->hStopEvent_);   
+    CloseHandle(p_sender->hStopEvent_);
+    p_sender->hStopEvent_ = NULL;
     return 0;
 }
 
-sender_state_t sender_get_current_state(void)
+struct mcast_sender * sender_create(struct sender_settings * p_settings)
 {
-    return g_state;
+    struct mcast_sender * p_sender = (struct mcast_sender *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_sender));
+    p_sender->chunk_ = p_settings->chunk_;
+    p_sender->settings_ = p_settings;
+    return p_sender;
 }
 
-void sender_initialize(master_riff_chunk_t * p_wav_chunk)
+void sender_destroy(struct mcast_sender * p_sender)
 {
-    g_pWavChunk = p_wav_chunk;
+    HeapFree(GetProcessHeap(), 0, p_sender);
 }
 
-void sender_handle_mcastjoin(void)
+sender_state_t sender_get_current_state(struct mcast_sender * p_sender)
 {
-    if (SENDER_INITIAL == g_state)
+    return p_sender->state_;
+}
+
+void sender_handle_mcastjoin(struct mcast_sender * p_sender)
+{
+    assert(p_sender);
+    if (SENDER_INITIAL == p_sender->state_)
     {
-        if (0 == sender_handle_mcastjoin_internal())
-            g_state = SENDER_MCAST_JOINED;
+        if (0 == sender_handle_mcastjoin_internal(p_sender))
+            p_sender->state_ = SENDER_MCAST_JOINED;
     }
     else
     {
@@ -256,12 +224,12 @@ void sender_handle_mcastjoin(void)
     }
 }
 
-void sender_handle_mcastleave(void)
+void sender_handle_mcastleave(struct mcast_sender * p_sender)
 {
-    if (SENDER_MCAST_JOINED == g_state)
+    if (SENDER_MCAST_JOINED == p_sender->state_)
     {
-        if (0 == sender_handle_mcastleave_internal())
-            g_state = SENDER_INITIAL;
+        if (0 == sender_handle_mcastleave_internal(p_sender))
+            p_sender->state_ = SENDER_INITIAL;
     }
     else
     {
@@ -269,12 +237,13 @@ void sender_handle_mcastleave(void)
     }
 }
 
-void sender_handle_startsending(void)
+void sender_handle_startsending(struct mcast_sender * p_sender)
 {
-    if (SENDER_MCAST_JOINED == g_state)
+    assert(p_sender);
+    if (SENDER_MCAST_JOINED == p_sender->state_)
     {
-        if (0 == sender_handle_startsending_internal())
-            g_state = SENDER_SENDING;
+        if (0 == sender_handle_startsending_internal(p_sender))
+            p_sender->state_ = SENDER_SENDING;
     }
     else
     {
@@ -282,12 +251,12 @@ void sender_handle_startsending(void)
     }
 }
 
-void sender_handle_stopsending(void)
+void sender_handle_stopsending(struct mcast_sender * p_sender)
 {
-    if (SENDER_SENDING == g_state)
+    if (SENDER_SENDING == p_sender->state_)
     {
-        if (0 == sender_handle_stopsending_internal())
-            g_state = SENDER_MCAST_JOINED;
+        if (0 == sender_handle_stopsending_internal(p_sender))
+            p_sender->state_ = SENDER_MCAST_JOINED;
     }
     else
     {
