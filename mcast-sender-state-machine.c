@@ -2,11 +2,11 @@
 /*!
  * @file mcast-sender-state-machine.c
  * @brief Multicast sender state machine.
- * @details A sender operats using a state machine. This state machine 
+ * @details A sender operates using a state machine. This state machine 
  * is quite simple and rudimentary, but nevertheless it gives a fairly good
- * reliability and readibility. Instead of tons of if...else on the various
- * variables, there's just one check for state and then, if the test yields ok,
- * an action is perfomed.
+ * reliability and readability. Instead of tons of if...else on the various
+ * variables, there's just one check for state and then, if the test yields OK,
+ * an action is performed.
  * @author T. Ostaszewski 
  * @date 04-Jan-2012
  */ 
@@ -20,31 +20,37 @@
 #include "mcast-sender-state-machine.h"
 #include "mcast-sender-settings.h"
 
+/**
+ * @brief Description of the multicast sender state machine.
+ */
 struct mcast_sender { 
-    sender_state_t state_;
-    master_riff_chunk_t * chunk_;
-    struct mcast_connection * conn_;    
-    struct sender_settings * settings_;
+    sender_state_t state_; /*!< Current sender state. */
+    master_riff_chunk_t * chunk_; /*<! Pointer to the first byte of data being send. */
+    struct mcast_connection * conn_;   /*!< Pointer to the structure that describes multicast connection */
+    struct sender_settings * settings_; /*!< Pointer to the structure that describes sender settings. */
     /*!
-     * @brief
+     * @brief Pointer to the next byte being send 
      */
     uint8_t const * p_current_pos_;
+    HANDLE hStopEvent_; /*!< Handle to the event used to stop the sending thread. */
     /*!
-     * @brief
-     */
-    DWORD chunk_send_timeout_;
-    /*!
-     * @brief
-     */
-    HANDLE hStopEvent_;
-    /*!
-     * @brief
+     * @brief Handle to the event used to stop the sending thread. 
+     * @details This is a copy of the handle stored in hStopEvent_ member. To avoid
+     * race conditions between the sender thread and the main thread, there are 2 handles 
+     * that describe the very same event. Both the main thread and the sender thread operate
+     * on their own copy, therefore avoid race conditions between CloseHandle() calls.
+     * @sa hStopEvent_
      */
     HANDLE hStopEvent_thread_;
 };
 
 /*!
- * @brief
+ * @brief Sender thread function.
+ * @details Spins a loop in which it checks whether it was signalled to exit. If so, exits.
+ * Otherwise, sends out next chunk of data over the multicast connected socket. The data wraps
+ * around the beginning if end of data is exhibited.
+ * @param[in] param pointer to the mcast_sender structure
+ * @return returns 0 if a thread has completed successfully, otherwise <>0.
  */
 static DWORD WINAPI SendThreadProc(LPVOID param)
 {
@@ -104,8 +110,9 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
 }
 
 /**
- * @brief
- * @param
+ * @brief Joins the multicast group for which sender is configured to join.
+ * @param[in] p_sender pointer to the sender description structure.
+ * @return returns 0 on success, <>0 otherwise.
  */
 static int sender_handle_mcastjoin_internal(struct mcast_sender * p_sender)
 {
@@ -143,8 +150,9 @@ static int sender_handle_mcastjoin_internal(struct mcast_sender * p_sender)
 }
 
 /**
- * @brief
- * @param
+ * @brief Leaves the multicast group.
+ * @param[in] p_sender pointer to the sender description structure.
+ * @return returns 0 on success, <>0 otherwise.
  */
 static int sender_handle_mcastleave_internal(struct mcast_sender * p_sender)
 {
@@ -156,8 +164,9 @@ static int sender_handle_mcastleave_internal(struct mcast_sender * p_sender)
 }
 
 /**
- * @brief
- * @param
+ * @brief Starts sending data over the multicast connection.
+ * @param[in] p_sender pointer to the sender description structure.
+ * @return returns 0 on success, <>0 otherwise.
  */
 static int sender_handle_startsending_internal(struct mcast_sender * p_sender)
 {
@@ -181,8 +190,9 @@ static int sender_handle_startsending_internal(struct mcast_sender * p_sender)
 }
 
 /**
- * @brief
- * @param
+ * @brief Stops sending data over the multicast connection.
+ * @param[in] p_sender pointer to the sender description structure.
+ * @return returns 0 on success, <>0 otherwise.
  */
 static int sender_handle_stopsending_internal(struct mcast_sender * p_sender)
 {
