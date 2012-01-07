@@ -126,26 +126,29 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                 get_default_settings(&g_settings);
                 result = init_master_riff(&g_settings.chunk_, g_hInst, MAKEINTRESOURCE(IDR_0_1));
                 assert(0 == result);
-                debug_outputln("%s %d : %8.8x %5.5u", __FILE__, __LINE__, g_settings.ipv4_mcast_group_addr_, g_settings.mcast_port_);
                 g_sender = sender_create(&g_settings);
+                assert(g_sender);
             }
             return TRUE;
        case WM_COMMAND:
             switch(wParam)
             {
                 case ID_SENDER_SETTINGS:
+                    curr_state = sender_get_current_state(g_sender);
+                    if (SENDER_INITIAL == curr_state)
                     {
-                        curr_state = sender_get_current_state(g_sender);
-                        if (SENDER_INITIAL == curr_state)
+                        /* Open up the settings dialog with the MCAST settings parameters */
+                        struct platform_specific_data platform = { g_hInst, hDlg };
+                        if (IDOK == do_dialog(&platform, &g_settings))
                         {
-                            /* Open up the settings dialog with the MCAST settings parameters */
-                            struct platform_specific_data platform = { g_hInst, hDlg };
-                            do_dialog(&platform, &g_settings);
+                            sender_destroy(g_sender);
+                            g_sender = sender_create(&g_settings);
+                            assert(g_sender);
                         }
-                        else
-                        {
-                            debug_outputln("%s %5.5d", __FILE__, __LINE__);
-                        }
+                    }
+                    else
+                    {
+                        debug_outputln("%s %5.5d", __FILE__, __LINE__);
                     }
                     break;
                 case ID_SENDER_JOINMCAST:

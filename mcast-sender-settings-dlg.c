@@ -63,8 +63,8 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 	return FALSE;
 }
 
-void do_dialog(struct platform_specific_data const * p_platform, struct sender_settings * p_settings)
+int do_dialog(struct platform_specific_data const * p_platform, struct sender_settings * p_settings)
 {
-	DialogBoxParam(p_platform->hInst_, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), p_platform->hParent_, McastSettingsProc, (LPARAM)p_settings);
+	return DialogBoxParam(p_platform->hInst_, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), p_platform->hParent_, McastSettingsProc, (LPARAM)p_settings);
 }
 

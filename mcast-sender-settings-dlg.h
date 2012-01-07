@@ -12,7 +12,7 @@ struct platform_specific_data {
 	HWND hParent_;
 };
 
-void do_dialog(struct platform_specific_data const * p_platform, struct sender_settings * p_settings);
+int do_dialog(struct platform_specific_data const * p_platform, struct sender_settings * p_settings);
 
 #if defined __cplusplus
 }
