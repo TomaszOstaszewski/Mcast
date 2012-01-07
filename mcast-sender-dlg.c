@@ -152,7 +152,6 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     }
                     break;
                 case ID_SENDER_JOINMCAST:
-                    debug_outputln("%s %5.5d", __FILE__, __LINE__);
                     sender_handle_mcastjoin(g_sender);
                     break;
                 case ID_SENDER_LEAVEMCAST:

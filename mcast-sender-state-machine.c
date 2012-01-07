@@ -53,6 +53,9 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
     struct master_riff_chunk * p_master_riff;
     int8_t const * p_data_begin;
     DWORD dwResult;
+    p_sender = (struct mcast_sender *)param;
+    assert(p_sender);
+    assert(p_sender->settings_);
     p_master_riff = p_sender->settings_->chunk_;
     assert(p_master_riff);
     p_data_begin = &p_master_riff->format_chunk_.subchunk_.samples8_[0];
