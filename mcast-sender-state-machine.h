@@ -9,6 +9,9 @@
 #include <windows.h>
 #include "wave_utils.h"
 
+struct sender_settings; 
+struct mcast_sender;
+
 /*!
  * @brief Describes a sender state.
  * @details At each moment, the sender is in one of the states
@@ -23,16 +26,19 @@ typedef enum sender_state {
 } sender_state_t;
 
 /*! 
- * @brief Returns current sender state.
- */
-sender_state_t sender_get_current_state(void);
-
-struct sender_settings; 
-
-/*! 
  * @brief Initializes a sender state machine.
  */
-void sender_initialize(struct sender_settings * p_settings);
+struct mcast_sender * sender_create(struct sender_settings * p_settings);
+
+/*! 
+ * @brief Destroys the sender state machine.
+ */
+void sender_destroy(struct mcast_sender * p_sender);
+
+/*! 
+ * @brief Returns current sender state.
+ */
+sender_state_t sender_get_current_state(struct mcast_sender * p_sender);
 
 /*! 
  * @brief Causes the sender to join multicast group (if not a member already or not sending already).:w
@@ -40,7 +46,7 @@ void sender_initialize(struct sender_settings * p_settings);
  * SENDER_MCAST_JOINED state. Otherwise, i.e. the sender state is different than SENDER_INITIAL, this handler does nothing.
  * While in the SENDER_MCAST_JOINED state, the sender maintains a membership to the multicast group.
  */
-void sender_handle_mcastjoin(void);
+void sender_handle_mcastjoin(struct mcast_sender * p_sender);
 
 /*! 
  * @brief Causes the sender to leave multicast group (if already was a member).
@@ -48,7 +54,7 @@ void sender_handle_mcastjoin(void);
  * Otherwise, does nothing. While in the SENDER_INITIAL state, 
  * the sender is virtually idle, i.e. it does not maintain a multicast group membership neither it does send any data.
  */
-void sender_handle_mcastleave(void);
+void sender_handle_mcastleave(struct mcast_sender * p_sender);
 
 /*! 
  * @brief Causes the sender to start sending data (if it was not doing so).
@@ -57,14 +63,14 @@ void sender_handle_mcastleave(void);
  * the sender runs a background thread that sends the WAV file over and over again to the
  * multicast group.
  */
-void sender_handle_startsending(void);
+void sender_handle_startsending(struct mcast_sender * p_sender);
 
 /*! 
  * @brief Causes the sender to stop sending data (if it was doing so).
  * @details If the sender is in the SENDER_SENDING state, then it transits to the
  * SENDER_MCAST_JOINED state. Otherwise, does nothing.
  */
-void sender_handle_stopsending(void);
+void sender_handle_stopsending(struct mcast_sender * p_sender);
 
 #endif /*!defined MCAST_SENDER_BF6FAC88_2286_488B_9256_997E81B13E49*/
 

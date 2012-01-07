@@ -74,7 +74,7 @@ $(OUTDIR_OBJ)\mcastui.obj: mcastui.c pcc.h mcastui.h dsoundplay.h conn_data.h $(
 $(OUTDIR_OBJ)\mcast-receiver-dlg.obj: mcast-receiver-dlg.c pcc.h dsoundplay.h conn_data.h $(OUTDIR_OBJ)
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
-$(OUTDIR_OBJ)\mcast-sender-dlg.obj: mcast-sender-dlg.c mcast-sender-settings-dlg.h pcc.h dsoundplay.h conn_data.h $(OUTDIR_OBJ)
+$(OUTDIR_OBJ)\mcast-sender-dlg.obj: mcast-sender-dlg.c mcast-sender-settings-dlg.h mcast-sender-state-machine.h pcc.h dsoundplay.h conn_data.h $(OUTDIR_OBJ)
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\mcast-sender-settings-dlg.obj: mcast-sender-settings-dlg.c pcc.h mcast-sender-settings-dlg.h $(OUTDIR_OBJ)

@@ -28,12 +28,12 @@ static HINSTANCE   g_hInst;
 /**
  * @brief 
  */
-static master_riff_chunk_t * g_pWavChunk;
+static struct mcast_sender * g_sender;
 
 /**
  * @brief 
  */
-struct sender_settings g_settings;
+static struct sender_settings g_settings;
 
 /**
  * @brief Updates the UI with application state.
@@ -43,7 +43,9 @@ struct sender_settings g_settings;
 static void UpdateUI(HWND hDlg)
 {
     static sender_state_t prev_state = -1;
-    sender_state_t curr_state = sender_get_current_state();
+    sender_state_t curr_state;
+    assert(g_sender);
+    curr_state = sender_get_current_state(g_sender);
     if (prev_state != curr_state)
     {
         static HWND hSettingsBtn = NULL, hJoinMcastBtn = NULL, hLeaveMcast = NULL, hStartSendingBtn = NULL, hStopSendingBtn = NULL;
@@ -124,9 +126,10 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
     {
         case WM_INITDIALOG:
             {
-                int result = init_master_riff(&g_settings.chunk_, g_hInst, MAKEINTRESOURCE(IDR_0_1));
+                int result;
+                result = init_master_riff(&g_settings.chunk_, g_hInst, MAKEINTRESOURCE(IDR_0_1));
                 assert(0 == result);
-                sender_initialize(&g_settings);
+                g_sender = sender_create(&g_settings);
             }
             return TRUE;
        case WM_COMMAND:
@@ -134,7 +137,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
             {
                 case ID_SENDER_SETTINGS:
                     {
-                        curr_state = sender_get_current_state();
+                        curr_state = sender_get_current_state(g_sender);
                         if (SENDER_INITIAL == curr_state)
                         {
                             /* Open up the settings dialog with the MCAST settings parameters */
@@ -148,19 +151,20 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     }
                     break;
                 case ID_SENDER_JOINMCAST:
-                    sender_handle_mcastjoin();
+                    sender_handle_mcastjoin(g_sender);
                     break;
                 case ID_SENDER_LEAVEMCAST:
-                    sender_handle_mcastleave();
+                    sender_handle_mcastleave(g_sender);
                     break;
                 case ID_SENDER_STARTSENDING:
-                    sender_handle_startsending();
+                    sender_handle_startsending(g_sender);
                     break;
                 case ID_SENDER_STOPSENDING:
-                    sender_handle_stopsending();
+                    sender_handle_stopsending(g_sender);
                     break;
                 case IDOK:
                 case IDCANCEL: 
+                    sender_destroy(g_sender);
                     DestroyWindow(hDlg);
                     break;
             }

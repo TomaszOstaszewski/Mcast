@@ -52,6 +52,14 @@
  */
 #define DEFAULT_CHUNK_SEND_TIMEOUT (85)
 
+
+struct mcast_sender { 
+    sender_state_t state_;
+    master_riff_chunk_t * chunk_;
+    struct mcast_connection * conn_;    
+    struct sender_settings * settings_;
+};
+
 /*!
  * @brief
  * @details
@@ -234,17 +242,25 @@ static int sender_handle_stopsending_internal(void)
     return 0;
 }
 
-sender_state_t sender_get_current_state(void)
+struct mcast_sender * sender_create(struct sender_settings * p_settings)
+{
+    struct mcast_sender * p_sender = (struct mcast_sender *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_sender));
+    p_sender->chunk_ = p_settings->chunk_;
+    g_pWavChunk = p_settings->chunk_;
+    return p_sender;
+}
+
+void sender_destroy(struct mcast_sender * p_sender)
+{
+    HeapFree(GetProcessHeap(), 0, p_sender);
+}
+
+sender_state_t sender_get_current_state(struct mcast_sender * p_sender)
 {
     return g_state;
 }
 
-void sender_initialize(struct sender_settings * p_settings)
-{
-    g_pWavChunk = p_settings->chunk_;
-}
-
-void sender_handle_mcastjoin(void)
+void sender_handle_mcastjoin(struct mcast_sender * p_sender)
 {
     if (SENDER_INITIAL == g_state)
     {
@@ -257,7 +273,7 @@ void sender_handle_mcastjoin(void)
     }
 }
 
-void sender_handle_mcastleave(void)
+void sender_handle_mcastleave(struct mcast_sender * p_sender)
 {
     if (SENDER_MCAST_JOINED == g_state)
     {
@@ -270,7 +286,7 @@ void sender_handle_mcastleave(void)
     }
 }
 
-void sender_handle_startsending(void)
+void sender_handle_startsending(struct mcast_sender * p_sender)
 {
     if (SENDER_MCAST_JOINED == g_state)
     {
@@ -283,7 +299,7 @@ void sender_handle_startsending(void)
     }
 }
 
-void sender_handle_stopsending(void)
+void sender_handle_stopsending(struct mcast_sender * p_sender)
 {
     if (SENDER_SENDING == g_state)
     {
