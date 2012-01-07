@@ -1,3 +1,9 @@
+/*!
+ * @brief
+ * @file mcast-sender-settings-dlg.c
+ * @author T.Ostaszewski
+ * @date Jan-2012
+ */
 #include "pcc.h"
 #include "debug_helpers.h"
 #include "resource.h"

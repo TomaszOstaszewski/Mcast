@@ -32,9 +32,77 @@ static struct mcast_sender * g_sender;
 static struct sender_settings g_settings;
 
 /**
+ * @brief 
+ * @param hDlg
+ * @param state
+ */
+static void UpdateUIwithCurrentState(HWND hDlg, sender_state_t state)
+{
+    static HWND hSettingsBtn = NULL, hJoinMcastBtn = NULL, hLeaveMcast = NULL, hStartSendingBtn = NULL, hStopSendingBtn = NULL;
+    static HMENU hMenu = NULL;
+    if (NULL == hSettingsBtn)
+        hSettingsBtn = GetDlgItem(hDlg, ID_SENDER_SETTINGS);    
+    if (NULL == hJoinMcastBtn)
+        hJoinMcastBtn = GetDlgItem(hDlg, ID_SENDER_JOINMCAST);  
+    if (NULL == hStartSendingBtn)
+        hStartSendingBtn = GetDlgItem(hDlg, ID_SENDER_STARTSENDING);    
+    if (NULL == hStopSendingBtn)
+        hStopSendingBtn = GetDlgItem(hDlg, ID_SENDER_STOPSENDING);  
+    if (NULL == hLeaveMcast)
+        hLeaveMcast = GetDlgItem(hDlg, ID_SENDER_LEAVEMCAST);
+    if (NULL == hMenu)
+        hMenu = GetMenu(hDlg);
+    switch (state)
+    {
+        case SENDER_INITIAL:
+            EnableMenuItem(hMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
+            EnableWindow(hSettingsBtn, TRUE);
+            EnableWindow(hJoinMcastBtn, TRUE);
+            EnableWindow(hLeaveMcast, FALSE);
+            EnableWindow(hStartSendingBtn, FALSE);
+            EnableWindow(hStopSendingBtn, FALSE);
+            SetFocus(hJoinMcastBtn);
+            break;
+        case SENDER_MCAST_JOINED:
+            EnableMenuItem(hMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
+            EnableWindow(hSettingsBtn, FALSE);
+            EnableWindow(hJoinMcastBtn, FALSE);
+            EnableWindow(hLeaveMcast, TRUE);
+            EnableWindow(hStartSendingBtn, TRUE);
+            EnableWindow(hStopSendingBtn, FALSE);
+            SetFocus(hStartSendingBtn);
+            break;
+        case SENDER_SENDING:
+            EnableMenuItem(hMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_ENABLED);
+            EnableWindow(hSettingsBtn, FALSE);
+            EnableWindow(hJoinMcastBtn, FALSE);
+            EnableWindow(hLeaveMcast, FALSE);
+            EnableWindow(hStartSendingBtn, FALSE);
+            EnableWindow(hStopSendingBtn, TRUE);
+            SetFocus(hStopSendingBtn);
+            break;
+        default:
+            break;
+    }
+}
+
+/**
  * @brief Updates the UI with application state.
  * @param Just sets the focus to various controls and 
  * lights them up or ghosts them out.
+ * @param hDlg
  */
 static void UpdateUI(HWND hDlg)
 {
@@ -44,64 +112,7 @@ static void UpdateUI(HWND hDlg)
     curr_state = sender_get_current_state(g_sender);
     if (prev_state != curr_state)
     {
-        static HWND hSettingsBtn = NULL, hJoinMcastBtn = NULL, hLeaveMcast = NULL, hStartSendingBtn = NULL, hStopSendingBtn = NULL;
-        static HMENU hMenu = NULL;
-        if (NULL == hSettingsBtn)
-            hSettingsBtn = GetDlgItem(hDlg, ID_SENDER_SETTINGS);    
-        if (NULL == hJoinMcastBtn)
-            hJoinMcastBtn = GetDlgItem(hDlg, ID_SENDER_JOINMCAST);  
-        if (NULL == hStartSendingBtn)
-            hStartSendingBtn = GetDlgItem(hDlg, ID_SENDER_STARTSENDING);    
-        if (NULL == hStopSendingBtn)
-            hStopSendingBtn = GetDlgItem(hDlg, ID_SENDER_STOPSENDING);  
-        if (NULL == hLeaveMcast)
-            hLeaveMcast = GetDlgItem(hDlg, ID_SENDER_LEAVEMCAST);
-        if (NULL == hMenu)
-            hMenu = GetMenu(hDlg);
-        switch (curr_state)
-        {
-            case SENDER_INITIAL:
-                EnableMenuItem(hMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
-                EnableWindow(hSettingsBtn, TRUE);
-                EnableWindow(hJoinMcastBtn, TRUE);
-                EnableWindow(hLeaveMcast, FALSE);
-                EnableWindow(hStartSendingBtn, FALSE);
-                EnableWindow(hStopSendingBtn, FALSE);
-                SetFocus(hSettingsBtn);
-                break;
-            case SENDER_MCAST_JOINED:
-                EnableMenuItem(hMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
-                EnableWindow(hSettingsBtn, FALSE);
-                EnableWindow(hJoinMcastBtn, FALSE);
-                EnableWindow(hLeaveMcast, TRUE);
-                EnableWindow(hStartSendingBtn, TRUE);
-                EnableWindow(hStopSendingBtn, FALSE);
-                SetFocus(hStartSendingBtn);
-                break;
-            case SENDER_SENDING:
-                EnableMenuItem(hMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_ENABLED);
-                EnableWindow(hSettingsBtn, FALSE);
-                EnableWindow(hJoinMcastBtn, FALSE);
-                EnableWindow(hLeaveMcast, FALSE);
-                EnableWindow(hStartSendingBtn, FALSE);
-                EnableWindow(hStopSendingBtn, TRUE);
-                SetFocus(hStopSendingBtn);
-                break;
-            default:
-                break;
-        }
+        UpdateUIwithCurrentState(hDlg, curr_state);
         prev_state = curr_state;
     }
 }
@@ -123,8 +134,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
         case WM_INITDIALOG:
             {
                 int result;
-                get_default_settings(&g_settings);
-                result = init_master_riff(&g_settings.chunk_, g_hInst, MAKEINTRESOURCE(IDR_0_1));
+                result = get_default_settings(g_hInst, &g_settings);
                 assert(0 == result);
                 g_sender = sender_create(&g_settings);
                 assert(g_sender);
