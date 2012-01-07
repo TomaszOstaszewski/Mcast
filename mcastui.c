@@ -841,7 +841,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMessage, WPARAM wParam, LPARAM lPa
             {
                 case IDM_JOIN_MCAST:
                     {
-                        int result = setup_mcast(&g_connection_data);
+                        //int result = setup_mcast(&g_connection_data);
                         debug_outputln("%s %d : %d", __FILE__, __LINE__, result);
                     }
                     break;
