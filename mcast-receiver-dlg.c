@@ -14,7 +14,6 @@
 #include "dsoundplay.h"
 #include "fifo-circular-buffer.h"
 #include "wave_utils.h"
-#include "var-database.h"
 #include "mcast-receiver-state-machine.h"
 #include "message-loop.h"
 

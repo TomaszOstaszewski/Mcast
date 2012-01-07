@@ -9,11 +9,15 @@ extern "C" {
 struct master_riff_chunk;
 
 struct sender_settings {
+	struct master_riff_chunk * chunk_;
+	uint16_t 	chunk_size_;
 	unsigned int send_delay_;
 	unsigned long	ipv4_mcast_group_addr_;	
 	uint16_t	mcast_port_;
-	struct master_riff_chunk * chunk_;
+	uint16_t	ttl_;
 };
+
+void get_default_settings(struct sender_settings * p_settings);
 
 #if defined __cplusplus
 }

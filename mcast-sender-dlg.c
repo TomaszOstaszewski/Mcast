@@ -7,17 +7,13 @@
  * @details 
  */
 #include "pcc.h"
-#include "mcastui.h"
-#include "conn_data.h"
-#include "mcast_setup.h"
 #include "resource.h"
 #include "debug_helpers.h"
-#include "dsoundplay.h"
-#include "wave_utils.h"
 #include "winsock_adapter.h"
 #include "message-loop.h"
 #include "mcast-sender-state-machine.h"
 #include "mcast-sender-settings-dlg.h"
+#include "mcast-sender-settings.h"
 
 /**
  * @brief Global Application instance.
@@ -127,8 +123,10 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
         case WM_INITDIALOG:
             {
                 int result;
+                get_default_settings(&g_settings);
                 result = init_master_riff(&g_settings.chunk_, g_hInst, MAKEINTRESOURCE(IDR_0_1));
                 assert(0 == result);
+                debug_outputln("%s %d : %8.8x %5.5u", __FILE__, __LINE__, g_settings.ipv4_mcast_group_addr_, g_settings.mcast_port_);
                 g_sender = sender_create(&g_settings);
             }
             return TRUE;
@@ -151,6 +149,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     }
                     break;
                 case ID_SENDER_JOINMCAST:
+                    debug_outputln("%s %5.5d", __FILE__, __LINE__);
                     sender_handle_mcastjoin(g_sender);
                     break;
                 case ID_SENDER_LEAVEMCAST:
