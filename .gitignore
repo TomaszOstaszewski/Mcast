@@ -2,6 +2,8 @@
 # Ignore (generated) html files,
 doxy.warn
 cscope.out
+cscope.in.out
+cscope.po.out
 # Ignore (g)vim temporaries
 .*.swp
 # except foo.html which is maintained by hand.
