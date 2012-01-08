@@ -22,19 +22,21 @@
 static HINSTANCE   g_hInst;
 
 /**
- * @brief 
+ * @brief Pointer to the sender object. 
  */
 static struct mcast_sender * g_sender;
 
 /**
- * @brief 
+ * @brief The sender settings object.
  */
 static struct sender_settings g_settings;
 
 /**
- * @brief 
- * @param hDlg
- * @param state
+ * @brief Handles the user interface widgets update.
+ * @details Given the state, in which the sender object currently has, updates the UI widgets to match that state. For instance, if the sender state is <b>SENDER_INITIAL</b>, then only the "Settings" and "Join multicast" widgets shall be enabled, all others shall be disabled. Then, for the <b>SENDER_MCAST_JOINED</b> state, the "Leave multicast" and "Start sending" buttons shall be enabled, all other widgets shall be disabled. 
+ * This function is not usually called directly. The entry point for user interface update is the UpdateUI function, which compares the previous and current sender state and updates user interface if and only if the state has changed.
+ * @param hDlg handle to the main dialog window, holding the user interface widgets.
+ * @param state sender's current state. 
  */
 static void UpdateUIwithCurrentState(HWND hDlg, sender_state_t state)
 {
@@ -99,10 +101,10 @@ static void UpdateUIwithCurrentState(HWND hDlg, sender_state_t state)
 }
 
 /**
- * @brief Updates the UI with application state.
- * @param Just sets the focus to various controls and 
- * lights them up or ghosts them out.
- * @param hDlg
+ * @brief Entry point for the user interface widgets update.
+ * @details Compares the previous and current sender state. If the state changes, calls UpdateUIwithCurrentState function, to update user interface widgets.
+ * @param hDlg handle to the main dialog window, holding the user interface widgets.
+ * @sa UpdateUIwithCurrentState
  */
 static void UpdateUI(HWND hDlg)
 {
@@ -120,10 +122,10 @@ static void UpdateUI(HWND hDlg)
 /**
  * @brief Sender dialog message processing routine.
  * @details Processes the messages for the dialog, mainly the WM_COMMAND type.
- * @param hDlg
- * @param uMessage
- * @param wParam
- * @param lParam
+ * @param hDlg handle to the dialog window
+ * @param uMessage message to be processed
+ * @param wParam message specific parameter
+ * @param lParam message specific parameter
  * @return  
  */
 static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
@@ -193,8 +195,8 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
  * no message in the message queue. When it returns a non-zero value,
  * it will be called again, and so on, unless a message shows up in the message
  * queue, or it returns 0. 
- * @param hWnd
- * @param count
+ * @param hWnd handle to the window whose message loop is idle.
+ * @param count The idle cycle counter. Each time a message loop enters idle condition, i.e. there are no messages in the looop, the on_idle() function is called. Each time it is called, this parameter is incremented. This parameter is zeroed each time a message appears in the message queue.
  * @return When it returns 0, it wont' be called again until a message shows up
  * in the message queue and its processed. When it returns a non-zero, it may be called again,
  * unless a message shows up in the message queue.
@@ -214,8 +216,7 @@ static long int on_idle(HWND hWnd, long int count)
 
 /*!
  * @brief Windows entry point.
- * @details
- * @param hInstance
+ * @param hInstance 
  * @param hPrevInstance
  * @param lpCmdLine
  * @param nCmdShow

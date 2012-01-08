@@ -19,52 +19,37 @@
 #include "wave_utils.h"
 
 /**
- * @brief
+ * @brief IPv4 multicast group address.
  */
 #define DEFAULT_MCASTADDRV4    "234.5.6.7"
 
 /**
- * @brief
+ * @brief Default port on which multicast communication is performed.
  */
 #define DEFAULT_MCASTPORT      "25000"
 
 /**
- * @brief
+ * @brief IPv6 multicast group address.
  */
 #define DEFAULT_MCASTADDRV6    "ff12::1"
 
-/**
- * @brief
- */
-static receiver_state_t g_state;
+static receiver_state_t g_state; /*!< Receiver's current state. */
 
-/**
- * @brief
- */
-static struct mcast_connection * g_conn;
+static struct mcast_connection * g_conn; /*!< Pointer to the multicast connection object */
 
-/**
- * @brief
- */
-static struct fifo_circular_buffer * g_fifo;
+static struct fifo_circular_buffer * g_fifo; /*!< Pointer to the jitter buffer */
 
-/**
- * @brief
- */
-static DSOUNDPLAY g_player;
+static DSOUNDPLAY g_player; /*!< Pointer to the data player buffer */
 
-/**
- * @brief
- */
-static WAVEFORMATEX * g_wfex;
+static WAVEFORMATEX * g_wfex; /*!< Pointer to the object describing the PCM data being received */
 
-/**
- * @brief
- */
-static HANDLE g_hStopEvent;
+static HANDLE g_hStopEvent; /*!< The receiver's stop event. When this event is signalled via SetEvent() call, the receiver thread exits. */
  
 /**
- * @brief
+ * @brief Entry point of the Multicast receiver thread 
+ * @details The PCM data is being received from the multicast group via this thread. The thread
+ * received the data from multicast connected socket and feeds it to the jitter buffer (fifo queue).
+ *
  */
 static DWORD WINAPI ReceiverThreadProc(LPVOID param)
 {
@@ -106,7 +91,7 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
                 item.count_ += DATA_ITEM_SIZE;
             } while (WSAGetLastError() == WSAEMSGSIZE);
         }
-        else if (WAIT_OBJECT_0 == dwWaitResult) /* Signaled - hence, the external enviroment has just requested termination */
+        else if (WAIT_OBJECT_0 == dwWaitResult) /* Signaled - hence, the external environment has just requested termination */
         {
             break;
         }
@@ -122,7 +107,9 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
 }
 
 /**
- * @brief
+ * @brief Implements the multicast data retrieval worker thread startup.
+ * @details Creates a worker thread which receives data from the multicast socket and feeds it to the jitter buffer.
+ * @return returns 0 if the data retrieval process has been successfully started, otherwise returns <>0.
  */
 static int handle_rcvstart_internal(void)
 {
@@ -150,7 +137,10 @@ static int handle_rcvstart_internal(void)
 }
 
 /**
- * @brief
+ * @brief Implements the multicast data retrieval worker thread graceful termination.
+ * @details Signals a worker thread, created via call to handle_rcvstop_internal, that it shall complete whatever it is doing and exit gracefully.
+ * @return returns 0 if the data retrieval process has been successfully terminated, otherwise returns <>0. Most likely reason of failure is that the receiver object does not have the data retrieval worker thread has not been created.
+ * @sa handle_rcvstart_internal
  */
 static int handle_rcvstop_internal(void)
 {
@@ -166,7 +156,9 @@ static int handle_rcvstop_internal(void)
 }
 
 /**
- * @brief
+ * @brief Implements joining a multicast group
+ * @return returns 0 if a multicast group has been successfully joined, <>0 otherwise.
+ * @sa handle_mcastleave_internal
  */
 static int handle_mcastjoin_internal(void)
 {
@@ -189,7 +181,9 @@ static int handle_mcastjoin_internal(void)
 }
 
 /**
- * @brief
+ * @brief Implements leaving a multicast group
+ * @return returns 0 if a multicast group has been successfully left, <>0 otherwise. Most likely reason of failure is lack of multicast group membership to begin with, i.e. handle_mcastjoin_internal() has not been called.
+ * @sa handle_mcastjoin_internal
  */
 static int handle_mcastleave_internal(void)
 {
@@ -205,7 +199,9 @@ static int handle_mcastleave_internal(void)
 }
 
 /**
- * @brief
+ * @brief Stops retrieved data playback.
+ * @return returns 0 if a player has stopped playing data, <>0 otherwise. Most likely reason of failure is the fact that there is no data playback to begin with, i.e. handle_play_internal() has not been called.
+ * @sa handle_play_internal
  */
 static int handle_stop_internal(void)
 {
@@ -221,7 +217,9 @@ static int handle_stop_internal(void)
 }
 
 /**
- * @brief
+ * @brief Starts retrieved data playback.
+ * @return returns 0 if a player has started playing data, <>0 otherwise.
+ * @sa handle_play_internal
  */
 static int handle_play_internal(HWND hMainWnd)
 {
