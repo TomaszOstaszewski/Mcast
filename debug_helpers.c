@@ -20,15 +20,14 @@
 #define BUFFER_SIZE (256)
 
 /*!
- * @brief 
- * @param[in] formatString
- * @author T.Ostaszewski
+ * @brief Output buffer for debug_output and debug_outputln
+ * @details This is a thread specific global, so each thread has its own copy of the buffer.
  */
 static __declspec(thread) TCHAR outputBuffer[OUTPUT_BUFFER_LEN];
 
 /*!
  * @brief Helper function, actual implementation of both debug_output and debug_outputln
- * @param[in] formatString format string for printf
+ * @param[in] formatString string for printf
  * @param[in] args arguments list for printf
  * @author T.Ostaszewski
  */

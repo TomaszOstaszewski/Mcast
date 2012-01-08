@@ -19,9 +19,12 @@ extern "C" {
  * \li how much data is already stored
  */
 struct buffer_desc {
-    unsigned char * p_begin_;           /**!< Pointer to the very first byte of the buffer.*/
-    size_t      nCurrentOffset_;        /**!< Describes how many data is already stored. */
-    size_t      nMaxOffset_;            /**!< Describes how many bytes can be stored.*/
+	/** @brief Pointer to the very first byte of the buffer.*/
+    unsigned char * p_begin_;           
+	/** @brief Describes how many data is already stored. */
+    size_t      nCurrentOffset_;        
+	/** @brief Describes how many bytes can be stored.*/
+    size_t      nMaxOffset_;            
 };
 
 /**

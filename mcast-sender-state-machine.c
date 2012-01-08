@@ -24,10 +24,14 @@
  * @brief Description of the multicast sender state machine.
  */
 struct mcast_sender { 
-    sender_state_t state_; /*!< Current sender state. */
-    master_riff_chunk_t * chunk_; /*<! Pointer to the first byte of data being send. */
-    struct mcast_connection * conn_;   /*!< Pointer to the structure that describes multicast connection */
-    struct sender_settings * settings_; /*!< Pointer to the structure that describes sender settings. */
+	/** @brief Current sender state. */
+    sender_state_t state_; 
+    /** @brief Pointer to the first byte of data being send. */
+    master_riff_chunk_t * chunk_;
+	/** @brief Pointer to the structure that describes multicast connection */
+    struct mcast_connection * conn_;   
+	/** @brief Pointer to the structure that describes sender settings. */
+    struct sender_settings * settings_; 
     /*!
      * @brief Pointer to the next byte being send 
      */
