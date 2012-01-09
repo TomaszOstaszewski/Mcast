@@ -13,7 +13,7 @@
 
 /*!
  * @brief Determines if the message is an idle message. 
- * @detail In general, messages which do not usually affect the state of the user interface and
+ * @details In general, messages which do not usually affect the state of the user interface and
  * happen very often are checked for. For instance, those can be redundant WM_MOUSEMOVE and WM_NCMOUSEMOVE
  * messages, whose parameters indicate that mouse move is at same position as last mouse move.
  * @param pMsg a message to be tested for idleness.

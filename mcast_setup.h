@@ -76,7 +76,9 @@ int setup_multicast_default(char * p_multicast_addr, char * p_port, struct mcast
 int setup_multicast_indirect(struct mcast_settings const * p_settings, struct mcast_connection * p_conn);
 
 /*!
- * @brief
+ * @brief Leaves the multicast group, closes socket.
+ * @param p_mcast_conn descriptor of the multicast connection obtained via setup_multicast_indirect, setup_mutlicast_default or setup_multicast call.
+ * @return returns 0 on success, <>0 otherwise
  */
 int close_multicast(struct mcast_connection * p_mcast_conn);
 

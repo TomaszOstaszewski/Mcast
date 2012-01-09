@@ -18,7 +18,7 @@
  * appears in the message queue. When it returns 0, it will not be called again
  * until application hits another idle state, i.e. a message gets into its queue,
  * and undergoes proper processing.
- * The @i count @i parameter indicates whether this is the first turn of the idle
+ * The <b>count</b> parameter indicates whether this is the first turn of the idle
  * processing - it is zero then, or another one (it is then non-zero). 
  * @param count - a counter that is incremented each time this function is called.
  * This counter will be zeroed when a message appears in the message queue.

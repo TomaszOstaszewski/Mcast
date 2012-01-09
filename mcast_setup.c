@@ -24,7 +24,7 @@
 #include "debug_helpers.h"
 
 /*!
- * @brief
+ * @brief Default TTL for multicast connection.
  */ 
 #define DEFAULT_TTL    8
 
