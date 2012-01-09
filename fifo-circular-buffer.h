@@ -4,7 +4,7 @@
  * @file fifo-circular-buffer.h
  * @author T.Ostaszewski
  * @date 04-Jan-2012
- * @brief A circular buffer header file.
+ * @brief A circular buffer interface.
  * @details This file contains forward declarations of circular buffer functions. The circular buffer is 
  * a table based buffer. Buffer size is a power of 2, which allows for quite simple and straightforward implementation.
  */

@@ -4,8 +4,8 @@
  * @file dsoundplay.h
  * @author T.Ostaszewski
  * @date 04-Jan-2012
- * @brief
- * @details
+ * @brief A DirectSound player interface.
+ * @details This interface abstracts a bit the end user from the gory details of DirectX or rather DirectSound to be more precise. Instead of concentrating how to do COM programming, how to fill play primary buffers while filling the secondary buffer, and other chores, the end user has to do one thing only. She or he shall keep the FIFO queue packed with data. What this player does is constantly poll FIFO queue for data to play. So if only client of this interface keeps the instance of the FIFO queue, the one used to create this player, packed with PCM data, the PCM data playback will be done nice and smoothly.
  */
 #if !defined DSOUNDPLAY_8F4A9172_53C7_4FD8_83DC_8A3DE09800FA
 #define DSOUNDPLAY_8F4A9172_53C7_4FD8_83DC_8A3DE09800FA
