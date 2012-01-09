@@ -31,9 +31,7 @@
  */ 
 #define DEFAULT_TTL    8
 
-static char *gInterface=NULL;          // Interface to join the multicast group on
-
-int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, uint8_t nTTL, char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
+int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * interfaceAddr, uint8_t nTTL, char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
 {
 	int rc;
 	p_mcast_conn->multiAddr_ 	= ResolveAddress(p_multicast_addr, p_port, AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP);
@@ -50,7 +48,7 @@ int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, uint8_t nTT
 		goto cleanup;
 	}
 	// Resolve the multicast interface
-	p_mcast_conn->resolveAddr_	= ResolveAddress(gInterface, "0", p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
+	p_mcast_conn->resolveAddr_	= ResolveAddress(interfaceAddr, "0", p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
 	if (NULL == p_mcast_conn->multiAddr_)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
@@ -134,7 +132,20 @@ cleanup:
 
 int setup_multicast_default(char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
 {
-    return setup_multicast(FALSE, TRUE, NULL, DEFAULT_TTL, p_multicast_addr, p_port, p_mcast_conn);
+    return setup_multicast(FALSE, TRUE, NULL, NULL, DEFAULT_TTL, p_multicast_addr, p_port, p_mcast_conn);
+}
+
+int setup_multicast_indirect(struct mcast_settings const * p_settings, struct mcast_connection * p_conn)
+{
+    return setup_multicast(
+            p_settings->bConnect_,
+            p_settings->bReuseAddr_,
+            p_settings->bindAddr_,
+            p_settings->interface_,
+            p_settings->nTTL_,
+            p_settings->mcast_addr_,
+            p_settings->mcast_port_,
+            p_conn);
 }
 
 int close_multicast(struct mcast_connection * p_mcast_conn)
