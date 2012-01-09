@@ -24,6 +24,8 @@ struct mcast_settings {
 	char * mcast_port_; /*!< The port number on which communication will be performed */
 };
 
+struct mcast_settings const * get_default_mcast_settings(void);
+
 #if defined __cplusplus
 }
 #endif
