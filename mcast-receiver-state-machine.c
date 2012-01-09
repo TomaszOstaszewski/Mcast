@@ -44,6 +44,12 @@ static DSOUNDPLAY g_player; /*!< Pointer to the data player buffer */
 static WAVEFORMATEX * g_wfex; /*!< Pointer to the object describing the PCM data being received */
 
 static HANDLE g_hStopEvent; /*!< The receiver's stop event. When this event is signalled via SetEvent() call, the receiver thread exits. */
+
+struct mcast_receiver { 
+    HANDLE hStopEvent_;
+};
+
+struct mcast_receiver * p_receiver = NULL;
  
 /**
  * @brief Entry point of the Multicast receiver thread 
@@ -111,7 +117,7 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
  * @details Creates a worker thread which receives data from the multicast socket and feeds it to the jitter buffer.
  * @return returns 0 if the data retrieval process has been successfully started, otherwise returns <>0.
  */
-static int handle_rcvstart_internal(void)
+static int handle_rcvstart_internal(struct mcast_receiver * p_receiver)
 {
     HANDLE h_rcv_thread;
 	HANDLE h_stop_event;
@@ -142,7 +148,7 @@ static int handle_rcvstart_internal(void)
  * @return returns 0 if the data retrieval process has been successfully terminated, otherwise returns <>0. Most likely reason of failure is that the receiver object does not have the data retrieval worker thread has not been created.
  * @sa handle_rcvstart_internal
  */
-static int handle_rcvstop_internal(void)
+static int handle_rcvstop_internal(struct mcast_receiver * p_receiver)
 {
     assert (NULL != g_hStopEvent);
     if (NULL != g_hStopEvent)
@@ -160,7 +166,7 @@ static int handle_rcvstop_internal(void)
  * @return returns 0 if a multicast group has been successfully joined, <>0 otherwise.
  * @sa handle_mcastleave_internal
  */
-static int handle_mcastjoin_internal(void)
+static int handle_mcastjoin_internal(struct mcast_receiver * p_receiver)
 {
 	int result;
 	assert(g_conn == NULL);
@@ -185,7 +191,7 @@ static int handle_mcastjoin_internal(void)
  * @return returns 0 if a multicast group has been successfully left, <>0 otherwise. Most likely reason of failure is lack of multicast group membership to begin with, i.e. handle_mcastjoin_internal() has not been called.
  * @sa handle_mcastjoin_internal
  */
-static int handle_mcastleave_internal(void)
+static int handle_mcastleave_internal(struct mcast_receiver * p_receiver)
 {
     assert(NULL != g_conn);
     if (NULL != g_conn)
@@ -203,7 +209,7 @@ static int handle_mcastleave_internal(void)
  * @return returns 0 if a player has stopped playing data, <>0 otherwise. Most likely reason of failure is the fact that there is no data playback to begin with, i.e. handle_play_internal() has not been called.
  * @sa handle_play_internal
  */
-static int handle_stop_internal(void)
+static int handle_stop_internal(struct mcast_receiver * p_receiver)
 {
     assert(NULL != g_player);
     if (NULL != g_player)
@@ -221,7 +227,7 @@ static int handle_stop_internal(void)
  * @return returns 0 if a player has started playing data, <>0 otherwise.
  * @sa handle_play_internal
  */
-static int handle_play_internal(HWND hMainWnd)
+static int handle_play_internal(HWND hMainWnd, struct mcast_receiver * p_receiver)
 {
     assert(NULL == g_player);
     assert(NULL != g_wfex);
@@ -249,17 +255,17 @@ void handle_play(HWND hMainWnd)
 {
     if (RECEIVER_MCASTJOINED == g_state)
     {
-        if (0 ==handle_play_internal(hMainWnd))
+        if (0 ==handle_play_internal(hMainWnd, p_receiver))
             g_state = RECEIVER_MCASTJOINED_PLAYING;
     }
     else if (RECEIVER_INITIAL == g_state)
     {
-        if (0 == handle_play_internal(hMainWnd))
+        if (0 == handle_play_internal(hMainWnd, p_receiver))
             g_state = RECEIVER_PLAYING;
     }
     else if (RECEIVER_RECEIVING == g_state)
     {
-        if (0 == handle_play_internal(hMainWnd))
+        if (0 == handle_play_internal(hMainWnd, p_receiver))
             g_state = RECEIVER_RECEIVING_PLAYING;
     }
     else
@@ -272,17 +278,17 @@ void handle_stop(void)
 {
     if (RECEIVER_PLAYING == g_state)
     {
-        if  (0 == handle_stop_internal())
+        if  (0 == handle_stop_internal(p_receiver))
             g_state = RECEIVER_INITIAL;
     }
     else if (RECEIVER_RECEIVING_PLAYING == g_state)
     {
-        if  (0 == handle_stop_internal())
+        if  (0 == handle_stop_internal(p_receiver))
             g_state = RECEIVER_RECEIVING;
     }
     else if (RECEIVER_MCASTJOINED_PLAYING == g_state)
     {
-        if  (0 == handle_stop_internal())
+        if  (0 == handle_stop_internal(p_receiver))
             g_state = RECEIVER_MCASTJOINED;
     }
     else
@@ -295,12 +301,12 @@ void handle_rcvstart(void)
 {
     if (RECEIVER_MCASTJOINED == g_state)
     {
-        if (0 == handle_rcvstart_internal())
+        if (0 == handle_rcvstart_internal(p_receiver))
             g_state = RECEIVER_RECEIVING;
     } 
     else if (RECEIVER_MCASTJOINED_PLAYING == g_state)
     {
-        if (0 == handle_rcvstart_internal())
+        if (0 == handle_rcvstart_internal(p_receiver))
             g_state = RECEIVER_RECEIVING_PLAYING;
     }
     else
@@ -313,12 +319,12 @@ void handle_rcvstop(void)
 {
     if (RECEIVER_RECEIVING_PLAYING == g_state)
     {
-        if (0 == handle_rcvstop_internal())
+        if (0 == handle_rcvstop_internal(p_receiver))
             g_state = RECEIVER_MCASTJOINED_PLAYING;
     }
     else if (RECEIVER_RECEIVING == g_state)
     {
-        if (0 == handle_rcvstop_internal())
+        if (0 == handle_rcvstop_internal(p_receiver))
             g_state = RECEIVER_MCASTJOINED;
     }
     else
@@ -331,12 +337,12 @@ void handle_mcastjoin(void)
 {
     if (RECEIVER_INITIAL == g_state)
     {
-        if (0 == handle_mcastjoin_internal())
+        if (0 == handle_mcastjoin_internal(p_receiver))
             g_state = RECEIVER_MCASTJOINED;
     }
     else if (RECEIVER_PLAYING == g_state)
     {
-        if (0 == handle_mcastjoin_internal())
+        if (0 == handle_mcastjoin_internal(p_receiver))
             g_state = RECEIVER_MCASTJOINED_PLAYING;
     }
     else
@@ -349,12 +355,12 @@ void handle_mcastleave(void)
 {
     if (RECEIVER_MCASTJOINED == g_state)
     {
-        if (0 == handle_mcastleave_internal())
+        if (0 == handle_mcastleave_internal(p_receiver))
             g_state = RECEIVER_INITIAL; 
     }
     else if (RECEIVER_MCASTJOINED_PLAYING == g_state)
     {
-        if (0 == handle_mcastleave_internal())
+        if (0 == handle_mcastleave_internal(p_receiver))
             g_state = RECEIVER_PLAYING;
     }
     else
