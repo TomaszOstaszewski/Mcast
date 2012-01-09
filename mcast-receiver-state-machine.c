@@ -168,7 +168,7 @@ static int handle_mcastjoin_internal(void)
 	assert(NULL != g_conn);
     if (NULL != g_conn)
     {
-        result = setup_multicast_3(DEFAULT_MCASTADDRV4, DEFAULT_MCASTPORT, g_conn);
+        result = setup_multicast_default(DEFAULT_MCASTADDRV4, DEFAULT_MCASTPORT, g_conn);
         assert(0 == result);
         if (0 == result)
         {
