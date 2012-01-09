@@ -17,7 +17,6 @@
 #include "dsoundplay.h"
 #include "fifo-circular-buffer.h"
 #include "wave_utils.h"
-#include "mcast-
 
 /**
  * @brief IPv4 multicast group address.
@@ -52,8 +51,8 @@ struct mcast_receiver {
     WAVEFORMATEX * wfex_; /*!< Pointer to the object describing the PCM data being received */
     struct mcast_connection * conn_; /*!< Pointer to the multicast connection object */
     struct fifo_circular_buffer * fifo_; /*!< Pointer to the jitter buffer */
-    HANDLE hStopEvent_;
-    HANDLE hStopEventThread_;
+    HANDLE hStopEvent_;/*!< The receiver's stop event. When this event is signalled via SetEvent() call, the receiver thread exits. */
+    HANDLE hStopEventThread_;/*!< The receiver's stop event. When this event is signalled via SetEvent() call, the receiver thread exits. */
 };
 
 struct mcast_receiver * p_receiver = NULL;
