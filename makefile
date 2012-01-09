@@ -23,7 +23,7 @@ $(OUTDIR_PCC)\pcc.pch: pcc.c pcc.h $(OUTDIR_PCC) $(OUTDIR_OBJ)
 $(OUTDIR_PCC)\pcpp.pch: pcpp.cpp pcc.h $(OUTDIR_PCC) $(OUTDIR_OBJ)
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yc /Fp$(OUTDIR_PCC)\pcpp.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
-$(OUTDIR_OBJ)\mcastui.res: mcastui.rc resource.h mcastui.h $(OUTDIR_OBJ)
+$(OUTDIR_OBJ)\mcastui.res: mcastui.rc resource.h $(OUTDIR_OBJ)
 	$(rc) $(rcflags) $(rcvars) /fo $(OUTDIR_OBJ)\mcastui.res %s
 
 $(OUTDIR_OBJ)\mcast_utils.obj: mcast_utils.c mcast_utils.h resolve.h $(OUTDIR_PCC)\pcc.pch

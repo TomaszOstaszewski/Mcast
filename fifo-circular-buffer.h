@@ -27,59 +27,59 @@ typedef struct data_item {
 
 /**
  * @brief
- * @detail
+ * @details
  */
 struct fifo_circular_buffer;
 
 /**
  * @brief
- * @detail
+ * @details
  *
  */
 struct fifo_circular_buffer *  fifo_circular_buffer_create(void);
 
 /**
  * @brief
- * @detail
+ * @details
  *
  */
 void fifo_circular_buffer_delete(struct fifo_circular_buffer * p_fifo);
 
 /**
  * @brief
- * @detail
+ * @details
  *
  */
 uint32_t fifo_circular_buffer_get_capacity(struct fifo_circular_buffer * p_fifo);
 
 /**
  * @brief
- * @detail
+ * @details
  *
  */
 uint32_t fifo_circular_buffer_get_items_count(struct fifo_circular_buffer * p_fifo);
 
 /**
  * @brief
- * @detail
+ * @details
  */
 int fifo_circular_buffer_is_free_space(struct fifo_circular_buffer * p_fifo);
 
 /**
  * @brief
- * @detail
+ * @details
  */
 unsigned int fifo_circular_buffer_is_full(struct fifo_circular_buffer * p_fifo);
 
 /**
  * @brief
- * @detail
+ * @details
  */
 int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_fifo, struct data_item const * p_item);
 
 /**
  * @brief
- * @detail
+ * @details
  */
 int fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_fifo, struct data_item * p_item);
 
