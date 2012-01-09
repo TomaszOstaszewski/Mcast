@@ -11,6 +11,7 @@
 #define MCAST_SETUP_H_870702C0_B65B_4828_949C_490704388A28
 
 #include "pcc.h"
+#include "mcast-settings.h"
 
 struct addrinfo;
 
@@ -22,19 +23,6 @@ struct mcast_connection {
 	struct addrinfo * resolveAddr_; /*!< */
 	struct addrinfo * multiAddr_; /*!< */
 	SOCKET socket_; /*!< */
-};
-
-/*!
- * @brief Configuration of the multicast connection.
- */
-struct mcast_settings {
-	BOOL bConnect_; /*!< Whether or not call connect() on the socket bound to the multicast group */
-	BOOL bReuseAddr_; /*!< Whether or not reuse address.  */
-    char * bindAddr_; /*!< Name of the interface to bind to */
-    char * interface_; /*!< Name of the interface to bind to */
-	int nTTL_; /*!< The 'Time To Live' parameter to set on the socket. */
-	char * mcast_addr_; /*!< The address of the multicast group */
-	char * mcast_port_; /*!< The port number on which communication will be performed */
 };
 
 /*!

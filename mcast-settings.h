@@ -1,5 +1,5 @@
 /*!
- * @brief
+ * @brief Describes the multicast settings.
  * @file mcast-settings.h
  * @author T.Ostaszewski
  * @date Jan-2012
