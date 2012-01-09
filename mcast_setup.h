@@ -18,36 +18,62 @@ struct addrinfo;
  * @brief Describes the MCAST connection.
  */
 struct mcast_connection {
-	struct addrinfo * bindAddr_;
-	struct addrinfo * resolveAddr_;
-	struct addrinfo * multiAddr_;
-	SOCKET socket_;
+	struct addrinfo * bindAddr_; /*!< */
+	struct addrinfo * resolveAddr_; /*!< */
+	struct addrinfo * multiAddr_; /*!< */
+	SOCKET socket_; /*!< */
 };
 
 /*!
- * @brief
+ * @brief Configuration of the multicast connection.
  */
-struct mcast_connection * setup_multicast_2(char * p_multicast_addr, char * p_port);
+struct mcast_settings {
+	BOOL bConnect_; /*!< Whether or not call connect() on the socket bound to the multicast group */
+	BOOL bReuseAddr_; /*!< Whether or not reuse address.  */
+    char * bindAddr_; /*!< Name of the interface to bind to */
+    char * interface_; /*!< Name of the interface to bind to */
+	int nTTL_; /*!< The 'Time To Live' parameter to set on the socket. */
+	char * mcast_addr_; /*!< The address of the multicast group */
+	char * mcast_port_; /*!< The port number on which communication will be performed */
+};
 
 /*!
- * @brief
+ * @brief Setup the multicast connection with given parameters.
+ * @param[in] bConnect
+ * @param[in] bReuseAddr
+ * @param[in] bindAddr
+ * @param[in] interfaceAddr
+ * @param[in] nTTL
+ * @param[in] p_multicast_addr IPv4 of the multicast group to connect, i.e. "224.5.6.7"
+ * @param[in] p_port  port number on which data will be send/received.
+ * @param[out] p_mcast_conn this memory location will be written with active multicast connection upon successful exit.
+ * @return returns 0 on success, <>0 otherwise.
  */
-int setup_multicast_3(char * p_multicast_addr, char * p_port, struct mcast_connection * p_conn);
+int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * interfaceAddr, uint8_t nTTL, char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn);
 
 /*!
- * @brief
+ * @brief Wrapper for the setup_multicast function with most of the parameters set to so called "reasonable defaults".
+ * @details The so called "reasonable defaults" are:
+ * \li bConnect set to FALSE - don't call connect() after joining a multicast group;
+ * \li bReuseAddr set to TRUE so the address can be reused immediatelly without relaying on Windows to free that after some period of time;
+ * \li bindAddr set to NULL to bind to any address
+ * \li interfaceAddr set to NULL to bind to any interface
+ * \li nTTL set to value 8
+ * @param[in] p_multicast_addr IPv4 of the multicast group to connect, i.e. "224.5.6.7"
+ * @param[in] p_port  port number on which data will be send/received.
+ * @param[out] p_mcast_conn this memory location will be written with active multicast connection upon successful exit.
+ * @return returns 0 on success, <>0 otherwise.
+ * @sa setup_multicast
  */
-int setup_multicast(struct mcast_connection * p_mcast_conn);
+int setup_multicast_default(char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn);
 
 /*!
- * @brief
+ * @brief Setup the multicast connection with given parameters.
+ * @param[in] p_settings contains all the multicast connection related settings.
+ * @param[out] p_conn this memory location will be written with active multicast connection upon successful exit.
+ * @return returns 0 on success, <>0 otherwise.
  */
-int setup_mcast(struct conn_data * p_conn_data);
-
-/*!
- * @brief
- */
-int act_on_timer(struct conn_data * p_conn_data);
+int setup_multicast_indirect(struct mcast_settings const * p_settings, struct mcast_connection * p_conn);
 
 /*!
  * @brief
