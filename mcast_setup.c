@@ -19,10 +19,7 @@
 #include "pcc.h"
 #include "winsock_adapter.h"
 #include "mcast_setup.h"
-#include "conn_data.h"
-#include "hello.h"
 #include "mcast_utils.h"
-#include "winsock_adapter.h"
 #include "resolve.h"
 #include "debug_helpers.h"
 
