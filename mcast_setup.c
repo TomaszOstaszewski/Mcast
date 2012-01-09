@@ -31,38 +31,19 @@
  */ 
 #define DEFAULT_TTL    8
 
-struct mcast_settings {
-	BOOL bConnect_;
-	BOOL bDontJoin_;
-	BOOL bReuseAddr_;
-	int nProtocol_;
-	int nLoopback_;
-	int nTTL_;
-	char * bindAddr_;
-	char * interface_;
-	char * mcast_addr_;
-	char * mcast_port_;
-};
-
-static BOOL  bConnect=FALSE;           // Connect before sending?
-static BOOL  bReuseAddr=TRUE;         // Set SO_REUSEADDR 
-static int   gProtocol=IPPROTO_UDP;    // UDP
-static int   gTtl=DEFAULT_TTL;         // Multicast TTL value
-
-static char *gBindAddr=NULL;           // Address to bind socket to (default is 0.0.0.0 or ::)
 static char *gInterface=NULL;          // Interface to join the multicast group on
 
-int setup_multicast(char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
+int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, uint8_t nTTL, char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
 {
 	int rc;
-	p_mcast_conn->multiAddr_ 	= ResolveAddress(p_multicast_addr, p_port, AF_UNSPEC, SOCK_DGRAM, gProtocol);
+	p_mcast_conn->multiAddr_ 	= ResolveAddress(p_multicast_addr, p_port, AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP);
 	if (NULL == p_mcast_conn->multiAddr_)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
 	// Resolve the binding address
-	p_mcast_conn->bindAddr_ 	= ResolveAddress(gBindAddr, p_port, p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
+	p_mcast_conn->bindAddr_ 	= ResolveAddress(bindAddr, p_port, p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
 	if (NULL == p_mcast_conn->bindAddr_)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
@@ -131,7 +112,7 @@ int setup_multicast(char * p_multicast_addr, char * p_port, struct mcast_connect
 		goto cleanup;
 	}
 	// Set the TTL to something else. The default TTL is one.
-	rc = SetMulticastTtl(p_mcast_conn->socket_, p_mcast_conn->multiAddr_->ai_family, gTtl);
+	rc = SetMulticastTtl(p_mcast_conn->socket_, p_mcast_conn->multiAddr_->ai_family, nTTL);
 	if (rc == SOCKET_ERROR)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
@@ -149,6 +130,11 @@ int setup_multicast(char * p_multicast_addr, char * p_port, struct mcast_connect
 	return 0;
 cleanup:
 	return -1;
+}
+
+int setup_multicast_default(char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
+{
+    return setup_multicast(FALSE, TRUE, NULL, DEFAULT_TTL, p_multicast_addr, p_port, p_mcast_conn);
 }
 
 int close_multicast(struct mcast_connection * p_mcast_conn)
