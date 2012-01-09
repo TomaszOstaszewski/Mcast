@@ -25,41 +25,13 @@ struct mcast_connection {
 };
 
 /*!
- * @brief
- * @param[in]
- * @param[in]
- * @param[out]
- * @return
- */
-struct mcast_connection * setup_multicast_2(char * p_multicast_addr, char * p_port);
-
-/*!
  * @brief Setup the multicast connection with given parameters.
  * @param[in] p_multicast_addr IPv4 of the multicast group to connect, i.e. "224.5.6.7"
  * @param[in] p_port  port number on which data will be send/received.
  * @param[out] p_conn this memory location will be written with active multicast connection upon successful exit.
  * @return returns 0 on success, <>0 otherwise.
  */
-int setup_multicast_3(char * p_multicast_addr, char * p_port, struct mcast_connection * p_conn);
-
-/*!
- * @brief Setup the multicast connection with default parameters.
- * @param[in,out] p_mcast_conn
- * @return 
- */
-int setup_multicast(struct mcast_connection * p_mcast_conn);
-
-/*!
- * @brief
- * @param[in,out] p_conn_data
- * @return
- */
-int setup_mcast(struct conn_data * p_conn_data);
-
-/*!
- * @brief
- */
-int act_on_timer(struct conn_data * p_conn_data);
+int setup_multicast(char * p_multicast_addr, char * p_port, struct mcast_connection * p_conn);
 
 /*!
  * @brief

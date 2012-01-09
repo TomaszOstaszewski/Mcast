@@ -27,7 +27,7 @@
 #include "debug_helpers.h"
 
 /*!
- * @::
+ * @brief
  */ 
 #define DEFAULT_TTL    8
 
@@ -44,17 +44,15 @@ struct mcast_settings {
 	char * mcast_port_;
 };
 
-static BOOL  
-	bConnect=FALSE,           // Connect before sending?
-	bReuseAddr=TRUE;         // Set SO_REUSEADDR 
-static int   
-	gProtocol=IPPROTO_UDP,    // UDP
-	gTtl=DEFAULT_TTL;         // Multicast TTL value
+static BOOL  bConnect=FALSE;           // Connect before sending?
+static BOOL  bReuseAddr=TRUE;         // Set SO_REUSEADDR 
+static int   gProtocol=IPPROTO_UDP;    // UDP
+static int   gTtl=DEFAULT_TTL;         // Multicast TTL value
 
-static char *gBindAddr=NULL,           // Address to bind socket to (default is 0.0.0.0 or ::)
-	*gInterface=NULL;          // Interface to join the multicast group on
+static char *gBindAddr=NULL;           // Address to bind socket to (default is 0.0.0.0 or ::)
+static char *gInterface=NULL;          // Interface to join the multicast group on
 
-int setup_multicast_3(char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
+int setup_multicast(char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
 {
 	int rc;
 	p_mcast_conn->multiAddr_ 	= ResolveAddress(p_multicast_addr, p_port, AF_UNSPEC, SOCK_DGRAM, gProtocol);

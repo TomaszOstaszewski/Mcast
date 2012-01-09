@@ -129,7 +129,7 @@ static int sender_handle_mcastjoin_internal(struct mcast_sender * p_sender)
             if (SUCCEEDED(hr))
             { 
                 debug_outputln("%s %d : %s:%s", __FILE__, __LINE__, psz_addr, psz_port);
-                rc = setup_multicast_3(psz_addr, psz_port, p_sender->conn_);
+                rc = setup_multicast(psz_addr, psz_port, p_sender->conn_);
                 if (0 == rc)
                 {
                     return 0;
