@@ -4,26 +4,30 @@
  * @file winsock_adapter.h
  * @author T.Ostaszewski
  * @date 04-Jan-2012
- * @brief
- * @details
+ * @brief Winsock header suited for non-Windows platform.
+ * @details Having this file allows one to write common code for both Windows and POSIX 
+ * platforms.
  */
 #if !defined WINSOCK_ADAPTER_3EC3154C_246B_4F9B_9BC1_008BB70BC774
 #define WINSOCK_ADAPTER_3EC3154C_246B_4F9B_9BC1_008BB70BC774
 
 #if !defined WIN32
-#include <stdint.h>
+/* POSIX world */
+#	include <stdint.h>
 #	if !defined SOCKET_TYPE
-typedef int SOCKET;
-#	define SOCKET_TYPE
+		typedef int SOCKET;
+#		define SOCKET_TYPE
 #	endif
 #	include <sys/types.h>
 #	include <sys/socket.h>
 #	include <netdb.h>
 
-#define WSADESCRIPTION_LEN      256
-#define WSASYS_STATUS_LEN       128
+/** @brief needed for Winsock stubs */
+#define WSADESCRIPTION_LEN     (256)
+/** @brief needed for Winsock stubs */
+#define WSASYS_STATUS_LEN      (128)
 
-typedef uint16_t WORD;
+typedef uint16_t WORD; /*!< needed for Winsock stubs */
 
 typedef struct WSAData {
   WORD			 wVersion;
@@ -35,15 +39,21 @@ typedef struct WSAData {
   char FAR       *lpVendorInfo;
 } WSADATA, *LPWSADATA;
 
+/*!
+ * @brief Winsock init stub.
+ * @return returns 0.
+ */
 int WSAStartup(WORD wVersionRequested, LPWSADATA lpWSAData);
+
+/*!
+ * @brief Winsock cleanup stub.
+ * @return returns 0.
+ */
 int	WSACleanup(void);
 
 #else
-#if defined _MSC_VER && _MSC_VER < 1600
-#	include "vc2003stdint.h"
-#else
-#	include <stdint.h>
-#endif
+/* WINDOWS world */
+#	include "std-int.h"
 #	include <Winsock2.h>
 #	include <ws2tcpip.h>
 #	include <wspiapi.h>
