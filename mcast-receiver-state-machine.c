@@ -115,14 +115,20 @@ static int handle_rcvstart_internal(struct mcast_receiver * p_receiver)
 	}
     bDupResult = DuplicateHandle(GetCurrentProcess(), p_receiver->hStopEvent_, GetCurrentProcess(), &p_receiver->hStopEventThread_, 0, FALSE, DUPLICATE_SAME_ACCESS);
 	if (bDupResult)
-	{
-		ResetEvent(p_receiver->hStopEvent_);
-		/* Pass event copy to the receiver thread */
-		p_receiver->hRcvThread_ = CreateThread(NULL, 0, ReceiverThreadProc, p_receiver, 0, NULL);
-		assert(NULL != p_receiver->hRcvThread_);
-		return 0;
-	}
+    {
+        ResetEvent(p_receiver->hStopEvent_);
+        /* Pass event copy to the receiver thread */
+        p_receiver->hRcvThread_ = CreateThread(NULL, 0, ReceiverThreadProc, p_receiver, 0, NULL);
+        assert(NULL != p_receiver->hRcvThread_);
+        if (NULL != p_receiver->hRcvThread_);
+        {
+            return 0;
+        }
+        CloseHandle(p_receiver->hStopEventThread_);
+        p_receiver->hStopEventThread_ = NULL;
+    }
     CloseHandle(p_receiver->hStopEvent_);
+    p_receiver->hStopEvent_ = NULL;
     return -1;
 }
 
@@ -134,7 +140,8 @@ static int handle_rcvstart_internal(struct mcast_receiver * p_receiver)
  */
 static int handle_rcvstop_internal(struct mcast_receiver * p_receiver)
 {
-    assert (NULL != p_receiver->hStopEvent_);
+    assert(NULL != p_receiver->hStopEvent_);
+    assert(NULL != p_receiver->hRcvThread_);
     if (NULL != p_receiver->hStopEvent_)
     {
         SetEvent(p_receiver->hStopEvent_);
@@ -164,6 +171,7 @@ static int handle_mcastjoin_internal(struct mcast_receiver * p_receiver)
         assert(0 == result);
         if (0 == result)
         {
+            /* Set the non-blocking mode on the socket */
             unsigned long non_block = 1;
             result = ioctlsocket(p_receiver->conn_->socket_, FIONBIO, &non_block);
             if (0 == result)
