@@ -30,6 +30,8 @@ struct mcast_receiver {
     HANDLE hRcvThread_; /*!< Handle to the receiver's thread */
 };
 
+#define MAX_UDP_PACKET_LENGHT (2048)
+
 /**
  * @brief Entry point of the Multicast receiver thread 
  * @details The PCM data is being received from the multicast group via this thread. The thread
@@ -38,7 +40,7 @@ struct mcast_receiver {
  */
 static DWORD WINAPI ReceiverThreadProc(LPVOID param)
 {
-    uint16_t count;
+    uint32_t count;
     struct mcast_receiver * p_receiver;
     struct data_item item;
     struct sockaddr_in sock_addr;
@@ -48,8 +50,8 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
     assert(p_receiver->conn_);
     assert(p_receiver->fifo_);
     sock_addr_size  = sizeof(struct sockaddr_in);
-    item.data_      = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, DATA_ITEM_SIZE);
-    item.count_     = DATA_ITEM_SIZE;
+    item.data_      = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, MAX_UDP_PACKET_LENGHT);
+    item.count_     = MAX_UDP_PACKET_LENGHT;
     for (count = 0; ; ++count)
     {
         int bytes_recevied;
@@ -57,7 +59,10 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
         dwWaitResult = WaitForSingleObject(p_receiver->hStopEventThread_, 50);
         if (WAIT_TIMEOUT == dwWaitResult) /* Timedout - hence, nobody wants us to finish yet */
         {
-            /* Receive data from the socket until you receiving this WSAMSGSIZE error */
+            /* Receive data from the socket until you receiving this WSAMSGSIZE error
+             * It is a non-blocking socket, so this call may well yield WSAEWOULDBLOCK - indicating that there
+             * is nothing to receive. We ignore those errors.
+             */
             do { 
                 bytes_recevied = recvfrom(
                         p_receiver->conn_->socket_,
@@ -73,7 +78,7 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
                     fifo_circular_buffer_push_item(p_receiver->fifo_, &item);
                     break;
                 }
-                item.data_ = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, item.data_, item.count_ + DATA_ITEM_SIZE);
+                item.data_ = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, item.data_, item.count_ + MAX_UDP_PACKET_LENGHT);
                 item.count_ += DATA_ITEM_SIZE;
             } while (WSAGetLastError() == WSAEMSGSIZE);
         }
@@ -155,12 +160,15 @@ static int handle_mcastjoin_internal(struct mcast_receiver * p_receiver)
 	assert(NULL != p_receiver->conn_);
     if (NULL != p_receiver->conn_)
     {
-        //result = setup_multicast_default(DEFAULT_MCASTADDRV4, DEFAULT_MCASTPORT, p_receiver->conn_);
         result = setup_multicast_addr(FALSE, TRUE, NULL, NULL, 8, &p_receiver->settings_->mcast_addr_, p_receiver->conn_);
         assert(0 == result);
         if (0 == result)
         {
-            return 0;
+            unsigned long non_block = 1;
+            result = ioctlsocket(p_receiver->conn_->socket_, FIONBIO, &non_block);
+            if (0 == result)
+                return 0;
+            close_multicast(p_receiver->conn_); 
         }
         HeapFree(GetProcessHeap(), 0, p_receiver->conn_);
         p_receiver->conn_ = NULL;
