@@ -172,6 +172,13 @@ struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int pr
     return res;
 }
 
+struct addrinfo *ResolveAddress_2(struct sockaddr_in const * p_in_addr, int af, int type, int proto)
+{
+    char port[8];
+    StringCchPrintf(port, 8, "%d", ntohs(p_in_addr->sin_port));
+    return ResolveAddress(inet_ntoa(p_in_addr->sin_addr), port, af, type, proto);
+}
+
 /**
  * @brief Common routines for resolving addresses and hostnames
  * @details This routine takes a SOCKADDR and does a reverse 

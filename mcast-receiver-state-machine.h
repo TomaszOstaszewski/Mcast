@@ -32,22 +32,25 @@ typedef enum receiver_state {
 /*!
  * @brief Returns current state the receiver is at the moment of the call of this function.:w
  */
-receiver_state_t receiver_get_state(void);
+receiver_state_t receiver_get_state(struct mcast_receiver * p_receiver);
 
 /*!
  * @brief Initializes the state machine.
+ * @param[in]
+ * @param[in]
+ * @return 
  */
-void receiver_init(WAVEFORMATEX * p_wfex);
+struct mcast_receiver * receiver_init(WAVEFORMATEX * p_wfex, struct mcast_settings const * mcast_settings);
 
 /*!
  * @brief Join multicast group handler.
  */
-void handle_mcastjoin(void);
+void handle_mcastjoin(struct mcast_receiver * p_receiver);
 
 /*!
  * @brief Leave multicast group handler.
  */
-void handle_mcastleave(void);
+void handle_mcastleave(struct mcast_receiver * p_receiver);
 
 /*!
  * @brief Play handler.
@@ -57,26 +60,26 @@ void handle_mcastleave(void);
  * start playing without any network data being fetched - in that case
  * they will only hear silence.
  */
-void handle_play(HWND hMainWnd);
+void handle_play(struct mcast_receiver * p_receiver, HWND hMainWnd);
 
 /*!
  * @brief Stop playing handler.
  * @details This one is called when the client wants to stop playback.
  */
-void handle_stop(void);
+void handle_stop(struct mcast_receiver * p_receiver);
 
 /*!
  * @brief Receiver start handler.
  * @details This function is called when the client wants
  * to start receiving multicast packets.
  */
-void handle_rcvstart(void);
+void handle_rcvstart(struct mcast_receiver * p_receiver);
 
 /*!
  * @brief Receiver stop handler.
  * @details This function is called when the client wants
  * to stop receiving multicast packets.
  */
-void handle_rcvstop(void);
+void handle_rcvstop(struct mcast_receiver * p_receiver);
 
 #endif /*if !defined MCAST_RECEIVER_STATE_093A307A_2B03_4C05_8350_E3ED8C52A126*/

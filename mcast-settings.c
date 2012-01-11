@@ -20,19 +20,16 @@
 /*!
  * @brief 
  */
-#define DEFAULT_MCASTPORT "25000"
+#define DEFAULT_MCASTPORT (25000)
+
+static struct mcast_settings g_default_settings;
 
 struct mcast_settings const * get_default_mcast_settings(void)
 {
-	static struct mcast_settings default_settings = {
-		FALSE,
-		TRUE,
-		NULL,
-		NULL,
-		8,
-		DEFAULT_MCASTADDRV4,
-		DEFAULT_MCASTPORT
-	};
-	return &default_settings;
+	unsigned long net_addr = inet_addr(DEFAULT_MCASTADDRV4);
+	g_default_settings.bReuseAddr_ = TRUE;
+	memcpy(&g_default_settings.mcast_addr_.sin_addr, &net_addr, sizeof(unsigned long));
+	g_default_settings.mcast_addr_.sin_port = htons(DEFAULT_MCASTPORT);
+	return &g_default_settings;
 }
 
