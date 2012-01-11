@@ -2,6 +2,7 @@
 # Ignore (generated) html files,
 doxy.warn
 cscope.out
+ncscope.out
 cscope.in.out
 cscope.po.out
 # Ignore (g)vim temporaries

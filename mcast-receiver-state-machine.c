@@ -18,45 +18,20 @@
 #include "fifo-circular-buffer.h"
 #include "wave_utils.h"
 
-/**
- * @brief IPv4 multicast group address.
- */
-#define DEFAULT_MCASTADDRV4    "234.5.6.7"
-
-/**
- * @brief Default port on which multicast communication is performed.
- */
-#define DEFAULT_MCASTPORT      "25000"
-
-/**
- * @brief IPv6 multicast group address.
- */
-#define DEFAULT_MCASTADDRV6    "ff12::1"
-
-static receiver_state_t g_state; /*!< Receiver's current state. */
-
-static struct mcast_connection * g_conn; /*!< Pointer to the multicast connection object */
-
-static struct fifo_circular_buffer * g_fifo; /*!< Pointer to the jitter buffer */
-
-static DSOUNDPLAY g_player; /*!< Pointer to the data player buffer */
-
-static WAVEFORMATEX * g_wfex; /*!< Pointer to the object describing the PCM data being received */
-
-static HANDLE g_hStopEvent; /*!< The receiver's stop event. When this event is signalled via SetEvent() call, the receiver thread exits. */
-
 struct mcast_receiver { 
-    receiver_state_t g_state; /*!< Receiver's current state. */
+    struct mcast_settings const * settings_; /*!< Receiver settings for multicast connection. */
+    receiver_state_t state_; /*!< Receiver's current state. */
     DSOUNDPLAY player_; /*!< Pointer to the data player buffer */
     WAVEFORMATEX * wfex_; /*!< Pointer to the object describing the PCM data being received */
     struct mcast_connection * conn_; /*!< Pointer to the multicast connection object */
     struct fifo_circular_buffer * fifo_; /*!< Pointer to the jitter buffer */
     HANDLE hStopEvent_;/*!< The receiver's stop event. When this event is signalled via SetEvent() call, the receiver thread exits. */
     HANDLE hStopEventThread_;/*!< The receiver's stop event. When this event is signalled via SetEvent() call, the receiver thread exits. */
+    HANDLE hRcvThread_; /*!< Handle to the receiver's thread */
 };
 
-struct mcast_receiver * p_receiver = NULL;
- 
+#define MAX_UDP_PACKET_LENGHT (2048)
+
 /**
  * @brief Entry point of the Multicast receiver thread 
  * @details The PCM data is being received from the multicast group via this thread. The thread
@@ -65,28 +40,32 @@ struct mcast_receiver * p_receiver = NULL;
  */
 static DWORD WINAPI ReceiverThreadProc(LPVOID param)
 {
-    uint16_t count;
+    uint32_t count;
+    struct mcast_receiver * p_receiver;
     struct data_item item;
     struct sockaddr_in sock_addr;
-    HANDLE h_stop_event;
     socklen_t sock_addr_size;
+    p_receiver = (struct mcast_receiver*)param;
+    assert(p_receiver);
+    assert(p_receiver->conn_);
+    assert(p_receiver->fifo_);
     sock_addr_size  = sizeof(struct sockaddr_in);
-    item.data_      = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, DATA_ITEM_SIZE);
-    item.count_     = DATA_ITEM_SIZE;
-    assert(NULL != g_conn);
-    assert(NULL != g_fifo);
-	h_stop_event = (HANDLE)param;
+    item.data_      = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, MAX_UDP_PACKET_LENGHT);
+    item.count_     = MAX_UDP_PACKET_LENGHT;
     for (count = 0; ; ++count)
     {
         int bytes_recevied;
         DWORD dwWaitResult;
-        dwWaitResult = WaitForSingleObject(h_stop_event, 50);
+        dwWaitResult = WaitForSingleObject(p_receiver->hStopEventThread_, 50);
         if (WAIT_TIMEOUT == dwWaitResult) /* Timedout - hence, nobody wants us to finish yet */
         {
-            /* Receive data from the socket until you receiving this WSAMSGSIZE error */
+            /* Receive data from the socket until you receiving this WSAMSGSIZE error
+             * It is a non-blocking socket, so this call may well yield WSAEWOULDBLOCK - indicating that there
+             * is nothing to receive. We ignore those errors.
+             */
             do { 
                 bytes_recevied = recvfrom(
-                        g_conn->socket_,
+                        p_receiver->conn_->socket_,
                         item.data_, 
                         item.count_, 
                         0,
@@ -96,10 +75,10 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
                 if (SOCKET_ERROR != bytes_recevied)
                 {
                     item.count_ = bytes_recevied;
-                    fifo_circular_buffer_push_item(g_fifo, &item);
+                    fifo_circular_buffer_push_item(p_receiver->fifo_, &item);
                     break;
                 }
-                item.data_ = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, item.data_, item.count_ + DATA_ITEM_SIZE);
+                item.data_ = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, item.data_, item.count_ + MAX_UDP_PACKET_LENGHT);
                 item.count_ += DATA_ITEM_SIZE;
             } while (WSAGetLastError() == WSAEMSGSIZE);
         }
@@ -113,7 +92,8 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
             break;
         }
     }
-	CloseHandle(h_stop_event);
+	CloseHandle(p_receiver->hStopEventThread_);
+    p_receiver->hStopEventThread_ = NULL;
 	HeapFree(GetProcessHeap(), 0, item.data_);
     return 0;
 }
@@ -125,26 +105,30 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
  */
 static int handle_rcvstart_internal(struct mcast_receiver * p_receiver)
 {
-    HANDLE h_rcv_thread;
-	HANDLE h_stop_event;
 	BOOL bDupResult;
-
-	assert(NULL == g_hStopEvent);
-	h_stop_event = CreateEvent(NULL, TRUE, FALSE, "recv-event-0");
-	if (NULL == h_stop_event)
+	assert(NULL == p_receiver->hStopEvent_);
+    assert(NULL == p_receiver->hRcvThread_);
+	p_receiver->hStopEvent_ = CreateEvent(NULL, TRUE, FALSE, "recv-event-0");
+	if (NULL == p_receiver->hStopEvent_)
 	{
 		return -1;
 	}
-    bDupResult = DuplicateHandle(GetCurrentProcess(), h_stop_event, GetCurrentProcess(), &g_hStopEvent, 0, FALSE, DUPLICATE_SAME_ACCESS);
+    bDupResult = DuplicateHandle(GetCurrentProcess(), p_receiver->hStopEvent_, GetCurrentProcess(), &p_receiver->hStopEventThread_, 0, FALSE, DUPLICATE_SAME_ACCESS);
 	if (bDupResult)
-	{
-		ResetEvent(g_hStopEvent);
-		/* Pass event copy to the receiver thread */
-		h_rcv_thread = CreateThread(NULL, 0, ReceiverThreadProc, h_stop_event, 0, NULL);
-		assert(NULL != h_rcv_thread);
-		CloseHandle(h_rcv_thread);
-		return 0;
-	}
+    {
+        ResetEvent(p_receiver->hStopEvent_);
+        /* Pass event copy to the receiver thread */
+        p_receiver->hRcvThread_ = CreateThread(NULL, 0, ReceiverThreadProc, p_receiver, 0, NULL);
+        assert(NULL != p_receiver->hRcvThread_);
+        if (NULL != p_receiver->hRcvThread_);
+        {
+            return 0;
+        }
+        CloseHandle(p_receiver->hStopEventThread_);
+        p_receiver->hStopEventThread_ = NULL;
+    }
+    CloseHandle(p_receiver->hStopEvent_);
+    p_receiver->hStopEvent_ = NULL;
     return -1;
 }
 
@@ -156,12 +140,15 @@ static int handle_rcvstart_internal(struct mcast_receiver * p_receiver)
  */
 static int handle_rcvstop_internal(struct mcast_receiver * p_receiver)
 {
-    assert (NULL != g_hStopEvent);
-    if (NULL != g_hStopEvent)
+    assert(NULL != p_receiver->hStopEvent_);
+    assert(NULL != p_receiver->hRcvThread_);
+    if (NULL != p_receiver->hStopEvent_)
     {
-        SetEvent(g_hStopEvent);
-        CloseHandle(g_hStopEvent);
-        g_hStopEvent = NULL;
+        SetEvent(p_receiver->hStopEvent_);
+        CloseHandle(p_receiver->hStopEvent_);
+        p_receiver->hStopEvent_ = NULL;
+        CloseHandle(p_receiver->hRcvThread_);
+        p_receiver->hRcvThread_ = NULL;
         return 0;
     }
     return -1;
@@ -175,19 +162,24 @@ static int handle_rcvstop_internal(struct mcast_receiver * p_receiver)
 static int handle_mcastjoin_internal(struct mcast_receiver * p_receiver)
 {
 	int result;
-	assert(g_conn == NULL);
-	g_conn = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_connection));
-	assert(NULL != g_conn);
-    if (NULL != g_conn)
+	assert(p_receiver->conn_ == NULL);
+	p_receiver->conn_ = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_connection));
+	assert(NULL != p_receiver->conn_);
+    if (NULL != p_receiver->conn_)
     {
-        result = setup_multicast_default(DEFAULT_MCASTADDRV4, DEFAULT_MCASTPORT, g_conn);
+        result = setup_multicast_addr(FALSE, TRUE, NULL, NULL, 8, &p_receiver->settings_->mcast_addr_, p_receiver->conn_);
         assert(0 == result);
         if (0 == result)
         {
-            return 0;
+            /* Set the non-blocking mode on the socket */
+            unsigned long non_block = 1;
+            result = ioctlsocket(p_receiver->conn_->socket_, FIONBIO, &non_block);
+            if (0 == result)
+                return 0;
+            close_multicast(p_receiver->conn_); 
         }
-        HeapFree(GetProcessHeap(), 0, g_conn);
-        g_conn = NULL;
+        HeapFree(GetProcessHeap(), 0, p_receiver->conn_);
+        p_receiver->conn_ = NULL;
     }
     return -1;
 }
@@ -199,12 +191,12 @@ static int handle_mcastjoin_internal(struct mcast_receiver * p_receiver)
  */
 static int handle_mcastleave_internal(struct mcast_receiver * p_receiver)
 {
-    assert(NULL != g_conn);
-    if (NULL != g_conn)
+    assert(NULL != p_receiver->conn_);
+    if (NULL != p_receiver->conn_)
     {
-        close_multicast(g_conn);
-        HeapFree(GetProcessHeap(), 0, g_conn);
-        g_conn = NULL;
+        close_multicast(p_receiver->conn_);
+        HeapFree(GetProcessHeap(), 0, p_receiver->conn_);
+        p_receiver->conn_ = NULL;
         return 0;
     }
     return -1;
@@ -217,12 +209,12 @@ static int handle_mcastleave_internal(struct mcast_receiver * p_receiver)
  */
 static int handle_stop_internal(struct mcast_receiver * p_receiver)
 {
-    assert(NULL != g_player);
-    if (NULL != g_player)
+    assert(NULL != p_receiver->player_);
+    if (NULL != p_receiver->player_)
     {
-        dsoundplayer_stop(g_player);    
-        dsoundplayer_destroy(g_player);
-        g_player = NULL;
+        dsoundplayer_stop(p_receiver->player_);    
+        dsoundplayer_destroy(p_receiver->player_);
+        p_receiver->player_ = NULL;
         return 0;
     }
     return -1;
@@ -235,44 +227,48 @@ static int handle_stop_internal(struct mcast_receiver * p_receiver)
  */
 static int handle_play_internal(HWND hMainWnd, struct mcast_receiver * p_receiver)
 {
-    assert(NULL == g_player);
-    assert(NULL != g_wfex);
-    assert(NULL != g_fifo);
-    if (NULL == g_player && NULL != g_wfex && NULL != g_fifo)
+    assert(NULL == p_receiver->player_);
+    assert(NULL != p_receiver->wfex_);
+    assert(NULL != p_receiver->fifo_);
+    if (NULL == p_receiver->player_ && NULL != p_receiver->wfex_ && NULL != p_receiver->fifo_)
     {
-        g_player = dsoundplayer_create(hMainWnd, g_wfex, g_fifo);
-        assert(NULL != g_player);
-        if (NULL != g_player)
+        p_receiver->player_ = dsoundplayer_create(hMainWnd, p_receiver->wfex_, p_receiver->fifo_);
+        assert(NULL != p_receiver->player_);
+        if (NULL != p_receiver->player_)
         {
-            dsoundplayer_play(g_player);    
+            dsoundplayer_play(p_receiver->player_);    
             return 0;
         }
     }
     return -1;
 }
 
-void receiver_init(WAVEFORMATEX * p_wfex)
+struct mcast_receiver * receiver_init(WAVEFORMATEX * p_wfex, struct mcast_settings const * mcast_settings)
 {
-	g_wfex = p_wfex;
-	g_fifo = fifo_circular_buffer_create();
+    struct mcast_receiver * p_receiver = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_receiver)); 
+    assert(p_receiver);
+    p_receiver->wfex_ = p_wfex; 
+    p_receiver->settings_ = mcast_settings;
+    p_receiver->fifo_ = fifo_circular_buffer_create();
+    return p_receiver;
 }
 
-void handle_play(HWND hMainWnd)
+void handle_play(struct mcast_receiver * p_receiver, HWND hMainWnd)
 {
-    if (RECEIVER_MCASTJOINED == g_state)
+    if (RECEIVER_MCASTJOINED == p_receiver->state_)
     {
         if (0 ==handle_play_internal(hMainWnd, p_receiver))
-            g_state = RECEIVER_MCASTJOINED_PLAYING;
+            p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
     }
-    else if (RECEIVER_INITIAL == g_state)
+    else if (RECEIVER_INITIAL == p_receiver->state_)
     {
         if (0 == handle_play_internal(hMainWnd, p_receiver))
-            g_state = RECEIVER_PLAYING;
+            p_receiver->state_ = RECEIVER_PLAYING;
     }
-    else if (RECEIVER_RECEIVING == g_state)
+    else if (RECEIVER_RECEIVING == p_receiver->state_)
     {
         if (0 == handle_play_internal(hMainWnd, p_receiver))
-            g_state = RECEIVER_RECEIVING_PLAYING;
+            p_receiver->state_ = RECEIVER_RECEIVING_PLAYING;
     }
     else
     {
@@ -280,22 +276,22 @@ void handle_play(HWND hMainWnd)
     }
 }
 
-void handle_stop(void)
+void handle_stop(struct mcast_receiver * p_receiver)
 {
-    if (RECEIVER_PLAYING == g_state)
+    if (RECEIVER_PLAYING == p_receiver->state_)
     {
         if  (0 == handle_stop_internal(p_receiver))
-            g_state = RECEIVER_INITIAL;
+            p_receiver->state_ = RECEIVER_INITIAL;
     }
-    else if (RECEIVER_RECEIVING_PLAYING == g_state)
+    else if (RECEIVER_RECEIVING_PLAYING == p_receiver->state_)
     {
         if  (0 == handle_stop_internal(p_receiver))
-            g_state = RECEIVER_RECEIVING;
+            p_receiver->state_ = RECEIVER_RECEIVING;
     }
-    else if (RECEIVER_MCASTJOINED_PLAYING == g_state)
+    else if (RECEIVER_MCASTJOINED_PLAYING == p_receiver->state_)
     {
         if  (0 == handle_stop_internal(p_receiver))
-            g_state = RECEIVER_MCASTJOINED;
+            p_receiver->state_ = RECEIVER_MCASTJOINED;
     }
     else
     {
@@ -303,17 +299,17 @@ void handle_stop(void)
     }
 }
 
-void handle_rcvstart(void)
+void handle_rcvstart(struct mcast_receiver * p_receiver)
 {
-    if (RECEIVER_MCASTJOINED == g_state)
+    if (RECEIVER_MCASTJOINED == p_receiver->state_)
     {
         if (0 == handle_rcvstart_internal(p_receiver))
-            g_state = RECEIVER_RECEIVING;
+            p_receiver->state_ = RECEIVER_RECEIVING;
     } 
-    else if (RECEIVER_MCASTJOINED_PLAYING == g_state)
+    else if (RECEIVER_MCASTJOINED_PLAYING == p_receiver->state_)
     {
         if (0 == handle_rcvstart_internal(p_receiver))
-            g_state = RECEIVER_RECEIVING_PLAYING;
+            p_receiver->state_ = RECEIVER_RECEIVING_PLAYING;
     }
     else
     {
@@ -321,17 +317,17 @@ void handle_rcvstart(void)
     }
 }
 
-void handle_rcvstop(void)
+void handle_rcvstop(struct mcast_receiver * p_receiver)
 {
-    if (RECEIVER_RECEIVING_PLAYING == g_state)
+    if (RECEIVER_RECEIVING_PLAYING == p_receiver->state_)
     {
         if (0 == handle_rcvstop_internal(p_receiver))
-            g_state = RECEIVER_MCASTJOINED_PLAYING;
+            p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
     }
-    else if (RECEIVER_RECEIVING == g_state)
+    else if (RECEIVER_RECEIVING == p_receiver->state_)
     {
         if (0 == handle_rcvstop_internal(p_receiver))
-            g_state = RECEIVER_MCASTJOINED;
+            p_receiver->state_ = RECEIVER_MCASTJOINED;
     }
     else
     {
@@ -339,17 +335,17 @@ void handle_rcvstop(void)
     }
 }
 
-void handle_mcastjoin(void)
+void handle_mcastjoin(struct mcast_receiver * p_receiver)
 {
-    if (RECEIVER_INITIAL == g_state)
+    if (RECEIVER_INITIAL == p_receiver->state_)
     {
         if (0 == handle_mcastjoin_internal(p_receiver))
-            g_state = RECEIVER_MCASTJOINED;
+            p_receiver->state_ = RECEIVER_MCASTJOINED;
     }
-    else if (RECEIVER_PLAYING == g_state)
+    else if (RECEIVER_PLAYING == p_receiver->state_)
     {
         if (0 == handle_mcastjoin_internal(p_receiver))
-            g_state = RECEIVER_MCASTJOINED_PLAYING;
+            p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
     }
     else
     {
@@ -357,17 +353,17 @@ void handle_mcastjoin(void)
     }
 }
 
-void handle_mcastleave(void)
+void handle_mcastleave(struct mcast_receiver * p_receiver)
 {
-    if (RECEIVER_MCASTJOINED == g_state)
+    if (RECEIVER_MCASTJOINED == p_receiver->state_)
     {
         if (0 == handle_mcastleave_internal(p_receiver))
-            g_state = RECEIVER_INITIAL; 
+            p_receiver->state_ = RECEIVER_INITIAL; 
     }
-    else if (RECEIVER_MCASTJOINED_PLAYING == g_state)
+    else if (RECEIVER_MCASTJOINED_PLAYING == p_receiver->state_)
     {
         if (0 == handle_mcastleave_internal(p_receiver))
-            g_state = RECEIVER_PLAYING;
+            p_receiver->state_ = RECEIVER_PLAYING;
     }
     else
     {
@@ -375,8 +371,8 @@ void handle_mcastleave(void)
     }
 }
 
-receiver_state_t receiver_get_state(void)
+receiver_state_t receiver_get_state(struct mcast_receiver * p_receiver)
 {
-    return g_state;
+    return p_receiver->state_;
 }
 

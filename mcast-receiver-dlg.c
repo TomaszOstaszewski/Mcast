@@ -16,11 +16,20 @@
 #include "wave_utils.h"
 #include "mcast-receiver-state-machine.h"
 #include "message-loop.h"
+#include "mcast-settings.h"
 
 /**
  *  @brief Pointer to the WAV file being send.
  */
 static master_riff_chunk_t *   g_pWavChunk;
+
+/**
+ */
+static struct mcast_settings const * g_p_defaultSettings;
+
+/**
+ */
+static struct mcast_receiver * g_receiver;
 
 /**
  * @brief Global Application instance.
@@ -37,7 +46,7 @@ static HINSTANCE   g_hInst;
 static void UpdateUI(HWND hDlg)
 {
     static receiver_state_t prev_state = -1;
-    receiver_state_t new_state = receiver_get_state();
+    receiver_state_t new_state = receiver_get_state(g_receiver);
     if (prev_state != new_state)
     {
         static HWND hSettingsBtn = NULL, 
@@ -196,7 +205,9 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                 {
                     WAVEFORMATEX * p_wfex = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(WAVEFORMATEX)); 
                     copy_waveformatex_2_WAVEFORMATEX(p_wfex, &g_pWavChunk->format_chunk_.format_);
-                    receiver_init(p_wfex);
+                    g_p_defaultSettings = get_default_mcast_settings();
+                    g_receiver = receiver_init(p_wfex, g_p_defaultSettings);
+                    assert(g_receiver);
                 }
             } 
             return TRUE;
@@ -204,7 +215,7 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
             switch(wParam)
             {
                 case ID_RECEIVER_SETTINGS:
-                    if (RECEIVER_INITIAL == receiver_get_state())
+                    if (RECEIVER_INITIAL == receiver_get_state(g_receiver))
                     {
                     }
                     else
@@ -213,22 +224,22 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                     }
                     break;
                 case ID_RECEIVER_JOINMCAST:
-                    handle_mcastjoin();
+                    handle_mcastjoin(g_receiver);
                     break;
                 case ID_RECEIVER_LEAVEMCAST:
-                    handle_mcastleave();
+                    handle_mcastleave(g_receiver);
                     break;
                 case ID_RECEIVER_PLAY:
-                    handle_play(hDlg);
+                    handle_play(g_receiver, hDlg);
                     break;
                 case ID_RECEIVER_STOP:
-                    handle_stop();
+                    handle_stop(g_receiver);
                     break;
                 case ID_RECEIVER_STARTRCV:
-                    handle_rcvstart();
+                    handle_rcvstart(g_receiver);
                     break;
                 case ID_RECEIVER_STOPRCV:
-                    handle_rcvstop();
+                    handle_rcvstop(g_receiver);
                     break;
                 case IDOK:
                 case IDCANCEL:
