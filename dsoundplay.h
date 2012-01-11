@@ -1,5 +1,11 @@
-/*!
- * @file
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+
+/**
+ * @file dsoundplay.h
+ * @author T.Ostaszewski
+ * @date 04-Jan-2012
+ * @brief
+ * @details
  */
 #if !defined DSOUNDPLAY_8F4A9172_53C7_4FD8_83DC_8A3DE09800FA
 #define DSOUNDPLAY_8F4A9172_53C7_4FD8_83DC_8A3DE09800FA

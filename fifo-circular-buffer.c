@@ -1,3 +1,11 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/**
+ * @file fifo-circular-buffer.c
+ * @author T. Ostaszewski
+ * @date 04-Jan-2012
+ * @brief 
+ * @details 
+ */
 #include "pcc.h"
 #include <limits.h>
 #include <string.h>
@@ -10,7 +18,7 @@
 #define MAX_ITEMS (0x10000)
 
 /*!
- *
+ * @brief
  */
 struct fifo_circular_buffer
 {

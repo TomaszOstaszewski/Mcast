@@ -1,151 +1,98 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @file mcast-sender-state-machine.c
+ * @brief Multicast sender state machine.
+ * @details A sender operates using a state machine. This state machine 
+ * is quite simple and rudimentary, but nevertheless it gives a fairly good
+ * reliability and readability. Instead of tons of if...else on the various
+ * variables, there's just one check for state and then, if the test yields OK,
+ * an action is performed.
  * @author T. Ostaszewski 
+ * @date 04-Jan-2012
  */ 
 #include "pcc.h"
 #include "mcast-sender-state-machine.h"
-#include "mcastui.h"
-#include "conn_data.h"
+
 #include "mcast_setup.h"
 #include "resource.h"
 #include "debug_helpers.h"
 #include "wave_utils.h"
-#include "winsock_adapter.h"
 #include "mcast-sender-state-machine.h"
-
-
-/*!
- *
- */
-#define DEFAULT_MCASTADDRV4    "234.5.6.7"
-
-/*!
- *
- */
-#define DEFAULT_MCASTADDRV6    "ff12::1"
-
-/*!
- *
- */
-#define DEFAULT_MCASTPORT      "25000"
-
-/*!
- *
- */
-#define DEFAULT_TTL    (8)
-
-
-/*!
- * @brief 
- */
-#define DEFAULT_WAV_CHUNK_SIZE    (1024+256+128)
-
-/*!
- * 
- */
-#define DEFAULT_CHUNK_SEND_TIMEOUT (85)
+#include "mcast-sender-settings.h"
 
 /**
- * 
+ * @brief Description of the multicast sender state machine.
  */
-static sender_state_t g_state;
-
-/**
- * 
- */
-static void * g_state_data[SENDER_LAST];
-
-extern master_riff_chunk_t * g_pWavChunk;
-
-
-/**
- * @brief
- * @details 
- */
-typedef struct data_send_descriptor { 
+struct mcast_sender { 
+	/** @brief Current sender state. */
+    sender_state_t state_; 
+    /** @brief Pointer to the first byte of data being send. */
+    master_riff_chunk_t * chunk_;
+	/** @brief Pointer to the structure that describes multicast connection */
+    struct mcast_connection * conn_;   
+	/** @brief Pointer to the structure that describes sender settings. */
+    struct sender_settings * settings_; 
+    /*!
+     * @brief Pointer to the next byte being send 
+     */
     uint8_t const * p_current_pos_;
-    DWORD           dw_chunk_send_timeout_;
-    HANDLE          h_stop_event_;
-    HANDLE          h_thread_;
-    struct mcast_connection *       p_conn_;
-    struct master_riff_chunk *    p_master_riff_;
-} data_send_descriptor_t;
+    HANDLE hStopEvent_; /*!< Handle to the event used to stop the sending thread. */
+    /*!
+     * @brief Handle to the event used to stop the sending thread. 
+     * @details This is a copy of the handle stored in hStopEvent_ member. To avoid
+     * race conditions between the sender thread and the main thread, there are 2 handles 
+     * that describe the very same event. Both the main thread and the sender thread operate
+     * on their own copy, therefore avoid race conditions between CloseHandle() calls.
+     * @sa hStopEvent_
+     */
+    HANDLE hStopEvent_thread_;
+};
 
 /*!
- * @brief
- * @details
- */
-typedef struct mcast_settings {
-    const char * ip4_addr_;
-    const char * ip6_addr_;
-    const char * port_;
-    uint8_t     ttl_;
-} mcast_settings_t;
-
-struct sender_intial_data {
-    struct mcast_settings * settings_;
-};
-
-struct sender_mcastjoined_data {
-    struct mcast_settings * settings_;
-    struct mcast_connection * conn_;
-};
-
-struct sender_sending_data {
-    struct mcast_settings * settings_;
-    struct mcast_connection * conn_;
-    struct data_send_descriptor * sender_;
-};
-
-
-/*!
- *
+ * @brief Sender thread function.
+ * @details Spins a loop in which it checks whether it was signalled to exit. If so, exits.
+ * Otherwise, sends out next chunk of data over the multicast connected socket. The data wraps
+ * around the beginning if end of data is exhibited.
+ * @param[in] param pointer to the mcast_sender structure
+ * @return returns 0 if a thread has completed successfully, otherwise <>0.
  */
 static DWORD WINAPI SendThreadProc(LPVOID param)
 {
     uint32_t max_offset;
-    struct data_send_descriptor * p_desc;
-    struct mcast_connection * p_conn;
+    struct mcast_sender * p_sender = (struct mcast_sender *)param;
     struct master_riff_chunk * p_master_riff;
     int8_t const * p_data_begin;
-    HANDLE h_stop_event;
     DWORD dwResult;
-    BOOL bDupResult;
-    p_desc = (struct data_send_descriptor *)param;
-    if (NULL == p_desc || NULL == p_desc->p_conn_ || NULL == p_desc->p_master_riff_)
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-        return -1;
-    }   
-    p_conn = p_desc->p_conn_;
-    p_master_riff = p_desc->p_master_riff_;
-    bDupResult = DuplicateHandle(GetCurrentProcess(), p_desc->h_stop_event_, GetCurrentProcess(), &h_stop_event, 0, FALSE, DUPLICATE_SAME_ACCESS);
+    p_sender = (struct mcast_sender *)param;
+    assert(p_sender);
+    assert(p_sender->settings_);
+    p_master_riff = p_sender->settings_->chunk_;
+    assert(p_master_riff);
     p_data_begin = &p_master_riff->format_chunk_.subchunk_.samples8_[0];
     max_offset = p_master_riff->format_chunk_.subchunk_.subchunk_size_;
     for (;;)
     {
-        dwResult = WaitForSingleObject(h_stop_event, p_desc->dw_chunk_send_timeout_);
+        dwResult = WaitForSingleObject(p_sender->hStopEvent_thread_, p_sender->settings_->send_delay_);
         if (WAIT_TIMEOUT == dwResult)
         {
             int result;
-            uint32_t offset = p_desc->p_current_pos_ - p_data_begin;
-            uint16_t chunk_size = DEFAULT_WAV_CHUNK_SIZE;
+            uint32_t offset = p_sender->p_current_pos_ - p_data_begin;
+            uint16_t chunk_size = p_sender->settings_->chunk_size_;
             if (offset + chunk_size > max_offset)
             {
                 chunk_size = max_offset - offset;
             }
-            result = sendto(p_desc->p_conn_->socket_, 
-                    (const char *)p_desc->p_current_pos_, 
+            result = sendto(p_sender->conn_->socket_, 
+                    (const char *)p_sender->p_current_pos_, 
                     chunk_size,
                     0,
-                    p_conn->multiAddr_->ai_addr,
-                    (int) p_conn->multiAddr_->ai_addrlen
+                    p_sender->conn_->multiAddr_->ai_addr,
+                    (int) p_sender->conn_->multiAddr_->ai_addrlen
                     );
-            p_desc->p_current_pos_ += chunk_size;
-            if ((uint32_t)(p_desc->p_current_pos_ - p_data_begin) + chunk_size >= max_offset)
+            p_sender->p_current_pos_+= chunk_size;
+            if ((uint32_t)(p_sender->p_current_pos_ - p_data_begin) + chunk_size >= max_offset)
             {
-                p_desc->p_current_pos_ = p_data_begin;
+                p_sender->p_current_pos_ = p_data_begin;
             }
         }
         else if (WAIT_OBJECT_0 == dwResult)
@@ -161,242 +108,173 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
             break;
         }
     }
-    CloseHandle(h_stop_event);
+    CloseHandle(p_sender->hStopEvent_thread_);
+    p_sender->hStopEvent_thread_ = NULL;
     return dwResult;
 }
 
 /**
- * @brief
- * @return
+ * @brief Joins the multicast group for which sender is configured to join.
+ * @param[in] p_sender pointer to the sender description structure.
+ * @return returns 0 on success, <>0 otherwise.
  */
-static data_send_descriptor_t * start_sending(struct mcast_connection * p_connection)
+static int sender_handle_mcastjoin_internal(struct mcast_sender * p_sender)
 {
-    struct data_send_descriptor * p_send_data;
-
-    p_send_data = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(data_send_descriptor_t));
-    if (NULL != p_send_data)
-    {
-        p_send_data->p_conn_ = p_connection;
-        p_send_data->dw_chunk_send_timeout_ = DEFAULT_CHUNK_SEND_TIMEOUT;
-        p_send_data->h_stop_event_ = CreateEvent(NULL, TRUE, FALSE, NULL);
-        p_send_data->p_master_riff_ = g_pWavChunk;
-        if (NULL != p_send_data->h_stop_event_)
-        {
-            ResetEvent(p_send_data->h_stop_event_);
-            p_send_data->h_thread_ = CreateThread(NULL, 0, SendThreadProc, p_send_data, 0, NULL);
-            debug_outputln("%s %d : %p", __FILE__, __LINE__, p_send_data);
-            return p_send_data;
-        }
-        HeapFree(GetProcessHeap(), 0, p_send_data);
-    }
-    debug_outputln("%s %d : %p", __FILE__, __LINE__, p_send_data);
-    return p_send_data;
-}
-
-/**
- * @brief
- * @param
- */
-static void stop_sending(struct sender_sending_data * p_sending)
-{
-    debug_outputln("%s %d : %p", __FILE__, __LINE__, p_sending);
-    SetEvent(p_sending->sender_->h_stop_event_);   
-    CloseHandle(p_sending->sender_->h_thread_);
-    CloseHandle(p_sending->sender_->h_stop_event_);
-    HeapFree(GetProcessHeap(), 0, p_sending->sender_);
-    p_sending->sender_ = NULL;
-    debug_outputln("%s %d", __FILE__, __LINE__);
-}
-
-/**
- * @brief
- * @param
- */
-static struct mcast_settings * get_mcast_settings(void)
-{
-    static struct mcast_settings  g_settings = {
-        DEFAULT_MCASTADDRV4,
-        DEFAULT_MCASTADDRV6,
-        DEFAULT_MCASTPORT,
-        DEFAULT_TTL
-    };
-    return &g_settings;
-}
-
-/**
- * @brief
- */
-static struct sender_intial_data * create_initial_0(struct mcast_settings * p_settings)
-{
-    struct sender_intial_data * p_initial;
-    p_initial = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct sender_intial_data));
-    if (NULL != p_initial)
-    {
-        p_initial->settings_ = p_settings;
-    }
-    return p_initial;
-}
-
-/**
- * @brief
- */
-static struct sender_sending_data * create_sending_0(struct sender_mcastjoined_data * p_mcastjoined)
-{
-    struct sender_sending_data * p_sending;
-    p_sending = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct sender_sending_data));
-    if (NULL != p_sending)
-    {
-        p_sending->settings_ = p_mcastjoined->settings_;
-        p_sending->conn_ = p_mcastjoined->conn_; 
-    }
-    return p_sending;
-}
-
-/**
- * @brief
- */
-static struct sender_mcastjoined_data * create_mcastjoined_0(struct sender_intial_data * p_initial)
-{
-    struct sender_mcastjoined_data * p_mcastjoined;
-    p_mcastjoined = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct sender_mcastjoined_data));
-    p_mcastjoined->settings_ = p_initial->settings_;
-    return p_mcastjoined;
-}
-
-/**
- * @brief
- */
-static int join_mcast(struct sender_mcastjoined_data * p_mcastjoined)
-{
-    p_mcastjoined->conn_ = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_connection));
-    if (NULL != p_mcastjoined->conn_)
+    assert(NULL == p_sender->conn_);
+    p_sender->conn_ = HeapAlloc(GetProcessHeap(), 0, sizeof(struct mcast_connection));
+    assert(NULL != p_sender->conn_);
+    if (NULL != p_sender->conn_)
     {
         int rc;
-        rc = setup_multicast_3(DEFAULT_MCASTADDRV4, DEFAULT_MCASTPORT, p_mcastjoined->conn_);
-        if (0 == rc)
+        char * psz_addr;
+        char psz_port[8] = { 0 };
+        struct in_addr * p_in_addr;
+        HRESULT hr;
+
+        p_in_addr =(struct in_addr *)&p_sender->settings_->ipv4_mcast_group_addr_;
+        psz_addr = inet_ntoa(*p_in_addr);
+        assert(psz_addr);
+        if (psz_addr)
         {
-            return 0;
+            hr = StringCchPrintf(psz_port, 8, "%5.5u", p_sender->settings_->mcast_port_);
+            if (SUCCEEDED(hr))
+            { 
+                debug_outputln("%s %d : %s:%s", __FILE__, __LINE__, psz_addr, psz_port);
+                rc = setup_multicast_default(psz_addr, psz_port, p_sender->conn_);
+                if (0 == rc)
+                {
+                    return 0;
+                }
+            }   
         }
+        HeapFree(GetProcessHeap(), 0, p_sender->conn_);
+        p_sender->conn_ = NULL;
     }
     return (-1);
 }
 
 /**
- * @brief
+ * @brief Leaves the multicast group.
+ * @param[in] p_sender pointer to the sender description structure.
+ * @return returns 0 on success, <>0 otherwise.
  */
-static int leave_mcast_0(struct sender_mcastjoined_data * p_mcastjoined)
+static int sender_handle_mcastleave_internal(struct mcast_sender * p_sender)
 {
-    int result = close_multicast(p_mcastjoined->conn_);
-    HeapFree(GetProcessHeap(), 0, p_mcastjoined->conn_);
-    p_mcastjoined->conn_ = NULL;
-    return result;
+    int result;
+    result = close_multicast(p_sender->conn_);
+    HeapFree(GetProcessHeap(), 0, p_sender->conn_);
+    p_sender->conn_ = NULL;
+    return 0;
 }
 
-sender_state_t sender_get_current_state(void)
+/**
+ * @brief Starts sending data over the multicast connection.
+ * @param[in] p_sender pointer to the sender description structure.
+ * @return returns 0 on success, <>0 otherwise.
+ */
+static int sender_handle_startsending_internal(struct mcast_sender * p_sender)
 {
-	return g_state;
+    assert(NULL == p_sender->hStopEvent_);
+    p_sender->hStopEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (NULL != p_sender->hStopEvent_)
+    {
+        BOOL bDupResult; 
+        bDupResult = DuplicateHandle(GetCurrentProcess(), p_sender->hStopEvent_, GetCurrentProcess(), &p_sender->hStopEvent_thread_, 0, FALSE, DUPLICATE_SAME_ACCESS);
+        if (bDupResult)
+        {
+            HANDLE hSenderThread;
+            hSenderThread = CreateThread(NULL, 0, SendThreadProc, p_sender, 0, NULL);
+            CloseHandle(hSenderThread);
+            return 0;
+        }
+        CloseHandle(p_sender->hStopEvent_);
+        p_sender->hStopEvent_ = NULL;
+    }
+    return -1;
 }
 
-void sender_initialize(void)
+/**
+ * @brief Stops sending data over the multicast connection.
+ * @param[in] p_sender pointer to the sender description structure.
+ * @return returns 0 on success, <>0 otherwise.
+ */
+static int sender_handle_stopsending_internal(struct mcast_sender * p_sender)
 {
-	if (NULL == g_state_data[g_state])
-	{
-		g_state_data[g_state] = create_initial_0(get_mcast_settings());
-	}
-	assert(NULL != g_state_data[g_state]);
+    SetEvent(p_sender->hStopEvent_);   
+    CloseHandle(p_sender->hStopEvent_);
+    p_sender->hStopEvent_ = NULL;
+    return 0;
 }
 
-void sender_handle_mcastjoin(void)
+struct mcast_sender * sender_create(struct sender_settings * p_settings)
 {
-	if (SENDER_INITIAL == g_state)
-	{
-		struct sender_intial_data * p_initial;
-		struct sender_mcastjoined_data * p_mcastjoined;
-		p_initial = (struct sender_intial_data *)g_state_data[g_state];
-		assert(NULL != p_initial);
-		p_mcastjoined = (struct sender_mcastjoined_data*)g_state_data[SENDER_MCAST_JOINED];
-		if (NULL == p_mcastjoined)
-		{
-			debug_outputln("%s %5.5d", __FILE__, __LINE__);
-			p_mcastjoined = create_mcastjoined_0(p_initial);
-		}
-		if (0 == join_mcast(p_mcastjoined))
-		{
-			g_state = SENDER_MCAST_JOINED;
-			g_state_data[g_state] = p_mcastjoined;
-		}
-	}
-	else
-	{
-		debug_outputln("%s %5.5d", __FILE__, __LINE__);
-	}
+    struct mcast_sender * p_sender = (struct mcast_sender *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_sender));
+    p_sender->chunk_ = p_settings->chunk_;
+    p_sender->settings_ = p_settings;
+    return p_sender;
 }
 
-void sender_handle_mcastleave(void)
+void sender_destroy(struct mcast_sender * p_sender)
 {
-	if (SENDER_MCAST_JOINED == g_state)
-	{
-		struct sender_intial_data * p_initial;
-		struct sender_mcastjoined_data * p_mcastjoined;
-		p_mcastjoined = (struct sender_mcastjoined_data*)g_state_data[g_state];
-		assert(NULL != p_mcastjoined);
-		p_initial = (struct sender_intial_data*)g_state_data[SENDER_INITIAL];
-		if (NULL != p_initial) 
-		{
-			p_initial = create_initial_0(p_mcastjoined->settings_);
-		}
-		leave_mcast_0(p_mcastjoined);
-		g_state = SENDER_INITIAL;
-		g_state_data[g_state] = p_initial;
-	}
-	else
-	{
-		debug_outputln("%s %5.5d", __FILE__, __LINE__);
-	}
+    HeapFree(GetProcessHeap(), 0, p_sender);
 }
 
-void sender_handle_startsending(void)
+sender_state_t sender_get_current_state(struct mcast_sender * p_sender)
 {
-	if (SENDER_MCAST_JOINED == g_state)
-	{
-		struct sender_mcastjoined_data * p_mcastjoined;
-		struct sender_sending_data * p_sending;
-		p_mcastjoined = (struct sender_mcastjoined_data*)g_state_data[g_state];
-		assert(NULL != p_mcastjoined);
-		p_sending = (struct sender_sending_data*)g_state_data[SENDER_SENDING]; 
-		if (NULL == p_sending)
-		{
-			p_sending = create_sending_0(p_mcastjoined);
-		}
-		p_sending->sender_ = start_sending(p_sending->conn_); 
-		if (NULL != p_sending->sender_)
-		{
-			g_state = SENDER_SENDING;
-			g_state_data[g_state] = p_sending;
-		}
-	}
-	else
-	{
-		debug_outputln("%s %5.5d", __FILE__, __LINE__);
-	}
+    return p_sender->state_;
 }
 
-void sender_handle_stopsending(void)
+void sender_handle_mcastjoin(struct mcast_sender * p_sender)
 {
-	if (SENDER_SENDING == g_state)
-	{
-		struct sender_mcastjoined_data * p_mcastjoined;
-		struct sender_sending_data * p_sending;
-		p_sending = (struct sender_sending_data*)g_state_data[g_state]; 
-		p_mcastjoined = (struct sender_mcastjoined_data*)g_state_data[SENDER_MCAST_JOINED];
-		assert(NULL != p_sending);
-		assert(NULL != p_mcastjoined);
-		stop_sending(p_sending);
-		g_state = SENDER_MCAST_JOINED;
-	}
-	else
-	{
-		debug_outputln("%s %5.5d", __FILE__, __LINE__);
-	}
+    assert(p_sender);
+    if (SENDER_INITIAL == p_sender->state_)
+    {
+        if (0 == sender_handle_mcastjoin_internal(p_sender))
+            p_sender->state_ = SENDER_MCAST_JOINED;
+    }
+    else
+    {
+        debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    }
+}
+
+void sender_handle_mcastleave(struct mcast_sender * p_sender)
+{
+    if (SENDER_MCAST_JOINED == p_sender->state_)
+    {
+        if (0 == sender_handle_mcastleave_internal(p_sender))
+            p_sender->state_ = SENDER_INITIAL;
+    }
+    else
+    {
+        debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    }
+}
+
+void sender_handle_startsending(struct mcast_sender * p_sender)
+{
+    assert(p_sender);
+    if (SENDER_MCAST_JOINED == p_sender->state_)
+    {
+        if (0 == sender_handle_startsending_internal(p_sender))
+            p_sender->state_ = SENDER_SENDING;
+    }
+    else
+    {
+        debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    }
+}
+
+void sender_handle_stopsending(struct mcast_sender * p_sender)
+{
+    if (SENDER_SENDING == p_sender->state_)
+    {
+        if (0 == sender_handle_stopsending_internal(p_sender))
+            p_sender->state_ = SENDER_MCAST_JOINED;
+    }
+    else
+    {
+        debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    }
 }
 

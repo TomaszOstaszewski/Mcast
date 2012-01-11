@@ -1,25 +1,32 @@
-//
-// Common routines for resolving addresses and hostnames
-//
-// Files:
-//      resolve.c       - Common routines
-//      resolve.h       - Header file for common routines
-//
-// Description:
-//      This file contains common name resolution and name printing
-//      functions.
-//
-// NOTE:
-//   From Network Programming for Microsoft Windows, Second Edition
-//   by Anthony Jones and James Ohlund.  Copyright 2002.
-//   Reproduced by permission of Microsoft Press.  All rights reserved.
-//
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/**
+ * @file resolve.c
+ * @author T. Ostaszewski
+ * @date 04-Jan-2012
+ * @brief Common routines for resolving addresses and hostnames
+ * @details This file contains common name resolution and name printing functions.
+ */
+
 #include "pcc.h"
 #include "resolve.h"
 
+/**
+ * @brief Length of the output buffer.
+ */
 #define OUTPUT_BUFFER_LEN (256)
+
+/**
+ * @brief Buffer for debug output to be send via OutputDebugString.
+ * @details This buffer will be formatted via format string prior sending via OutputDebugString
+ */
 static __declspec(thread) TCHAR outputBuffer[OUTPUT_BUFFER_LEN];
 
+/**
+ * @brief Common routines for resolving addresses and hostnames
+ * @details This routine takes a SOCKADDR structure and its lenght and prints converts it to a string representation. 
+ * @author T. Ostaszewski
+ * @date 04-Jan-2012
+ */
 static void debug_output(LPCTSTR formatString, ...)
 {
     va_list args;
@@ -30,14 +37,12 @@ static void debug_output(LPCTSTR formatString, ...)
         OutputDebugString(outputBuffer);
 }
 
-//
-// Function: PrintAddress
-//
-// Description:
-//    This routine takes a SOCKADDR structure and its lenght and prints
-//    converts it to a string representation. This string is printed
-//    to the console via stdout.
-//
+/**
+ * @brief Common routines for resolving addresses and hostnames
+ * @details This routine takes a SOCKADDR structure and its lenght and prints converts it to a string representation. 
+ * @author T. Ostaszewski
+ * @date 04-Jan-2012
+ */
 int PrintAddress(SOCKADDR const*sa, int salen)
 {
     char    host[NI_MAXHOST],
@@ -45,11 +50,9 @@ int PrintAddress(SOCKADDR const*sa, int salen)
     int     hostlen = NI_MAXHOST,
             servlen = NI_MAXSERV,
             rc;
-
     // Validate argument
     if (sa == NULL)
         return WSAEFAULT;
-
     rc = getnameinfo(
             sa,
             salen,
@@ -83,14 +86,10 @@ int PrintAddress(SOCKADDR const*sa, int salen)
     return NO_ERROR;
 }
 
-//
-// Function: FormatAddress
-//
-// Description:
-//    This is similar to the PrintAddress function except that instead of
-//    printing the string address to the console, it is formatted into
-//    the supplied string buffer.
-//
+/**
+ * @brief Common routines for resolving addresses and hostnames
+ * @details This is similar to the PrintAddress function except that instead of printing the string address to the console, it is formatted into the supplied string buffer.
+ */
 int FormatAddress(SOCKADDR *sa, int salen, char *addrbuf, int addrbuflen)
 {
     char    host[NI_MAXHOST],
@@ -141,15 +140,13 @@ int FormatAddress(SOCKADDR *sa, int salen, char *addrbuf, int addrbuflen)
     return NO_ERROR;
 }
 
-//
-// Function: ResolveAddress
-//
-// Description:
-//    This routine resolves the specified address and returns a list of addrinfo
-//    structure containing SOCKADDR structures representing the resolved addresses.
-//    Note that if 'addr' is non-NULL, then getaddrinfo will resolve it whether
-//    it is a string listeral address or a hostname.
-//
+/**
+ * @brief Common routines for resolving addresses and hostnames
+ * @details This routine resolves the specified address and returns a list of addrinfo
+ * structure containing SOCKADDR structures representing the resolved addresses.
+ * Note that if 'addr' is non-NULL, then getaddrinfo will resolve it whether
+ * it is a string listeral address or a hostname.
+ */
 struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int proto)
 {
     struct addrinfo hints,
@@ -170,25 +167,28 @@ struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int pr
             );
     if (rc != 0)
     {
-        //fprintf(stderr, "Invalid address %s, getaddrinfo failed: %d\n", addr, rc);
         return NULL;
     }
     return res;
 }
 
-//
-// Function: ReverseLookup
-//
-// Description:
-//    This routine takes a SOCKADDR and does a reverse lookup for the name
-//    corresponding to that address.
-//
+struct addrinfo *ResolveAddress_2(struct sockaddr_in const * p_in_addr, int af, int type, int proto)
+{
+    char port[8];
+    StringCchPrintf(port, 8, "%d", ntohs(p_in_addr->sin_port));
+    return ResolveAddress(inet_ntoa(p_in_addr->sin_addr), port, af, type, proto);
+}
+
+/**
+ * @brief Common routines for resolving addresses and hostnames
+ * @details This routine takes a SOCKADDR and does a reverse 
+ * lookup for the name corresponding to that address.
+ */
 int ReverseLookup(SOCKADDR *sa, int salen, char *buf, int buflen)
 {
     char    host[NI_MAXHOST];
     int     hostlen=NI_MAXHOST,
             rc;
-    
     // Validate parameters
     if ((sa == NULL) || (buf == NULL))
         return WSAEFAULT;
@@ -209,6 +209,6 @@ int ReverseLookup(SOCKADDR *sa, int salen, char *buf, int buflen)
     }
 
     //strncpy_s(buf,buflen,host,buflen-1);
-
     return NO_ERROR;
 }
+

@@ -1,10 +1,11 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /**
  * @file mcast-receiver-dlg.c
- * @author
- * @date
- * @brief
- * @details
+ * @author T. Ostaszewski
+ * @date 04-Jan-2012
+ * @brief Receiver's entry point.
+ * @details This file contains the receiver's dialog front end. This is
+ * where the UI meets the internal state management.
  */
 #include "pcc.h"
 #include "mcast_setup.h"
@@ -13,34 +14,39 @@
 #include "dsoundplay.h"
 #include "fifo-circular-buffer.h"
 #include "wave_utils.h"
-#include "var-database.h"
 #include "mcast-receiver-state-machine.h"
 #include "message-loop.h"
+#include "mcast-settings.h"
 
 /**
- *  @brief
+ *  @brief Pointer to the WAV file being send.
  */
-master_riff_chunk_t *   g_pWavChunk;
+static master_riff_chunk_t *   g_pWavChunk;
 
 /**
- * @brief
+ */
+static struct mcast_settings const * g_p_defaultSettings;
+
+/**
+ */
+static struct mcast_receiver * g_receiver;
+
+/**
+ * @brief Global Application instance.
+ * @details Required for various Windows related stuff.
  */
 static HINSTANCE   g_hInst;
 
 /**
- * @brief
- */
-static HWND     g_hMainWnd;
-
-/**
  * @brief Main UI update function.
  * @details Updates the UI widgets state so they reflect the internal state of the program.
+ * Mainly lights up and ghosts out various controls.
  * @param[in] hDlg - a handle to the window to be updated
  */
 static void UpdateUI(HWND hDlg)
 {
     static receiver_state_t prev_state = -1;
-    receiver_state_t new_state = receiver_get_state();
+    receiver_state_t new_state = receiver_get_state(g_receiver);
     if (prev_state != new_state)
     {
         static HWND hSettingsBtn = NULL, 
@@ -84,6 +90,7 @@ static void UpdateUI(HWND hDlg)
                 EnableWindow(hStop, FALSE);
                 EnableWindow(hStartRcv, FALSE);
                 EnableWindow(hStopRcv, FALSE);
+                SetFocus(hJoinMcastBtn);
                 break;
             case RECEIVER_MCASTJOINED:
                 EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
@@ -100,6 +107,7 @@ static void UpdateUI(HWND hDlg)
                 EnableWindow(hStop, FALSE);
                 EnableWindow(hStartRcv, TRUE);
                 EnableWindow(hStopRcv, FALSE);
+                SetFocus(hStartRcv);
                 break;
             case RECEIVER_PLAYING:
                 EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
@@ -116,6 +124,7 @@ static void UpdateUI(HWND hDlg)
                 EnableWindow(hStop, TRUE);
                 EnableWindow(hStartRcv, FALSE);
                 EnableWindow(hStopRcv, FALSE);
+                SetFocus(hStopRcv);
                 break;
             case RECEIVER_MCASTJOINED_PLAYING:
                 EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
@@ -132,6 +141,7 @@ static void UpdateUI(HWND hDlg)
                 EnableWindow(hStop, TRUE);
                 EnableWindow(hStartRcv, TRUE);
                 EnableWindow(hStopRcv, FALSE);
+                SetFocus(hStartRcv);
                 break;
             case RECEIVER_RECEIVING:
                 EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
@@ -148,6 +158,7 @@ static void UpdateUI(HWND hDlg)
                 EnableWindow(hStop, FALSE);
                 EnableWindow(hStartRcv, FALSE);
                 EnableWindow(hStopRcv, TRUE);
+                SetFocus(hPlay);
                 break;
             case RECEIVER_RECEIVING_PLAYING:
                 EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
@@ -164,6 +175,7 @@ static void UpdateUI(HWND hDlg)
                 EnableWindow(hStop, TRUE);
                 EnableWindow(hStartRcv, FALSE);
                 EnableWindow(hStopRcv, TRUE);
+                SetFocus(hStop);
                 break;
             default:
                 break;
@@ -173,7 +185,12 @@ static void UpdateUI(HWND hDlg)
 }
 
 /**
- * @brief
+ * @brief Receiver dialog message processing routine.
+ * @details Processes the dialog messages, mainly the WM_COMMMAND style ones.
+ * @param hDlg
+ * @param uMessage
+ * @param wParam
+ * @param lParam
  */
 static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
@@ -182,25 +199,23 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
         case WM_INITDIALOG:
             {
                 int result;
-                g_hMainWnd = hDlg;
                 result = init_master_riff(&g_pWavChunk, g_hInst, MAKEINTRESOURCE(IDR_0_1));
+                assert(0 == result);
                 if (0 == result)
                 {
                     WAVEFORMATEX * p_wfex = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(WAVEFORMATEX)); 
-                    set_var(GLOBAL_WFEX, p_wfex);
-                    add_ref(GLOBAL_WFEX);
                     copy_waveformatex_2_WAVEFORMATEX(p_wfex, &g_pWavChunk->format_chunk_.format_);
+                    g_p_defaultSettings = get_default_mcast_settings();
+                    g_receiver = receiver_init(p_wfex, g_p_defaultSettings);
+                    assert(g_receiver);
                 }
             } 
             return TRUE;
-        case WM_INITMENUPOPUP:
-            debug_outputln("%s %5.5d", __FILE__, __LINE__);
-            break;
         case WM_COMMAND:
             switch(wParam)
             {
                 case ID_RECEIVER_SETTINGS:
-                    if (RECEIVER_INITIAL == receiver_get_state())
+                    if (RECEIVER_INITIAL == receiver_get_state(g_receiver))
                     {
                     }
                     else
@@ -209,27 +224,26 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                     }
                     break;
                 case ID_RECEIVER_JOINMCAST:
-                    handle_mcastjoin();
+                    handle_mcastjoin(g_receiver);
                     break;
                 case ID_RECEIVER_LEAVEMCAST:
-                    handle_mcastleave();
+                    handle_mcastleave(g_receiver);
                     break;
                 case ID_RECEIVER_PLAY:
-                    handle_play(g_hMainWnd);
+                    handle_play(g_receiver, hDlg);
                     break;
                 case ID_RECEIVER_STOP:
-                    handle_stop();
+                    handle_stop(g_receiver);
                     break;
                 case ID_RECEIVER_STARTRCV:
-                    handle_rcvstart();
+                    handle_rcvstart(g_receiver);
                     break;
                 case ID_RECEIVER_STOPRCV:
-                    handle_rcvstop();
+                    handle_rcvstop(g_receiver);
                     break;
                 case IDOK:
                 case IDCANCEL:
-                    EndDialog(hDlg, wParam);
-                    PostQuitMessage(0);
+                    DestroyWindow(hDlg);
                     break;
             }
             return TRUE;
@@ -241,29 +255,42 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
 }
 
 /**
- * @brief
- * @details
+ * @brief Idle processing routine.
+ * @details This routine will be called each time there is 
+ * no message in the message queue. When it returns a non-zero value,
+ * it will be called again, and so on, unless a message shows up in the message
+ * queue, or it returns 0. 
+ * @param hWnd
+ * @param count
+ * @return When it returns 0, it wont' be called again until a message shows up
+ * in the message queue and its processed. When it returns a non-zero, it may be called again,
+ * unless a message shows up in the message queue.
  */
-static long int on_idle(long int count)
+static long int on_idle(HWND hWnd, long int count)
 {
     switch (count)
     {
         case 0:
-            UpdateUI(g_hMainWnd);
+            UpdateUI(hWnd);
             return 1;
         default:
-            garbage_collect();
             return 0;
     }
     return 0;
 }
 
 /**
- * @brief
- * @details
+ * @brief Recievers entry point.
+ * @details This is the entry point of the receivers application.
+ * @param hInstance
+ * @param hPrevInstance
+ * @param lpCmdLine
+ * @param nCmdShow
+ * @return
  */
 int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+    HWND hMainDlg;
     HRESULT hr;
     WSADATA wsd;
     int	rc;
@@ -275,15 +302,12 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     if (FAILED(hr))
         return FALSE;
     g_hInst = hInstance;
-    rc = init_master_riff(&g_pWavChunk, g_hInst, MAKEINTRESOURCE(IDR_0_1));
-    if (0 != rc)
-        return FALSE;
     //required to use the common controls
     InitCommonControls();
-    g_hMainWnd = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_MAIN_RECEIVER), NULL, ReceiverDlgProc);
-    if (NULL == g_hMainWnd)
+    hMainDlg = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_MAIN_RECEIVER), NULL, ReceiverDlgProc);
+    if (NULL == hMainDlg)
         return (-1);
-    message_loop(g_hMainWnd, &on_idle);
+    message_loop(hMainDlg, &on_idle);
     return (int)0;
 }
 

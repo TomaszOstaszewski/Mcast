@@ -1,3 +1,13 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/**
+ * @file timeofday.c
+ * @author Unknown - result of the internet search.
+ * @date 04-Jan-2012
+ * @brief Windows implementation of POSIX gettimeofday() routine.
+ * @details It is not a big deal - Windows returns time in multiples of 100ns,
+ * and the whole gettimeofday() comes down to calling GetSystemTimeAsFileTime()
+ * and then doing some math.
+ */
 
 #include "pcc.h"
 #include "timeofday.h" //I've ommited this line.
@@ -41,3 +51,4 @@ int gettimeofday(struct timeval *tv, struct timezone *tz)
 
     return 0;
 }
+
