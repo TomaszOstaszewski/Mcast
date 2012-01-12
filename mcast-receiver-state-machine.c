@@ -117,7 +117,6 @@ static int handle_rcvstart_internal(struct mcast_receiver * p_receiver)
 	if (bDupResult)
     {
         ResetEvent(p_receiver->hStopEvent_);
-        /* Pass event copy to the receiver thread */
         p_receiver->hRcvThread_ = CreateThread(NULL, 0, ReceiverThreadProc, p_receiver, 0, NULL);
         assert(NULL != p_receiver->hRcvThread_);
         if (NULL != p_receiver->hRcvThread_);

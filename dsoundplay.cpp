@@ -338,8 +338,11 @@ extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, WAVEFORMATEX const * p_WFE,
 
 extern "C" void dsoundplayer_destroy(DSOUNDPLAY handle) 
 {
-    struct dsound_data * p_retval = (struct dsound_data*)handle;
-    HeapFree(GetProcessHeap(), 0, p_retval);
+    struct dsound_data * p_ds_data = (struct dsound_data*)handle;
+    p_ds_data->p_secondary_sound_buffer_->Release();
+    p_ds_data->p_primary_sound_buffer_->Release();
+    p_ds_data->p_direct_sound_8_->Release();
+    HeapFree(GetProcessHeap(), 0, p_ds_data);
 }
 
 extern "C" void dsoundplayer_play(DSOUNDPLAY handle) 
