@@ -46,6 +46,7 @@ struct mcast_sender {
      * @sa hStopEvent_
      */
     HANDLE hStopEvent_thread_;
+    HANDLE hSenderThread_; /*!< Handle of the sender thread. */
 };
 
 /*!
@@ -166,10 +167,12 @@ static int sender_handle_startsending_internal(struct mcast_sender * p_sender)
         bDupResult = DuplicateHandle(GetCurrentProcess(), p_sender->hStopEvent_, GetCurrentProcess(), &p_sender->hStopEvent_thread_, 0, FALSE, DUPLICATE_SAME_ACCESS);
         if (bDupResult)
         {
-            HANDLE hSenderThread;
-            hSenderThread = CreateThread(NULL, 0, SendThreadProc, p_sender, 0, NULL);
-            CloseHandle(hSenderThread);
+            p_sender->hSenderThread_ = CreateThread(NULL, 0, SendThreadProc, p_sender, 0, NULL);
+            assert(NULL != p_sender->hSenderThread_);
+            if (NULL != p_sender->hSenderThread_)
+
             return 0;
+
         }
         CloseHandle(p_sender->hStopEvent_);
         p_sender->hStopEvent_ = NULL;
@@ -186,7 +189,9 @@ static int sender_handle_stopsending_internal(struct mcast_sender * p_sender)
 {
     SetEvent(p_sender->hStopEvent_);   
     CloseHandle(p_sender->hStopEvent_);
+    CloseHandle(p_sender->hSenderThread_);
     p_sender->hStopEvent_ = NULL;
+    p_sender->hSenderThread_ = NULL;
     return 0;
 }
 

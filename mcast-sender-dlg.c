@@ -108,7 +108,7 @@ static void UpdateUIwithCurrentState(HWND hDlg, sender_state_t state)
  */
 static void UpdateUI(HWND hDlg)
 {
-    static sender_state_t prev_state = -1;
+    static sender_state_t prev_state = SENDER_INITIAL;
     sender_state_t curr_state;
     assert(g_sender);
     curr_state = sender_get_current_state(g_sender);
@@ -140,8 +140,9 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                 assert(0 == result);
                 g_sender = sender_create(&g_settings);
                 assert(g_sender);
+                UpdateUIwithCurrentState(hDlg, sender_get_current_state(g_sender));
             }
-            return TRUE;
+            return FALSE; /* Return FALSE, as we did set focus ourselves in UpdateUIwithCurrentState call, and we don't want to focus on the default control */
        case WM_COMMAND:
             switch(wParam)
             {
