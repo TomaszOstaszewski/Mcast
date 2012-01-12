@@ -12,14 +12,14 @@
 #include "winsock_adapter.h"
 #include "message-loop.h"
 #include "mcast-sender-state-machine.h"
-#include "mcast-sender-settings-dlg.h"
+#include "sender-settings-dlg.h"
 #include "mcast-sender-settings.h"
 
 /**
  * @brief Global Application instance.
  * @details Required for various Windows related stuff.
  */
-static HINSTANCE   g_hInst;
+HINSTANCE   g_hInst;
 
 /**
  * @brief Pointer to the sender object. 
@@ -150,8 +150,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     if (SENDER_INITIAL == curr_state)
                     {
                         /* Open up the settings dialog with the MCAST settings parameters */
-                        struct platform_specific_data platform = { g_hInst, hDlg };
-                        if (IDOK == do_dialog(&platform, &g_settings))
+                        if (IDOK == do_dialog(hDlg, &g_settings))
                         {
                             sender_destroy(g_sender);
                             g_sender = sender_create(&g_settings);

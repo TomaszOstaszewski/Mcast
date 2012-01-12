@@ -12,28 +12,7 @@
 /*!
  * @brief 
  */
-#define DEFAULT_MCASTADDRV4 "234.5.6.7"
-
-/*!
- * @brief 
- */
-#define DEFAULT_MCASTADDRV6 "ff12::1"
-
-/*!
- * @brief 
- *
- */
-#define DEFAULT_MCASTPORT (25000)
-
-/*!
- * @brief 
- */
 #define DEFAULT_CHUNK_SEND_TIMEOUT (85)
-
-/*!
- * @brief
- */
-#define DEFAULT_TTL (8)
 
 /*!
  * @brief 
@@ -47,11 +26,11 @@ int get_default_settings(HINSTANCE hInst, struct sender_settings * p_settings)
 	assert(0 == result);
 	if (0 == result) 
 	{
+		struct mcast_settings const * p_default_mcast_settings;
 		p_settings->send_delay_ = DEFAULT_CHUNK_SEND_TIMEOUT;
-		p_settings->ipv4_mcast_group_addr_ = inet_addr(DEFAULT_MCASTADDRV4);
-		p_settings->mcast_port_ = DEFAULT_MCASTPORT;
-		p_settings->ttl_ = DEFAULT_TTL;
 		p_settings->chunk_size_ = DEFAULT_WAV_CHUNK_SIZE;
+		p_default_mcast_settings = get_default_mcast_settings();
+		memcpy(&p_settings->mcast_settings_, p_default_mcast_settings, sizeof(struct mcast_settings));
 	}
 	return result;
 }

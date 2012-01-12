@@ -126,26 +126,10 @@ static int sender_handle_mcastjoin_internal(struct mcast_sender * p_sender)
     if (NULL != p_sender->conn_)
     {
         int rc;
-        char * psz_addr;
-        char psz_port[8] = { 0 };
-        struct in_addr * p_in_addr;
-        HRESULT hr;
-
-        p_in_addr =(struct in_addr *)&p_sender->settings_->ipv4_mcast_group_addr_;
-        psz_addr = inet_ntoa(*p_in_addr);
-        assert(psz_addr);
-        if (psz_addr)
+        rc = setup_multicast_addr(FALSE, TRUE, NULL, NULL, p_sender->settings_->mcast_settings_.nTTL_, &p_sender->settings_->mcast_settings_.mcast_addr_, p_sender->conn_);
+        if (0 == rc)
         {
-            hr = StringCchPrintf(psz_port, 8, "%5.5u", p_sender->settings_->mcast_port_);
-            if (SUCCEEDED(hr))
-            { 
-                debug_outputln("%s %d : %s:%s", __FILE__, __LINE__, psz_addr, psz_port);
-                rc = setup_multicast_default(psz_addr, psz_port, p_sender->conn_);
-                if (0 == rc)
-                {
-                    return 0;
-                }
-            }   
+            return 0;
         }
         HeapFree(GetProcessHeap(), 0, p_sender->conn_);
         p_sender->conn_ = NULL;
