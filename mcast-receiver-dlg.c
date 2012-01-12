@@ -17,6 +17,8 @@
 #include "mcast-receiver-state-machine.h"
 #include "message-loop.h"
 #include "mcast-settings.h"
+#include "receiver-settings-dlg.h"
+#include "receiver-settings.h"
 
 /**
  *  @brief Pointer to the WAV file being send.
@@ -35,7 +37,7 @@ static struct mcast_receiver * g_receiver;
  * @brief Global Application instance.
  * @details Required for various Windows related stuff.
  */
-static HINSTANCE   g_hInst;
+HINSTANCE   g_hInst;
 
 /**
  * @brief Main UI update function.
@@ -217,6 +219,8 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                 case ID_RECEIVER_SETTINGS:
                     if (RECEIVER_INITIAL == receiver_get_state(g_receiver))
                     {
+                        struct receiver_settings settings = { 0 };
+                        receiver_settings_do_dialog(hDlg, &settings);
                     }
                     else
                     {
