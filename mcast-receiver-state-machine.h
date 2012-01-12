@@ -36,19 +36,27 @@ receiver_state_t receiver_get_state(struct mcast_receiver * p_receiver);
 
 /*!
  * @brief Initializes the state machine.
- * @param[in]
- * @param[in]
- * @return 
+ * @param[in] p_wfex parameters of the WAV file to be played.
+ * @param[in] mcast_settings parameters of the multicast connection.
+ * @return Returns a handle to the object that represents multicast PCM receiver. This handle can be then passed to functions handle_play() and so on.
+ * @sa handle_mcastjoin
+ * @sa handle_mcastleave
+ * @sa handle_play
+ * @sa handle_stop
+ * @sa handle_rcvstart
+ * @sa handle_rcvstop
  */
 struct mcast_receiver * receiver_init(WAVEFORMATEX * p_wfex, struct mcast_settings const * mcast_settings);
 
 /*!
  * @brief Join multicast group handler.
+ * @param[in] p_receiver handle to the receiver object. 
  */
 void handle_mcastjoin(struct mcast_receiver * p_receiver);
 
 /*!
  * @brief Leave multicast group handler.
+ * @param[in] p_receiver handle to the receiver object. 
  */
 void handle_mcastleave(struct mcast_receiver * p_receiver);
 
@@ -59,12 +67,14 @@ void handle_mcastleave(struct mcast_receiver * p_receiver);
  * filled with data being fetched from the network. But one can
  * start playing without any network data being fetched - in that case
  * they will only hear silence.
+ * @param[in] p_receiver handle to the receiver object. 
  */
 void handle_play(struct mcast_receiver * p_receiver, HWND hMainWnd);
 
 /*!
  * @brief Stop playing handler.
  * @details This one is called when the client wants to stop playback.
+ * @param[in] p_receiver handle to the receiver object. 
  */
 void handle_stop(struct mcast_receiver * p_receiver);
 
@@ -72,6 +82,7 @@ void handle_stop(struct mcast_receiver * p_receiver);
  * @brief Receiver start handler.
  * @details This function is called when the client wants
  * to start receiving multicast packets.
+ * @param[in] p_receiver handle to the receiver object. 
  */
 void handle_rcvstart(struct mcast_receiver * p_receiver);
 
@@ -79,6 +90,7 @@ void handle_rcvstart(struct mcast_receiver * p_receiver);
  * @brief Receiver stop handler.
  * @details This function is called when the client wants
  * to stop receiving multicast packets.
+ * @param[in] p_receiver handle to the receiver object. 
  */
 void handle_rcvstop(struct mcast_receiver * p_receiver);
 
