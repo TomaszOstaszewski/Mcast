@@ -146,27 +146,14 @@ int setup_multicast_default(char * p_multicast_addr, char * p_port, struct mcast
 
 int setup_multicast_indirect(struct mcast_settings const * p_settings, struct mcast_connection * p_conn)
 {
-#if 0
-    return setup_multicast(
+    return setup_multicast_addr(
             p_settings->bConnect_,
             p_settings->bReuseAddr_,
             p_settings->bindAddr_,
             p_settings->interface_,
             p_settings->nTTL_,
-            p_settings->mcast_addr_,
-            p_settings->mcast_port_,
+            &p_settings->mcast_addr_,
             p_conn);
-#else
-    return setup_multicast(
-            p_settings->bConnect_,
-            p_settings->bReuseAddr_,
-            p_settings->bindAddr_,
-            p_settings->interface_,
-            p_settings->nTTL_,
-            "234.5.6.7",
-            "25000",
-            p_conn);
-#endif
 }
 
 int close_multicast(struct mcast_connection * p_mcast_conn)

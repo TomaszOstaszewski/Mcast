@@ -1,6 +1,7 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @brief
- * @file mcast-sender-settings-dlg.h
+ * @file sender-settings-dlg.h
  * @author T.Ostaszewski
  * @date Jan-2012
  */
@@ -13,12 +14,7 @@ extern "C" {
 #include <windows.h>
 #include "mcast-sender-settings.h"
 
-struct platform_specific_data {
-	HINSTANCE hInst_;
-	HWND hParent_;
-};
-
-int do_dialog(struct platform_specific_data const * p_platform, struct sender_settings * p_settings);
+int do_dialog(HWND hWndParent, struct sender_settings * p_settings);
 
 #if defined __cplusplus
 }

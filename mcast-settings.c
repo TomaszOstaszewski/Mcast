@@ -22,6 +22,11 @@
  */
 #define DEFAULT_MCASTPORT (25000)
 
+/*!
+ * @brief
+ */
+#define DEFAULT_TTL (8)
+
 static struct mcast_settings g_default_settings;
 
 struct mcast_settings const * get_default_mcast_settings(void)
