@@ -30,10 +30,13 @@
 #if !defined MCAST_SETUP_H_870702C0_B65B_4828_949C_490704388A28
 #define MCAST_SETUP_H_870702C0_B65B_4828_949C_490704388A28
 
-#include "pcc.h"
+#include <Windows.h>
+#include <Winsock2.h>
+#include <ws2tcpip.h>
 #include "mcast-settings.h"
 
 struct addrinfo;
+struct mcast_settings;
 
 /*!
  * @brief Describes the MCAST connection.

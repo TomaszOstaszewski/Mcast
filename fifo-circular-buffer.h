@@ -35,6 +35,8 @@
 extern "C" {
 #endif
 
+#include "std-int.h"
+
 /**
  * @brief
  */

@@ -27,12 +27,6 @@
  * @details 
  */
 #include "pcc.h"
-#include <limits.h>
-#include <string.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <assert.h>
 #include "fifo-circular-buffer.h"
 
 #define MAX_ITEMS (0x10000)
