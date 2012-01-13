@@ -39,8 +39,8 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 	return FALSE;
 }
 
-int get_settings_from_dialog(HINSTANCE hInst, HWND hParent, struct mcast_settings * p_settings)
+int get_settings_from_dialog(HWND hParent, struct mcast_settings * p_settings)
 {
-	return DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc, (LPARAM)p_settings);
+	return DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc, (LPARAM)p_settings);
 }
 
