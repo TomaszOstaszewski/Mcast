@@ -32,7 +32,8 @@
 extern "C" {
 #endif
 #include <windows.h>
-#include "mcast-sender-settings.h"
+
+struct sender_settings;
 
 int do_dialog(HWND hWndParent, struct sender_settings * p_settings);
 

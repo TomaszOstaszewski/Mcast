@@ -38,7 +38,7 @@
 #include "debug_helpers.h"
 #include "wave_utils.h"
 #include "mcast-sender-state-machine.h"
-#include "mcast-sender-settings.h"
+#include "sender-settings.h"
 
 /**
  * @brief Description of the multicast sender state machine.

@@ -26,7 +26,7 @@
  */
 #include "pcc.h"
 #include "resource.h"
-#include "mcast-sender-settings.h"
+#include "sender-settings.h"
 #include "wave_utils.h"
 
 /*!
@@ -38,6 +38,14 @@
  * @brief 
  */
 #define DEFAULT_WAV_CHUNK_SIZE    (1024+256+128)
+
+#define MIN_PACKET_DELAY (1)
+
+#define MAX_PACKET_DELAY (1000)
+
+#define MIN_PACKET_LENGTH (20+8)
+
+#define MAX_PACKET_LENGTH (1500-20-8)
 
 int get_default_settings(HINSTANCE hInst, struct sender_settings * p_settings)
 {
@@ -53,5 +61,14 @@ int get_default_settings(HINSTANCE hInst, struct sender_settings * p_settings)
 		memcpy(&p_settings->mcast_settings_, p_default_mcast_settings, sizeof(struct mcast_settings));
 	}
 	return result;
+}
+
+int sender_settings_validate(struct sender_settings const * p_settings)
+{
+	if (p_settings->send_delay_ < MIN_PACKET_DELAY || p_settings->send_delay_ > MAX_PACKET_DELAY)
+		return 0;
+	if (p_settings->chunk_size_ < MIN_PACKET_LENGTH || p_settings->chunk_size_ > MAX_PACKET_LENGTH)
+		return 0;
+	return 1;
 }
 
