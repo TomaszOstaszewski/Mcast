@@ -24,9 +24,17 @@ static HWND g_packet_length_edit;
 static HWND g_packet_delay_spin;
 static HWND g_packet_length_spin;
 
-static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
+static void data_to_controls(struct sender_settings const * p_settings)
 {
 	char text_buf[8];
+	StringCchPrintf(text_buf, 8, "%d", g_settings->send_delay_);
+	SetWindowText(g_packet_delay_edit, text_buf);
+	StringCchPrintf(text_buf, 8, "%d", g_settings->chunk_size_);
+	SetWindowText(g_packet_length_edit, text_buf);
+}
+
+static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
+{
 	g_bounds = get_settings_bounds();
 	g_settings = (struct sender_settings*)lParam;
 	g_packet_delay_edit = GetDlgItem(hwnd, IDC_PACKET_DELAY_EDIT);
@@ -41,10 +49,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 	SendMessage(g_packet_length_spin, UDM_SETBUDDY, (WPARAM)g_packet_length_edit, (LPARAM)0);
 	SendMessage(g_packet_delay_spin, UDM_SETPOS, (WPARAM)0, (LPARAM)0);
 	SendMessage(g_packet_length_spin, UDM_SETPOS, (WPARAM)0, (LPARAM)0);
-	StringCchPrintf(text_buf, 8, "%d", g_settings->send_delay_);
-	SetWindowText(g_packet_delay_edit, text_buf);
-	StringCchPrintf(text_buf, 8, "%d", g_settings->chunk_size_);
-	SetWindowText(g_packet_length_edit, text_buf);
+	data_to_controls(g_settings);
 	return FALSE;
 } 
 
@@ -67,7 +72,6 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 		case WM_NOTIFY:
 			p_notify_header = (NMHDR*)lParam;
 			{
-				char text_buf[8];
 				NMUPDOWN * p_up_down = (NMUPDOWN *)p_notify_header;
 				switch (p_notify_header->code)
 				{
@@ -75,7 +79,6 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 						if (g_packet_delay_spin == p_notify_header->hwndFrom)
 						{
 							uint16_t new_send_delay;
-							debug_outputln("%s %d : %d %d", __FILE__, __LINE__, p_up_down->iPos, p_up_down->iDelta);
 							new_send_delay = g_settings->send_delay_;
 							if ((int)new_send_delay > p_up_down->iDelta)
 							{
@@ -83,8 +86,6 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 								if (new_send_delay <= g_bounds->max_packet_delay_ && new_send_delay >= g_bounds->min_packet_delay_)
 								{
 									g_settings->send_delay_ = new_send_delay;	
-									StringCchPrintf(text_buf, 8, "%d", g_settings->send_delay_);
-									SetWindowText(g_packet_delay_edit, text_buf);
 								}
 							}
 						}
@@ -92,21 +93,18 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 						{
 							uint16_t new_packet_length;
 							new_packet_length = g_settings->chunk_size_;
-							debug_outputln("%s %d : %d %d %hu", __FILE__, __LINE__, p_up_down->iPos, p_up_down->iDelta, new_packet_length);
 							if ((int)new_packet_length > p_up_down->iDelta)
 							{
 								new_packet_length -= p_up_down->iDelta;
-								debug_outputln("%s %d : %hu", __FILE__, __LINE__, new_packet_length);
 								if (new_packet_length <= g_bounds->max_chunk_size_ && new_packet_length >= g_bounds->min_chunk_size_)
 								{
 									g_settings->chunk_size_ = new_packet_length;	
-									StringCchPrintf(text_buf, 8, "%d", g_settings->chunk_size_);
-									SetWindowText(g_packet_length_edit, text_buf);
 								}
 							}
 						}
 						else
 							debug_outputln("%s %d", __FILE__, __LINE__);
+						data_to_controls(g_settings);
 						break;
 				} 	
 			}
@@ -119,10 +117,6 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 					break;
 				case IDCANCEL:
 				case IDOK:
-					{
-						//int32_t pos = SendMessage(g_send_delay_slider, TBM_GETPOS, 0, 0);
-						//debug_outputln("%s %d : %d\n", __FILE__, __LINE__, pos);
-					}
 					EndDialog(hDlg, wParam);
 					break;
 			}
