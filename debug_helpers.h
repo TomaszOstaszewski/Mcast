@@ -33,7 +33,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif 
-#include <windows.h>
+
+#include <Windows.h>
 
 /*!
  * @brief Outputs a formated text into the debug window 
@@ -44,6 +45,16 @@ extern "C" {
  * @return
  */
 HRESULT debug_output(LPCTSTR formatString, ...);
+
+/*!
+ * @brief Outputs a formated text into the debug window, appends a newline.
+ * @details The debug window is the one to which we write using OutputDebugString. 
+ * Usually, it is attached to a debugger, but can also be seen using DebugView application
+ * from Sysinternal.
+ * @param[in] formatString
+ * @return
+ */
+HRESULT debug_outputln(LPCTSTR formatString, ...);
 
 /*!
  * @brief Outputs a formated text into the debug window, appends newline at the end.

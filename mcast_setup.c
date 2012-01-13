@@ -37,7 +37,6 @@
  */
 
 #include "pcc.h"
-#include "winsock_adapter.h"
 #include "mcast_setup.h"
 #include "mcast_utils.h"
 #include "resolve.h"
@@ -59,7 +58,6 @@ int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * inte
 	}
     {
         struct sockaddr_in * p_in_addr = (struct sockaddr_in *)p_mcast_conn->multiAddr_->ai_addr;
-        ;
         debug_outputln("%s %5.5d : %4.4hu %4.4hu %8.8x %s", __FILE__, __LINE__, p_in_addr->sin_port, ntohs(p_in_addr->sin_port), p_in_addr->sin_addr, inet_ntoa(p_in_addr->sin_addr));
     }
 	// Resolve the binding address

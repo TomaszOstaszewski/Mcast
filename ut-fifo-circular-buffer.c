@@ -35,6 +35,7 @@
 #include <process.h>
 #include <assert.h>
 #include <time.h>
+#include "timeofday.h"
 #include "fifo-circular-buffer.h"
 
 static uint8_t  g_template_buffer[256];

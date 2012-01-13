@@ -76,7 +76,6 @@ int	WSACleanup(void);
 #	include "std-int.h"
 #	include <Winsock2.h>
 #	include <ws2tcpip.h>
-#	include <wspiapi.h>
 #	include "timeofday.h"
 #	if !defined timeradd
 #		define timeradd(left,right,sum) do { (sum)->tv_sec = (left)->tv_sec + (right)->tv_sec; (sum)->tv_usec = (left)->tv_usec + (right)->tv_usec; if ((sum)->tv_usec >= 1000000) { ++(sum)->tv_sec; (sum)->tv_usec -= 1000000; } } while (0)

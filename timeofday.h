@@ -40,6 +40,8 @@ struct timezone
   int  tz_minuteswest; /*!< minutes W of Greenwich */
   int  tz_dsttime;     /*!< type of dst correction */
 };
+
+struct timeval;
  
 /*! 
  * @brief Windows counterpart for POSIX gettimeofday() 
