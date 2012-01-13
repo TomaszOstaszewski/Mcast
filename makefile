@@ -35,16 +35,13 @@ $(OUTDIR_OBJ)\resolve.obj: resolve.c resolve.h $(OUTDIR_PCC)\pcc.pch
 $(OUTDIR_OBJ)\timeofday.obj: timeofday.c timeofday.h $(OUTDIR_PCC)\pcc.pch
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
-$(OUTDIR_OBJ)\winsock_adapter.obj: winsock_adapter.c timeofday.h winsock_adapter.h $(OUTDIR_PCC)\pcc.pch
-    $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
-
 $(OUTDIR_OBJ)\mcast-sender-state-machine.obj: mcast-sender-state-machine.c mcast-sender-state-machine.h sender-settings.h mcast_setup.h $(OUTDIR_PCC)\pcc.pch
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\mcast-receiver-state-machine.obj: mcast-receiver-state-machine.c mcast-receiver-state-machine.h mcast_setup.h $(OUTDIR_PCC)\pcc.pch
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
-$(OUTDIR_OBJ)\mcast_setup.obj: mcast_setup.c winsock_adapter.h mcast_setup.h mcast_utils.h winsock_adapter.h resolve.h $(OUTDIR_OBJ)
+$(OUTDIR_OBJ)\mcast_setup.obj: mcast_setup.c mcast_setup.h mcast_utils.h resolve.h $(OUTDIR_OBJ)
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\debug_helpers.obj: debug_helpers.c pcc.h debug_helpers.h  $(OUTDIR_OBJ)
@@ -104,7 +101,7 @@ $(OUTDIR)\ut-input-buffer.exe: $(OUTDIR_OBJ)\input-buffer.obj $(OUTDIR_OBJ)\ut-i
 	@ECHO $@
 	$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$@.map /PDB:$(OUTDIR_OBJ)\ut-fifo-circular-buffer.pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
 
-$(OUTDIR)\receiver.exe: $(OUTDIR_OBJ)\mcastui.res $(OUTDIR_OBJ)\mcast-receiver-dlg.obj $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\input-buffer.obj $(OUTDIR_OBJ)\fifo-circular-buffer.obj $(OUTDIR_OBJ)\dsoundplay.obj $(OUTDIR_OBJ)\mcast_setup.obj $(OUTDIR_OBJ)\winsock_adapter.obj $(OUTDIR_OBJ)\wave_utils.obj $(OUTDIR_OBJ)\mcast_utils.obj $(OUTDIR_OBJ)\timeofday.obj $(OUTDIR_OBJ)\resolve.obj $(OUTDIR_OBJ)\message-loop.obj  $(OUTDIR_OBJ)\mcast-receiver-state-machine.obj $(OUTDIR_OBJ)\receiver-settings.obj $(OUTDIR_OBJ)\receiver-settings-dlg.obj $(OUTDIR_OBJ)\mcast-settings.obj $(OUTDIR_OBJ)\mcast-settings-dlg.obj
+$(OUTDIR)\receiver.exe: $(OUTDIR_OBJ)\mcastui.res $(OUTDIR_OBJ)\mcast-receiver-dlg.obj $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\input-buffer.obj $(OUTDIR_OBJ)\fifo-circular-buffer.obj $(OUTDIR_OBJ)\dsoundplay.obj $(OUTDIR_OBJ)\mcast_setup.obj $(OUTDIR_OBJ)\wave_utils.obj $(OUTDIR_OBJ)\mcast_utils.obj $(OUTDIR_OBJ)\timeofday.obj $(OUTDIR_OBJ)\resolve.obj $(OUTDIR_OBJ)\message-loop.obj  $(OUTDIR_OBJ)\mcast-receiver-state-machine.obj $(OUTDIR_OBJ)\receiver-settings.obj $(OUTDIR_OBJ)\receiver-settings-dlg.obj $(OUTDIR_OBJ)\mcast-settings.obj $(OUTDIR_OBJ)\mcast-settings-dlg.obj
 	@ECHO $@
 	$(link) $(ldebug) $(guiflags) /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
 

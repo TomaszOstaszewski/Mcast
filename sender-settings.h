@@ -1,6 +1,6 @@
 /*!
  * @brief
- * @file mcast-sender-settings.h
+ * @file sender-settings.h
  * @author T.Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
