@@ -30,7 +30,7 @@
 #if !defined MCAST_UTILS_H_8DE850FE_74BA_4195_A769_0D9C94034663
 #define MCAST_UTILS_H_8DE850FE_74BA_4195_A769_0D9C94034663
 
-#include "winsock_adapter.h"
+#include <Winsock2.h>
 
 //
 // Function: JoinMulticastGroup

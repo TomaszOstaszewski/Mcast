@@ -1,6 +1,6 @@
 /*!
  * @brief
- * @file mcast-sender-settings.c
+ * @file sender-settings.c
  * @author T.Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
@@ -30,21 +30,37 @@
 #include "wave_utils.h"
 
 /*!
- * @brief 
+ * @brief Default timespan between moments the subsequent audio packets are being send.
  */
 #define DEFAULT_CHUNK_SEND_TIMEOUT (85)
 
 /*!
- * @brief 
+ * @brief Default number of bytes in the audio packet.
  */
 #define DEFAULT_WAV_CHUNK_SIZE    (1024+256+128)
 
+/*!
+ * @brief Lower boundary on time it takes to send next audio packet after the previous one has been sent.
+ * @details This value is arbitrary.
+ */
 #define MIN_PACKET_DELAY (1)
 
+/*!
+ * @brief Upper boundary on time it takes to send next audio packet after the previous one has been sent.
+ * @details This value is arbitrary.
+ */
 #define MAX_PACKET_DELAY (1000)
 
-#define MIN_PACKET_LENGTH (20+8)
+/*!
+ * @brief Defines the minimum payload length. 
+ * @details The value is calculated by taking the minimum Ehternet payload length (46 bytes) and subtracting lenghts of both IP header (20 bytes) and UDP header (8 bytes).
+ */
+#define MIN_PACKET_LENGTH (46-20+8)
 
+/*!
+ * @brief Defines the maximum payload length. 
+ * @details The value is calculated by taking the maximum Ehternet payload length (1500 bytes) and subtracting lenghts of both IP header (20 bytes) and UDP header (8 bytes).
+ */
 #define MAX_PACKET_LENGTH (1500-20-8)
 
 int get_default_settings(HINSTANCE hInst, struct sender_settings * p_settings)

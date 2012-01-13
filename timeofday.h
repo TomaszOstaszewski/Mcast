@@ -23,22 +23,20 @@
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
  * @date 04-Jan-2012
- * @brief Windows wrappers for POSIX time routines.
- * @details It looks like the mighty Windows lacks the gettimeofday() function.
- * A little bit of internet search fills that gap. The result is that very file with
- * forward declarations. See the actual implementation.
+ * @brief Windows wrappers for POSIX time routines header.
  * @sa timeofday.c
  */
 
 #if !defined TIME_OF_DAY_H
 #define TIME_OF_DAY_H
+
 /*! 
  * @brief Windows counterpart of POSIX timezone structure.
  */
 struct timezone 
 {
-  int  tz_minuteswest; /*!< minutes W of Greenwich */
-  int  tz_dsttime;     /*!< type of dst correction */
+    int  tz_minuteswest; /*!< minutes W of Greenwich */
+    int  tz_dsttime;     /*!< type of dst correction */
 };
 
 struct timeval;

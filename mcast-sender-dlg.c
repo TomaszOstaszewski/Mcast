@@ -29,7 +29,6 @@
 #include "pcc.h"
 #include "resource.h"
 #include "debug_helpers.h"
-#include "winsock_adapter.h"
 #include "message-loop.h"
 #include "mcast-sender-state-machine.h"
 #include "sender-settings-dlg.h"

@@ -31,7 +31,7 @@
 extern "C" {
 #endif
 
-#include "winsock_adapter.h"
+#include <Winsock2.h>
 
 /*!
  * @brief Configuration of the multicast connection.
