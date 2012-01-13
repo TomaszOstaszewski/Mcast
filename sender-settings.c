@@ -25,7 +25,7 @@
 
 #define MIN_PACKET_LENGTH (1)
 
-#define MAX_PACKET_LENGTH (1000)
+#define MAX_PACKET_LENGTH (1500)
 
 static struct sender_settings_bounds g_settings_bounds = { 
 	MIN_PACKET_LENGTH,
