@@ -19,6 +19,21 @@
  */
 #define DEFAULT_WAV_CHUNK_SIZE    (1024+256+128)
 
+#define MIN_PACKET_DELAY (1)
+
+#define MAX_PACKET_DELAY (1000)
+
+#define MIN_PACKET_LENGTH (1)
+
+#define MAX_PACKET_LENGTH (1000)
+
+static struct sender_settings_bounds g_settings_bounds = { 
+	MIN_PACKET_LENGTH,
+	MAX_PACKET_LENGTH,
+	MIN_PACKET_DELAY,
+	MAX_PACKET_DELAY,
+};
+
 int get_default_settings(HINSTANCE hInst, struct sender_settings * p_settings)
 {
 	int result;
@@ -33,5 +48,10 @@ int get_default_settings(HINSTANCE hInst, struct sender_settings * p_settings)
 		memcpy(&p_settings->mcast_settings_, p_default_mcast_settings, sizeof(struct mcast_settings));
 	}
 	return result;
+}
+
+struct sender_settings_bounds * get_settings_bounds(void)
+{
+	return &g_settings_bounds;
 }
 

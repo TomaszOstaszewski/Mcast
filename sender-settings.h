@@ -20,16 +20,31 @@ struct master_riff_chunk;
  * @brief
  */
 struct sender_settings {
+	uint16_t chunk_size_;
+	uint16_t send_delay_;
 	struct master_riff_chunk * chunk_;
-	uint16_t 	chunk_size_;
-	unsigned int send_delay_;
 	struct mcast_settings mcast_settings_;
 };
 
 /*!
  * @brief
  */
+struct sender_settings_bounds {
+	uint16_t 	min_chunk_size_;
+	uint16_t 	max_chunk_size_;
+	uint16_t 	min_packet_delay_;
+	uint16_t 	max_packet_delay_;
+};
+
+/*!
+ * @brief
+ */
 int get_default_settings(HINSTANCE hInst, struct sender_settings * p_settings);
+
+/*!
+ * @brief
+ */
+struct sender_settings_bounds * get_settings_bounds(void);
 
 #if defined __cplusplus
 }
