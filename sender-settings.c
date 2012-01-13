@@ -6,7 +6,7 @@
  */
 #include "pcc.h"
 #include "resource.h"
-#include "mcast-sender-settings.h"
+#include "sender-settings.h"
 #include "wave_utils.h"
 
 /*!

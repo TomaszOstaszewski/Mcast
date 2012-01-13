@@ -13,7 +13,7 @@
 #include "message-loop.h"
 #include "mcast-sender-state-machine.h"
 #include "sender-settings-dlg.h"
-#include "mcast-sender-settings.h"
+#include "sender-settings.h"
 
 /**
  * @brief Global Application instance.

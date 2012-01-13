@@ -15,9 +15,11 @@
 #define IDD_RECEIVER_SETTINGS                   125
 #define IDC_IPADDRESS1                          1000
 #define IDC_RECEIVER_BUFFER                     1001
-#define IDC_SLIDER1                             1001
 #define IDC_EDIT1                               1002
 #define IDC_MCAST_SETTINGS                      1002
+#define IDC_WAVCOMBO                            1003
+#define IDC_PACKET_DELAY_EDIT                   1004
+#define IDC_PACKET_DELAY_SPIN                   1006
 #define ID_RECEIVER_SETTINGS                    1007
 #define IDS_APPTITLE_SENDER                     40000
 #define ID_RECEIVER_STARTRCV                    40000
@@ -34,3 +36,5 @@
 #define ID_RECEIVER_LEAVEMCAST                  40012
 #define ID_RECEIVER_PLAY                        40015
 #define ID_RECEIVER_STOP                        40016
+#define IDC_PACKET_LENGTH_EDIT                  40018
+#define IDC_PACKET_LENGTH_SPIN                  40019
