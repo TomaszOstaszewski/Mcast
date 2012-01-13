@@ -21,8 +21,10 @@ struct master_riff_chunk;
  */
 struct receiver_settings {
 	struct master_riff_chunk * chunk_;
-	uint16_t 	chunk_size_;
-	unsigned int send_delay_;
+	uint16_t	play_buffer_size_;
+	uint16_t	poll_sleep_time_;
+	uint16_t 	timer_delay_;
+	uint16_t	pad_;
 	struct mcast_settings mcast_settings_;
 };
 
@@ -30,6 +32,11 @@ struct receiver_settings {
  * @brief
  */
 int receiver_get_default_settings(HINSTANCE hInst, struct receiver_settings * p_settings);
+
+/*!
+ * @brief
+ */
+int receiver_validate_settings(struct receiver_settings const * p_settings);
 
 #if defined __cplusplus
 }

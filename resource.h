@@ -20,7 +20,10 @@
 #define IDC_WAVCOMBO                            1003
 #define IDC_PACKET_DELAY_EDIT                   1004
 #define IDC_PACKET_DELAY_SPIN                   1006
+#define IDC_POLL_SLEEP_TIME_EDIT                1006
+#define IDC_PLAY_BUFFER_SIZE_EDIT               1007
 #define ID_RECEIVER_SETTINGS                    1007
+#define IDC_PLAY_BUFFER_SIZE_SPIN               1008
 #define IDS_APPTITLE_SENDER                     40000
 #define ID_RECEIVER_STARTRCV                    40000
 #define ID_SENDER_LEAVEMCAST                    40000
@@ -38,3 +41,5 @@
 #define ID_RECEIVER_STOP                        40016
 #define IDC_PACKET_LENGTH_EDIT                  40018
 #define IDC_PACKET_LENGTH_SPIN                  40019
+#define IDC_POLL_SLEEP_TIME_SPIN                40020
+#define IDC_PACKET_LENGTH_MS_EDIT               40022

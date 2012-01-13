@@ -30,8 +30,14 @@ static master_riff_chunk_t *   g_pWavChunk;
 static struct mcast_settings const * g_p_defaultSettings;
 
 /**
+ * 
  */
 static struct mcast_receiver * g_receiver;
+
+/**
+ * 
+ */
+static struct receiver_settings g_settings;
 
 /**
  * @brief Global Application instance.
@@ -209,6 +215,7 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                     copy_waveformatex_2_WAVEFORMATEX(p_wfex, &g_pWavChunk->format_chunk_.format_);
                     g_p_defaultSettings = get_default_mcast_settings();
                     g_receiver = receiver_init(p_wfex, g_p_defaultSettings);
+                    receiver_get_default_settings(g_hInst, &g_settings);
                     assert(g_receiver);
                 }
             } 
@@ -219,8 +226,7 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                 case ID_RECEIVER_SETTINGS:
                     if (RECEIVER_INITIAL == receiver_get_state(g_receiver))
                     {
-                        struct receiver_settings settings = { 0 };
-                        receiver_settings_do_dialog(hDlg, &settings);
+                        receiver_settings_do_dialog(hDlg, &g_settings);
                     }
                     else
                     {

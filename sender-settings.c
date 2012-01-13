@@ -23,16 +23,9 @@
 
 #define MAX_PACKET_DELAY (1000)
 
-#define MIN_PACKET_LENGTH (1)
+#define MIN_PACKET_LENGTH (20+8)
 
-#define MAX_PACKET_LENGTH (1500)
-
-static struct sender_settings_bounds g_settings_bounds = { 
-	MIN_PACKET_LENGTH,
-	MAX_PACKET_LENGTH,
-	MIN_PACKET_DELAY,
-	MAX_PACKET_DELAY,
-};
+#define MAX_PACKET_LENGTH (1500-20-8)
 
 int get_default_settings(HINSTANCE hInst, struct sender_settings * p_settings)
 {
@@ -50,8 +43,12 @@ int get_default_settings(HINSTANCE hInst, struct sender_settings * p_settings)
 	return result;
 }
 
-struct sender_settings_bounds * get_settings_bounds(void)
+int sender_settings_validate(struct sender_settings const * p_settings)
 {
-	return &g_settings_bounds;
+	if (p_settings->send_delay_ < MIN_PACKET_DELAY || p_settings->send_delay_ > MAX_PACKET_DELAY)
+		return 0;
+	if (p_settings->chunk_size_ < MIN_PACKET_LENGTH || p_settings->chunk_size_ > MAX_PACKET_LENGTH)
+		return 0;
+	return 1;
 }
 
