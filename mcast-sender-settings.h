@@ -32,6 +32,7 @@ extern "C" {
 #endif
 #include <windows.h>
 #include "std-int.h"
+#include "mcast-settings.h"
 
 struct master_riff_chunk;
 
@@ -42,9 +43,7 @@ struct sender_settings {
 	struct master_riff_chunk * chunk_;
 	uint16_t 	chunk_size_;
 	unsigned int send_delay_;
-	unsigned long	ipv4_mcast_group_addr_;	
-	uint16_t	mcast_port_;
-	uint16_t	ttl_;
+	struct mcast_settings mcast_settings_;
 };
 
 /*!

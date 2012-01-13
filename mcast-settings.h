@@ -31,6 +31,8 @@
 extern "C" {
 #endif
 
+#include "winsock_adapter.h"
+
 /*!
  * @brief Configuration of the multicast connection.
  */
@@ -40,9 +42,10 @@ struct mcast_settings {
     char * bindAddr_; /*!< Name of the interface to bind to */
     char * interface_; /*!< Name of the interface to bind to */
 	int nTTL_; /*!< The 'Time To Live' parameter to set on the socket. */
-	char * mcast_addr_; /*!< The address of the multicast group */
-	char * mcast_port_; /*!< The port number on which communication will be performed */
+	struct sockaddr_in mcast_addr_; /*!< Internet address and port of the multicast group */
 };
+
+struct mcast_settings const * get_default_mcast_settings(void);
 
 #if defined __cplusplus
 }
