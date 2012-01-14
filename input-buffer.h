@@ -1,3 +1,4 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @file input-buffer.h
  * @brief Header file for safe buffer copy routines.

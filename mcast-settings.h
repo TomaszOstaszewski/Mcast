@@ -1,3 +1,4 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @brief Describes the multicast settings.
  * @file mcast-settings.h

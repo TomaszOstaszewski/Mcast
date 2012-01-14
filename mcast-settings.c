@@ -1,3 +1,4 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @file mcast-settings.c
  * @brief Functions for multicast group membership settings manipulation.
