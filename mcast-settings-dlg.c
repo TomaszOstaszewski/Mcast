@@ -106,18 +106,29 @@ static void data_to_controls(struct mcast_settings const * p_settings)
 static void controls_to_data(struct mcast_settings * p_settings)
 {
     int result;
-    uint16_t port_host_order;
+    unsigned int port_host_order;
     DWORD address;
     memset(port_buffer, 0, sizeof(port_buffer));
     *((WORD *)port_buffer) = TEXT_LIMIT;
     result = SendMessage(g_ipport_edit_ctrl, EM_GETLINE, 0, (LPARAM)port_buffer);
-    result = sscanf(port_buffer, "%hu", &port_host_order);
+    result = sscanf(port_buffer, "%u", &port_host_order);
     if (result) 
     {
-        p_settings->mcast_addr_.sin_port = htons(port_host_order);
+        /* The 5 digit figures in decimal don't fit into 2 bytes of hex.
+         * Therefore we may need to make some exceptions for values above 65535 - we enter the 65535 insted.
+         */
+        if (port_host_order > USHRT_MAX)
+        {
+            p_settings->mcast_addr_.sin_port = htons(USHRT_MAX);
+            data_to_controls(p_settings);
+        }
+        else
+        {
+            p_settings->mcast_addr_.sin_port = htons((unsigned short)port_host_order);
+            SendMessage(g_ipaddr_ctrl, IPM_GETADDRESS, (WPARAM)0, (LPARAM)&address);
+            p_settings->mcast_addr_.sin_addr.s_addr = htonl(address);
+        }
     }
-    SendMessage(g_ipaddr_ctrl, IPM_GETADDRESS, (WPARAM)0, (LPARAM)&address);
-    p_settings->mcast_addr_.sin_addr.s_addr = htonl(address);
 }
 
 /*!
