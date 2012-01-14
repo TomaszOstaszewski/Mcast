@@ -243,7 +243,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     else
     {
         // Add a MessageBox here //
-        EndDialog(IDCANCEL);
+        EndDialog(hwnd, IDCANCEL);
     }
     return FALSE; /* We return FALSE, as we do call SetFocus() ourselves */
 }

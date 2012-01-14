@@ -26,6 +26,7 @@
  * @endcode
  */
 #include "pcc.h"
+#include "mcast-settings.h"
 #include "mcast-settings-dlg.h"
 #include "resource.h"
 
@@ -56,6 +57,7 @@ static void data_to_controls(struct mcast_settings const * p_settings)
 {
 	char buffer[8];
 	StringCchPrintf(buffer, 8, "%hu", ntohs(p_settings->mcast_addr_.sin_port));
+    SetWindowText(g_ipport_edit_ctrl, buffer);
 }
 
 /*!
@@ -71,12 +73,13 @@ static void data_to_controls(struct mcast_settings const * p_settings)
  */
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
-		g_ipaddr_ctrl = GetDlgItem(hwnd, IDC_IPADDRESS1);
-		assert(g_ipaddr_ctrl);
-		g_ipport_edit_ctrl = GetDlgItem(hwnd, IDC_EDIT1);
-		assert(g_ipport_edit_ctrl);
-		data_to_controls(&g_settings);
-		return TRUE;
+    g_ipaddr_ctrl = GetDlgItem(hwnd, IDC_IPADDRESS1);
+    assert(g_ipaddr_ctrl);
+    g_ipport_edit_ctrl = GetDlgItem(hwnd, IDC_EDIT1);
+    assert(g_ipport_edit_ctrl);
+
+    data_to_controls(&g_settings);
+    return TRUE;
 } 
 
 /**
@@ -93,7 +96,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 		switch (uMessage)
 		{
 				case WM_INITDIALOG:
-						return HANDLE_WM_INITDIALOG(HDLG, wParam, lParam, Handle_wm_initdialog);
+						return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
 				case WM_COMMAND:
 						switch(wParam)
 						{
