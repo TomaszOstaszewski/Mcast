@@ -7,11 +7,33 @@
  * reliability and readibility. Instead of tons of if...else on the various
  * variables, there's just one check for state and then, if the test yields ok,
  * an action is perfomed.
- * @author T. Ostaszewski 
+ * @author T. Ostaszewski
+ * @par License
+ * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+ * 	1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *	2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
+ * 	and/or other materials provided with the distribution.
+  * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+ * IN NO EVENT SHALL Tomasz Ostaszewski OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE.
+  * The views and conclusions contained in the software and documentation are those of the 
+ * authors and should not be interpreted as representing official policies, 
+ * either expressed or implied, of Tomasz Ostaszewski.
+ * @endcode 
  * @date 04-Jan-2012
  */ 
 #include "pcc.h"
 #include "mcast-receiver-state-machine.h"
+#include "receiver-settings.h"
+#include "mcast-settings.h"
 #include "mcast_setup.h"
 #include "debug_helpers.h"
 #include "dsoundplay.h"
@@ -117,7 +139,6 @@ static int handle_rcvstart_internal(struct mcast_receiver * p_receiver)
 	if (bDupResult)
     {
         ResetEvent(p_receiver->hStopEvent_);
-        /* Pass event copy to the receiver thread */
         p_receiver->hRcvThread_ = CreateThread(NULL, 0, ReceiverThreadProc, p_receiver, 0, NULL);
         assert(NULL != p_receiver->hRcvThread_);
         if (NULL != p_receiver->hRcvThread_);
@@ -243,12 +264,12 @@ static int handle_play_internal(HWND hMainWnd, struct mcast_receiver * p_receive
     return -1;
 }
 
-struct mcast_receiver * receiver_init(WAVEFORMATEX * p_wfex, struct mcast_settings const * mcast_settings)
+struct mcast_receiver * receiver_init(WAVEFORMATEX * p_wfex, struct receiver_settings const * p_settings)
 {
     struct mcast_receiver * p_receiver = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_receiver)); 
     assert(p_receiver);
     p_receiver->wfex_ = p_wfex; 
-    p_receiver->settings_ = mcast_settings;
+    p_receiver->settings_ = &p_settings->mcast_settings_;
     p_receiver->fifo_ = fifo_circular_buffer_create();
     return p_receiver;
 }

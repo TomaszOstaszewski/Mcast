@@ -1,10 +1,10 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /**
  * @file resolve.c
- * @author T. Ostaszewski
- * @date 04-Jan-2012
  * @brief Common routines for resolving addresses and hostnames
  * @details This file contains common name resolution and name printing functions.
+ * @author T. Ostaszewski
+ * @date 04-Jan-2012
  */
 
 #include "pcc.h"
@@ -24,7 +24,6 @@ static __declspec(thread) TCHAR outputBuffer[OUTPUT_BUFFER_LEN];
 /**
  * @brief Common routines for resolving addresses and hostnames
  * @details This routine takes a SOCKADDR structure and its lenght and prints converts it to a string representation. 
- * @author T. Ostaszewski
  * @date 04-Jan-2012
  */
 static void debug_output(LPCTSTR formatString, ...)
@@ -40,7 +39,6 @@ static void debug_output(LPCTSTR formatString, ...)
 /**
  * @brief Common routines for resolving addresses and hostnames
  * @details This routine takes a SOCKADDR structure and its lenght and prints converts it to a string representation. 
- * @author T. Ostaszewski
  * @date 04-Jan-2012
  */
 int PrintAddress(SOCKADDR const*sa, int salen)

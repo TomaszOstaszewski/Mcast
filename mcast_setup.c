@@ -13,11 +13,30 @@
  * Windows XP. To run this sample on older OSes, include the following header
  * file which makes it work automagically.
  * @author T. Ostaszewski
+ * @par License
+ * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+ * 	1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *	2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
+ * 	and/or other materials provided with the distribution.
+  * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+ * IN NO EVENT SHALL Tomasz Ostaszewski OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE.
+  * The views and conclusions contained in the software and documentation are those of the 
+ * authors and should not be interpreted as representing official policies, 
+ * either expressed or implied, of Tomasz Ostaszewski.
+ * @endcode
  * @date 04-Jan-2012
  */
 
 #include "pcc.h"
-#include "winsock_adapter.h"
 #include "mcast_setup.h"
 #include "mcast_utils.h"
 #include "resolve.h"
@@ -39,7 +58,6 @@ int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * inte
 	}
     {
         struct sockaddr_in * p_in_addr = (struct sockaddr_in *)p_mcast_conn->multiAddr_->ai_addr;
-        ;
         debug_outputln("%s %5.5d : %4.4hu %4.4hu %8.8x %s", __FILE__, __LINE__, p_in_addr->sin_port, ntohs(p_in_addr->sin_port), p_in_addr->sin_addr, inet_ntoa(p_in_addr->sin_addr));
     }
 	// Resolve the binding address
@@ -146,27 +164,14 @@ int setup_multicast_default(char * p_multicast_addr, char * p_port, struct mcast
 
 int setup_multicast_indirect(struct mcast_settings const * p_settings, struct mcast_connection * p_conn)
 {
-#if 0
-    return setup_multicast(
+    return setup_multicast_addr(
             p_settings->bConnect_,
             p_settings->bReuseAddr_,
             p_settings->bindAddr_,
             p_settings->interface_,
             p_settings->nTTL_,
-            p_settings->mcast_addr_,
-            p_settings->mcast_port_,
+            &p_settings->mcast_addr_,
             p_conn);
-#else
-    return setup_multicast(
-            p_settings->bConnect_,
-            p_settings->bReuseAddr_,
-            p_settings->bindAddr_,
-            p_settings->interface_,
-            p_settings->nTTL_,
-            "234.5.6.7",
-            "25000",
-            p_conn);
-#endif
 }
 
 int close_multicast(struct mcast_connection * p_mcast_conn)

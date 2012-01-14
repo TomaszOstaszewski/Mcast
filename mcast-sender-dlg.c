@@ -2,6 +2,26 @@
 /**
  * @file mcast-sender-dlg.c
  * @author T.Ostaszewski
+ * @par License
+ * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+ * 	1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *	2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
+ * 	and/or other materials provided with the distribution.
+  * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+ * IN NO EVENT SHALL Tomasz Ostaszewski OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE.
+  * The views and conclusions contained in the software and documentation are those of the 
+ * authors and should not be interpreted as representing official policies, 
+ * either expressed or implied, of Tomasz Ostaszewski.
+ * @endcode
  * @date 03-Jan-2011
  * @brief Sender dialog application main file.
  * @details 
@@ -9,17 +29,16 @@
 #include "pcc.h"
 #include "resource.h"
 #include "debug_helpers.h"
-#include "winsock_adapter.h"
 #include "message-loop.h"
 #include "mcast-sender-state-machine.h"
-#include "mcast-sender-settings-dlg.h"
-#include "mcast-sender-settings.h"
+#include "sender-settings-dlg.h"
+#include "sender-settings.h"
 
 /**
  * @brief Global Application instance.
  * @details Required for various Windows related stuff.
  */
-static HINSTANCE   g_hInst;
+HINSTANCE   g_hInst;
 
 /**
  * @brief Pointer to the sender object. 
@@ -108,7 +127,7 @@ static void UpdateUIwithCurrentState(HWND hDlg, sender_state_t state)
  */
 static void UpdateUI(HWND hDlg)
 {
-    static sender_state_t prev_state = -1;
+    static sender_state_t prev_state = SENDER_INITIAL;
     sender_state_t curr_state;
     assert(g_sender);
     curr_state = sender_get_current_state(g_sender);
@@ -140,8 +159,9 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                 assert(0 == result);
                 g_sender = sender_create(&g_settings);
                 assert(g_sender);
+                UpdateUIwithCurrentState(hDlg, sender_get_current_state(g_sender));
             }
-            return TRUE;
+            return FALSE; /* Return FALSE, as we did set focus ourselves in UpdateUIwithCurrentState call, and we don't want to focus on the default control */
        case WM_COMMAND:
             switch(wParam)
             {
@@ -150,8 +170,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     if (SENDER_INITIAL == curr_state)
                     {
                         /* Open up the settings dialog with the MCAST settings parameters */
-                        struct platform_specific_data platform = { g_hInst, hDlg };
-                        if (IDOK == do_dialog(&platform, &g_settings))
+                        if (IDOK == do_dialog(hDlg, &g_settings))
                         {
                             sender_destroy(g_sender);
                             g_sender = sender_create(&g_settings);

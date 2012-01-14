@@ -1,7 +1,11 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
- * @file mcast-settings.c
- * @brief Functions for multicast group membership settings manipulation.
+ * @brief
+ * @file receiver-settings.c
+ * @brief Implementation of the sender's settings representation.
+ * @details Contains functions for:
+ * \li returning a default settings.
+ * \li validating settings for correctness.
  * @author T.Ostaszewski
  * @date Jan-2012
  * @par License
@@ -26,50 +30,45 @@
  * @endcode
  */
 #include "pcc.h"
-#include "mcast-settings.h"
+#include "resource.h"
+#include "receiver-settings.h"
+#include "wave_utils.h"
 
 /*!
  * @brief 
  */
-#define DEFAULT_MCASTADDRV4 "234.5.6.7"
+#define DEFAULT_CHUNK_SEND_TIMEOUT (85)
 
 /*!
  * @brief 
  */
-#define DEFAULT_MCASTADDRV6 "ff12::1"
+#define DEFAULT_WAV_CHUNK_SIZE    (1024+256+128)
 
-/*!
- * @brief 
- */
-#define DEFAULT_MCASTPORT (25000)
-
-/*!
- * @brief
- */
-#define DEFAULT_TTL (8)
-
-static struct mcast_settings g_default_settings;
-
-struct mcast_settings const * get_default_mcast_settings(void)
+int receiver_get_default_settings(HINSTANCE hInst, struct receiver_settings * p_settings)
 {
-	unsigned long net_addr = inet_addr(DEFAULT_MCASTADDRV4);
-	g_default_settings.bReuseAddr_ = TRUE;
-	memcpy(&g_default_settings.mcast_addr_.sin_addr, &net_addr, sizeof(unsigned long));
-	g_default_settings.mcast_addr_.sin_port = htons(DEFAULT_MCASTPORT);
-	return &g_default_settings;
+	int result;
+	result = init_master_riff(&p_settings->chunk_, hInst, MAKEINTRESOURCE(IDR_0_1));
+	assert(0 == result);
+	if (0 == result) 
+	{
+		struct mcast_settings const * p_default_mcast_settings;
+		p_settings->play_buffer_size_ = 1024;
+		p_settings->poll_sleep_time_ = 50;
+		p_settings->timer_delay_ = 10 ;
+		p_default_mcast_settings = get_default_mcast_settings();
+		memcpy(&p_settings->mcast_settings_, p_default_mcast_settings, sizeof(struct mcast_settings));
+	}
+	return result;
 }
 
-#define MIN_MCAST_ADDR (0xe0000000)
-#define MAX_MCAST_ADDR (0xefffffff)
-
-int mcast_settings_validate(struct mcast_settings const * p_settings)
+int receiver_validate_settings(struct receiver_settings const * p_settings)
 {
-    unsigned short port = ntohs(p_settings->mcast_addr_.sin_port);
-    unsigned long addr  = ntohl(p_settings->mcast_addr_.sin_addr.s_addr); 
-    if (port < 1024)
-        return 0;
-    if (addr < MIN_MCAST_ADDR || addr > MAX_MCAST_ADDR)
-        return 0;
-    return 1;
+	if (p_settings->timer_delay_ < 1 || p_settings->timer_delay_ > 1000)
+		return 0;	
+	if (p_settings->poll_sleep_time_ < 1 || p_settings->poll_sleep_time_ > 10000)
+		return 0;	
+	if (p_settings->play_buffer_size_ < 128 || p_settings->play_buffer_size_ > 8192)
+		return 0;	
+	return 1;
 }
 

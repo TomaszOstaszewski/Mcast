@@ -2,10 +2,9 @@
 
 /**
  * @file resolve.h
- * @author T.Ostaszewski
- * @date 04-Jan-2011
  * @brief This file contains function prototypes for resolve.cpp
- * @details These are common routines for resolving and printing IPv4 and IPv6   addresses.
+ * @details These are common routines for resolving and printing IPv4 and IPv6 addresses.
+ * @date 04-Jan-2011
  */
 
 #ifndef _RESOLVE_H_

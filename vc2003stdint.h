@@ -1,3 +1,4 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /**
  * @file vc2003stdint.h
  * @brief ISO C9x  7.18  Integer types <stdint.h>

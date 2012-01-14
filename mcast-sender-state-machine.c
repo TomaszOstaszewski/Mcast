@@ -7,7 +7,27 @@
  * reliability and readability. Instead of tons of if...else on the various
  * variables, there's just one check for state and then, if the test yields OK,
  * an action is performed.
- * @author T. Ostaszewski 
+ * @author T. Ostaszewski
+ * @par License
+ * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+ * 	1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *	2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
+ * 	and/or other materials provided with the distribution.
+  * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+ * IN NO EVENT SHALL Tomasz Ostaszewski OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE.
+  * The views and conclusions contained in the software and documentation are those of the 
+ * authors and should not be interpreted as representing official policies, 
+ * either expressed or implied, of Tomasz Ostaszewski.
+ * @endcode 
  * @date 04-Jan-2012
  */ 
 #include "pcc.h"
@@ -18,7 +38,7 @@
 #include "debug_helpers.h"
 #include "wave_utils.h"
 #include "mcast-sender-state-machine.h"
-#include "mcast-sender-settings.h"
+#include "sender-settings.h"
 
 /**
  * @brief Description of the multicast sender state machine.
@@ -46,6 +66,7 @@ struct mcast_sender {
      * @sa hStopEvent_
      */
     HANDLE hStopEvent_thread_;
+    HANDLE hSenderThread_; /*!< Handle of the sender thread. */
 };
 
 /*!
@@ -126,26 +147,10 @@ static int sender_handle_mcastjoin_internal(struct mcast_sender * p_sender)
     if (NULL != p_sender->conn_)
     {
         int rc;
-        char * psz_addr;
-        char psz_port[8] = { 0 };
-        struct in_addr * p_in_addr;
-        HRESULT hr;
-
-        p_in_addr =(struct in_addr *)&p_sender->settings_->ipv4_mcast_group_addr_;
-        psz_addr = inet_ntoa(*p_in_addr);
-        assert(psz_addr);
-        if (psz_addr)
+        rc = setup_multicast_addr(FALSE, TRUE, NULL, NULL, p_sender->settings_->mcast_settings_.nTTL_, &p_sender->settings_->mcast_settings_.mcast_addr_, p_sender->conn_);
+        if (0 == rc)
         {
-            hr = StringCchPrintf(psz_port, 8, "%5.5u", p_sender->settings_->mcast_port_);
-            if (SUCCEEDED(hr))
-            { 
-                debug_outputln("%s %d : %s:%s", __FILE__, __LINE__, psz_addr, psz_port);
-                rc = setup_multicast_default(psz_addr, psz_port, p_sender->conn_);
-                if (0 == rc)
-                {
-                    return 0;
-                }
-            }   
+            return 0;
         }
         HeapFree(GetProcessHeap(), 0, p_sender->conn_);
         p_sender->conn_ = NULL;
@@ -182,10 +187,12 @@ static int sender_handle_startsending_internal(struct mcast_sender * p_sender)
         bDupResult = DuplicateHandle(GetCurrentProcess(), p_sender->hStopEvent_, GetCurrentProcess(), &p_sender->hStopEvent_thread_, 0, FALSE, DUPLICATE_SAME_ACCESS);
         if (bDupResult)
         {
-            HANDLE hSenderThread;
-            hSenderThread = CreateThread(NULL, 0, SendThreadProc, p_sender, 0, NULL);
-            CloseHandle(hSenderThread);
+            p_sender->hSenderThread_ = CreateThread(NULL, 0, SendThreadProc, p_sender, 0, NULL);
+            assert(NULL != p_sender->hSenderThread_);
+            if (NULL != p_sender->hSenderThread_)
+
             return 0;
+
         }
         CloseHandle(p_sender->hStopEvent_);
         p_sender->hStopEvent_ = NULL;
@@ -202,7 +209,9 @@ static int sender_handle_stopsending_internal(struct mcast_sender * p_sender)
 {
     SetEvent(p_sender->hStopEvent_);   
     CloseHandle(p_sender->hStopEvent_);
+    CloseHandle(p_sender->hSenderThread_);
     p_sender->hStopEvent_ = NULL;
+    p_sender->hSenderThread_ = NULL;
     return 0;
 }
 

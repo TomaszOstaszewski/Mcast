@@ -2,7 +2,27 @@
 /*!
  * @file dsoundplay.cpp
  * @author T. Ostaszewski
- * @date 30-Nov-2010
+ * @par License
+ * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+ * 	1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *	2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
+ * 	and/or other materials provided with the distribution.
+ * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+ * IN NO EVENT SHALL Tomasz Ostaszewski OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE.
+ * The views and conclusions contained in the software and documentation are those of the 
+ * authors and should not be interpreted as representing official policies, 
+ * either expressed or implied, of Tomasz Ostaszewski.
+ * @endcode
+ * @date 30-Nov-2011
  * @brief DirectSound WAV playing file.
  */
 #include "pcc.h"
@@ -273,7 +293,28 @@ static void CALLBACK sTimerCallback(UINT uTimerID, UINT uMsg, DWORD dwUser,
 }
 
 /*!
- * @brief
+ * @brief Sets up the DirectSound for playback
+ * @details Example code:
+ * @code
+ * HRESULT hr;
+ * struct dsound_data * p_retval = (struct dsound_data*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dsound_data));
+ * if (NULL != p_retval)
+ * {
+ *     hr = init_ds_data(hWnd, p_WFE, p_retval);
+ *     if (SUCCEEDED(hr))
+ *     {
+ *         return (DSOUNDPLAY)(p_retval);
+ *     }
+ * }
+ * debug_outputln("%s %5.5d", __FILE__, __LINE__);
+ * HeapFree(GetProcessHeap(), 0, p_retval);
+ * return NULL;
+ * @endcode
+ * @param[in] hwnd handle to the window that goes into the call of IDirectSound::SetCooperationLevel. Can be NULL, in which case either
+ * a foreground window or the desktop window will be used. See <a href="http://msdn.microsoft.com/en-us/library/ms898135.aspx">this link</a> for more information.
+ * @param[in] p_WFE pointer to the WAVEFORMATEX structure, describing the data to be played.
+ * @param[out] p_ds_data refernce to the structure, whose members will be filled with DirectSound interface pointers.
+ * @retrun returns the status of the operation, test it with SUCCEEDED() or FAILED() macros. 
  */
 static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound_data * p_ds_data)
 {
@@ -283,6 +324,14 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound
     {
         debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
         goto error_0;
+    }
+    if (NULL == hwnd)
+    {
+        hwnd = GetForegroundWindow();
+    }
+    if (NULL == hwnd)
+    {
+        hwnd = GetDesktopWindow();
     }
     hr = p_ds_data->p_direct_sound_8_->SetCooperativeLevel(hwnd, DSSCL_PRIORITY);
     if (FAILED(hr))
@@ -332,14 +381,16 @@ extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, WAVEFORMATEX const * p_WFE,
     }
     debug_outputln("%s %5.5d", __FILE__, __LINE__);
     HeapFree(GetProcessHeap(), 0, p_retval);
-    p_retval = NULL;
-    return (DSOUNDPLAY)(p_retval);
+    return NULL;
 }
 
 extern "C" void dsoundplayer_destroy(DSOUNDPLAY handle) 
 {
-    struct dsound_data * p_retval = (struct dsound_data*)handle;
-    HeapFree(GetProcessHeap(), 0, p_retval);
+    struct dsound_data * p_ds_data = (struct dsound_data*)handle;
+    p_ds_data->p_secondary_sound_buffer_->Release();
+    p_ds_data->p_primary_sound_buffer_->Release();
+    p_ds_data->p_direct_sound_8_->Release();
+    HeapFree(GetProcessHeap(), 0, p_ds_data);
 }
 
 extern "C" void dsoundplayer_play(DSOUNDPLAY handle) 

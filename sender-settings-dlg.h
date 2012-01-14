@@ -1,7 +1,8 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
-/**
- * @file pcc.c
- * @author T. Ostaszewski
+/*!
+ * @brief
+ * @file sender-settings-dlg.h
+ * @author T.Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -22,8 +23,23 @@
  * authors and should not be interpreted as representing official policies, 
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
- * @date 04-Jan-2012
- * @brief 
- * @details 
+ * @date Jan-2012
  */
-#include "pcc.h"
+#if !defined MCAST_SENDER_SETTINGS_DLG_BDDF0787_F748_479B_BB79_F5C26F739FB4
+#define MCAST_SENDER_SETTINGS_DLG_BDDF0787_F748_479B_BB79_F5C26F739FB4
+
+#if defined __cplusplus
+extern "C" {
+#endif
+#include <windows.h>
+
+struct sender_settings;
+
+int do_dialog(HWND hWndParent, struct sender_settings * p_settings);
+
+#if defined __cplusplus
+}
+#endif
+
+#endif /* !defined MCAST_SENDER_SETTINGS_DLG_BDDF0787_F748_479B_BB79_F5C26F739FB4 */
+

@@ -10,10 +10,12 @@
  */
 
 #include "pcc.h"
-#include "timeofday.h" //I've ommited this line.
+#include "timeofday.h"
 #if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
+/*! @brief Adjustment for Roman / Julian Calendar */
 #define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
 #else
+/*! @brief Adjustment for Roman / Julian Calendar */
 #define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
 #endif
 
