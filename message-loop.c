@@ -65,17 +65,13 @@ WPARAM message_loop(HWND hWnd, P_ON_IDLE idle_func)
     /* Message loop with idle time processing */
     for (;;)
     {
-        // phase1: check to see if we can do idle work
         while (bIdle && !PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
         {
-            // call OnIdle while in bIdle state
             if (idle_func && !(*idle_func)(hWnd, lIdleCount++))
                 break;
         }
-        // phase2: pump messages while available
         do
         {
-            // pump message, but quit on WM_QUIT
             if (!GetMessage(&msg, NULL, 0, 0))
                 return (int)msg.wParam;
             if (!IsDialogMessage(hWnd, &msg))
@@ -83,7 +79,6 @@ WPARAM message_loop(HWND hWnd, P_ON_IDLE idle_func)
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);  
             }
-            // reset "no idle" state after pumping "normal" message
             if (IsIdleMessage(&msg))
             {
                 bIdle = TRUE;

@@ -22,7 +22,7 @@
  * authors and should not be interpreted as representing official policies, 
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
- * @date 30-Nov-2010
+ * @date 30-Nov-2011
  * @brief DirectSound WAV playing file.
  */
 #include "pcc.h"

@@ -57,7 +57,7 @@ receiver_state_t receiver_get_state(struct mcast_receiver * p_receiver);
 /*!
  * @brief Initializes the state machine.
  * @param[in] p_wfex parameters of the WAV file to be played.
- * @param[in] mcast_settings parameters of the multicast connection.
+ * @param[in] p_settings pointer to the structure describing receiver settings (mcast connection params, timings and so on).
  * @return Returns a handle to the object that represents multicast PCM receiver. This handle can be then passed to functions handle_play() and so on.
  * @sa handle_mcastjoin
  * @sa handle_mcastleave
@@ -66,7 +66,7 @@ receiver_state_t receiver_get_state(struct mcast_receiver * p_receiver);
  * @sa handle_rcvstart
  * @sa handle_rcvstop
  */
-struct mcast_receiver * receiver_init(WAVEFORMATEX * p_wfex, struct mcast_settings const * mcast_settings);
+struct mcast_receiver * receiver_init(WAVEFORMATEX * p_wfex, struct receiver_settings const * p_settings);
 
 /*!
  * @brief Join multicast group handler.

@@ -32,6 +32,8 @@
  */ 
 #include "pcc.h"
 #include "mcast-receiver-state-machine.h"
+#include "receiver-settings.h"
+#include "mcast-settings.h"
 #include "mcast_setup.h"
 #include "debug_helpers.h"
 #include "dsoundplay.h"
@@ -266,12 +268,12 @@ static int handle_play_internal(HWND hMainWnd, struct mcast_receiver * p_receive
     return -1;
 }
 
-struct mcast_receiver * receiver_init(WAVEFORMATEX * p_wfex, struct mcast_settings const * mcast_settings)
+struct mcast_receiver * receiver_init(WAVEFORMATEX * p_wfex, struct receiver_settings const * p_settings)
 {
     struct mcast_receiver * p_receiver = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_receiver)); 
     assert(p_receiver);
     p_receiver->wfex_ = p_wfex; 
-    p_receiver->settings_ = mcast_settings;
+    p_receiver->settings_ = &p_settings->mcast_settings_;
     p_receiver->fifo_ = fifo_circular_buffer_create();
     return p_receiver;
 }
