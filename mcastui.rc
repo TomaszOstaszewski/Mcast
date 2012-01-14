@@ -32,7 +32,7 @@ IDR_MENU1 MENU
         MENUITEM "&Leave multicast", ID_SENDER_LEAVEMCAST
         MENUITEM "S&tart sending", ID_SENDER_STARTSENDING
         MENUITEM "St&op sending", ID_SENDER_STOPSENDING
-        MENUITEM "&Exit", IDCANCEL
+        MENUITEM "&Quit", IDCANCEL
     }
 }
 
