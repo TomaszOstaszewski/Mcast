@@ -1,5 +1,8 @@
 #----- Include the PSDK's WIN32.MAK to pick up defines------------------------------------
-!include "obj.mk"
+!include <win32.mak>
+#----- OUTDIR is defined in WIN32.MAK This is the name of the destination directory-------
+OUTDIR_OBJ=$(OUTDIR)\obj
+OUTDIR_PCC=$(OUTDIR)\pcc
 #----- OUTDIR_OBJ is defined in WIN32.MAK This is the name of the destination directory-------
         
 all: $(OUTDIR)\ut-fifo-circular-buffer.exe $(OUTDIR)\ut-input-buffer.exe $(OUTDIR)\sender.exe $(OUTDIR)\receiver.exe
@@ -8,7 +11,14 @@ all: $(OUTDIR)\ut-fifo-circular-buffer.exe $(OUTDIR)\ut-input-buffer.exe $(OUTDI
 	
 DXLIB="C:\Program Files\Microsoft DirectX SDK (June 2010)\Lib\x86"
 
-!include "outdir.mk"
+$(OUTDIR):
+    @if not exist "$(OUTDIR_OBJ)/$(NULL)" mkdir $(OUTDIR_OBJ)
+
+$(OUTDIR_PCC) : $(OUTDIR)
+    @if not exist "$(OUTDIR_PCC)/$(NULL)" mkdir $(OUTDIR_PCC)
+
+$(OUTDIR_OBJ) : $(OUTDIR)
+    @if not exist "$(OUTDIR_OBJ)/$(NULL)" mkdir $(OUTDIR_OBJ)!include "outdir.mk"
 
 #
 # Build rule for resource file
@@ -101,6 +111,7 @@ $(OUTDIR)\ut-input-buffer.exe: $(OUTDIR_OBJ)\input-buffer.obj $(OUTDIR_OBJ)\ut-i
 	@ECHO $@
 	$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$@.map /PDB:$(OUTDIR_OBJ)\ut-fifo-circular-buffer.pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
 
+# Applications
 $(OUTDIR)\receiver.exe: $(OUTDIR_OBJ)\mcastui.res $(OUTDIR_OBJ)\mcast-receiver-dlg.obj $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\input-buffer.obj $(OUTDIR_OBJ)\fifo-circular-buffer.obj $(OUTDIR_OBJ)\dsoundplay.obj $(OUTDIR_OBJ)\mcast_setup.obj $(OUTDIR_OBJ)\wave_utils.obj $(OUTDIR_OBJ)\mcast_utils.obj $(OUTDIR_OBJ)\timeofday.obj $(OUTDIR_OBJ)\resolve.obj $(OUTDIR_OBJ)\message-loop.obj  $(OUTDIR_OBJ)\mcast-receiver-state-machine.obj $(OUTDIR_OBJ)\receiver-settings.obj $(OUTDIR_OBJ)\receiver-settings-dlg.obj $(OUTDIR_OBJ)\mcast-settings.obj $(OUTDIR_OBJ)\mcast-settings-dlg.obj
 	@ECHO $@
 	$(link) $(ldebug) $(guiflags) /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
