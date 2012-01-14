@@ -43,6 +43,8 @@ extern "C" {
  * @details This structure is binary compatible with WAV bytes, 16 bytes from the beginning.
  * It describes number of channels in WAV file, its format, how many samples per second, 
  * how many bytes per second, how many bits per sample and so on.
+ * @attention All the data in the WAV file is stored in little endian. So on the little endian machine 
+ * it is enough to load a WAV file into this structure.
  */
 typedef struct waveformatex {
     uint16_t  wFormatTag; /*!< Format tag */
@@ -56,7 +58,9 @@ typedef struct waveformatex {
 /*!
  * @brief A sub-chunk header
  * @details This is the last header, what follows is data. 
- */
+ * @attention All the data in the WAV file is stored in little endian. So on the little endian machine 
+ * it is enough to load a WAV file into this structure.
+  */
 typedef struct wav_subchunk { 
     uint8_t     subchunkId_[4]; /*!< 4 bytes, they give string 'data', 0x64 0x61 0x74 0x61 */
     uint32_t    subchunk_size_;  /*!< Number of bytes that follow. */
@@ -84,7 +88,8 @@ typedef struct wav_format_chunk {
 /*!
  * @brief WAV file header.
  * @details  
- * @attention All the data in the file is stored in little endian.
+ * @attention All the data in the WAV file is stored in little endian. So on the little endian machine 
+ * it is enough to load a WAV file into this structure.
  */
 typedef struct master_riff_chunk {
     uint8_t     ckid_[4]; /*!< ChunkID, 4 bytes that give "RIFF", 0x52 0x49 0x46 0x46 in hex */
