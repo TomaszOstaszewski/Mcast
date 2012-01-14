@@ -236,7 +236,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
         WAVEFORMATEX * p_wfex = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(WAVEFORMATEX)); 
         copy_waveformatex_2_WAVEFORMATEX(p_wfex, &g_pWavChunk->format_chunk_.format_);
         receiver_get_default_settings(g_hInst, &g_settings);
-        g_receiver = receiver_init(p_wfex, &g_settings.mcast_settings_);
+        g_receiver = receiver_init(p_wfex, &g_settings);
         assert(g_receiver);
         UpdateUIwithCurrentState(hwnd, receiver_get_state(g_receiver));
     }

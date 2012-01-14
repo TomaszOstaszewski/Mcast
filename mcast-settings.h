@@ -48,6 +48,8 @@ struct mcast_settings {
 
 struct mcast_settings const * get_default_mcast_settings(void);
 
+int mcast_settings_validate(struct mcast_settings const * p_settings);
+
 #if defined __cplusplus
 }
 #endif

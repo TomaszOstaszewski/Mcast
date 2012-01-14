@@ -38,7 +38,7 @@ extern "C" {
 struct master_riff_chunk;
 
 /*!
- * @brief
+ * @brief A structure that describes receiver parameters.
  */
 struct receiver_settings {
 	struct master_riff_chunk * chunk_;
