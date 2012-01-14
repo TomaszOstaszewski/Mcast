@@ -156,7 +156,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
             {
                 int result;
                 result = get_default_settings(g_hInst, &g_settings);
-                assert(0 == result);
+                assert(result);
                 g_sender = sender_create(&g_settings);
                 assert(g_sender);
                 UpdateUIwithCurrentState(hDlg, sender_get_current_state(g_sender));

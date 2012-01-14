@@ -66,7 +66,15 @@ receiver_state_t receiver_get_state(struct mcast_receiver * p_receiver);
  * @sa handle_rcvstart
  * @sa handle_rcvstop
  */
-struct mcast_receiver * receiver_init(WAVEFORMATEX * p_wfex, struct receiver_settings const * p_settings);
+struct mcast_receiver * receiver_create(struct receiver_settings const * p_settings);
+
+/*!
+ * @brief Destroys the state machine.
+ * @param[in] p_wfex parameters of the WAV file to be played.
+ * @return Returns non-zero on sucess, 0 otherwise. Most likely cause of failure is that receiver is not in the RECEIVER_INITIAL state.
+ * @sa receiver_init
+ */
+int receiver_destroy(struct mcast_receiver * p_receiver);
 
 /*!
  * @brief Join multicast group handler.

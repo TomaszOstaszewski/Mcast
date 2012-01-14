@@ -34,6 +34,7 @@ extern "C" {
 #include <windows.h>
 #include "std-int.h"
 #include "mcast-settings.h"
+#include "wave_utils.h"
 
 struct master_riff_chunk;
 
@@ -41,7 +42,7 @@ struct master_riff_chunk;
  * @brief A structure that describes receiver parameters.
  */
 struct receiver_settings {
-	struct master_riff_chunk * chunk_;
+	WAVEFORMATEX wfex_;
 	uint16_t	play_buffer_size_;
 	uint16_t	poll_sleep_time_;
 	uint16_t 	timer_delay_;
@@ -58,6 +59,16 @@ int receiver_get_default_settings(HINSTANCE hInst, struct receiver_settings * p_
  * @brief
  */
 int receiver_validate_settings(struct receiver_settings const * p_settings);
+
+/*!
+ * @brief Copies the receiver settings from one structure to another.
+ */
+void receiver_settings_copy(struct receiver_settings * p_dest, struct receiver_settings const * p_source);
+
+/*!
+ * @brief Copies the receiver settings from one structure to another.
+ */
+void receiver_settings_swap(struct receiver_settings * p_left, struct receiver_settings * p_right);
 
 #if defined __cplusplus
 }

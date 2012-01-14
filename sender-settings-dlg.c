@@ -176,11 +176,16 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
             }
             break;
         case WM_COMMAND:
-            switch(wParam)
+            switch(HIWORD(wParam))
             {
                 case IDC_MCAST_SETTINGS:
                     get_settings_from_dialog(hDlg, &g_settings.mcast_settings_);
-                    return TRUE;
+                    change = 1;
+                    break;;
+                case IDC_PACKET_DELAY_EDIT:
+                case IDC_PACKET_LENGTH_EDIT:
+                case IDC_PACKET_LENGTH_MS_EDIT:
+                    break;
                 case IDCANCEL:
                 case IDOK:
                     EndDialog(hDlg, wParam);
@@ -195,6 +200,11 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
         {
             memcpy(&g_settings, &sender_settings_copy, sizeof(struct sender_settings));
             data_to_controls(&g_settings);
+            EnableWindow(g_btok, TRUE);
+        }
+        else
+        {
+            EnableWindow(g_btok, FALSE);
         }
         return TRUE;
     }

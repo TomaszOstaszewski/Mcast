@@ -113,7 +113,7 @@ void copy_waveformatex_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, const struct wavefo
 int init_master_riff(PC_master_riff_chunk_t * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName)
 {
     HRSRC hRes;
-    int result = -1;
+    int result = 0;
     hRes = FindResource(hModule, lpResName, "0");
     if (NULL != hRes)
     {
@@ -123,7 +123,7 @@ int init_master_riff(PC_master_riff_chunk_t * pp_chunk, HINSTANCE hModule, LPCTS
         {
             *pp_chunk = (PC_master_riff_chunk_t)LockResource(globRes);
             if (NULL != *pp_chunk)
-                result = 0;
+                result = 1;
         }
         else
         {
@@ -134,6 +134,6 @@ int init_master_riff(PC_master_riff_chunk_t * pp_chunk, HINSTANCE hModule, LPCTS
     {
         debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, GetLastError(), GetLastError());
     }
-    return 0;
+    return result;
 }
 

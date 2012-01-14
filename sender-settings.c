@@ -68,8 +68,8 @@ int get_default_settings(HINSTANCE hInst, struct sender_settings * p_settings)
 {
 	int result;
 	result = init_master_riff(&p_settings->chunk_, hInst, MAKEINTRESOURCE(IDR_0_1));
-	assert(0 == result);
-	if (0 == result) 
+	assert(result);
+	if (result) 
 	{
 		struct mcast_settings const * p_default_mcast_settings;
 		p_settings->send_delay_ = DEFAULT_CHUNK_SEND_TIMEOUT;
