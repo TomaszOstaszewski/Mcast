@@ -103,7 +103,7 @@ static void data_to_controls(struct mcast_settings const * p_settings)
  * @details Takes values from the settings object and presents them on the UI
  * @param[in] p_settings pointer to the settings object whose contents are to be presented on the screen.
  */
-static void controls_to_data(struct mcast_settings * p_settings)
+static int controls_to_data(struct mcast_settings * p_settings)
 {
     int result;
     unsigned int port_host_order;
@@ -112,6 +112,7 @@ static void controls_to_data(struct mcast_settings * p_settings)
     *((WORD *)port_buffer) = TEXT_LIMIT;
     result = SendMessage(g_ipport_edit_ctrl, EM_GETLINE, 0, (LPARAM)port_buffer);
     result = sscanf(port_buffer, "%u", &port_host_order);
+    assert(result);
     if (result) 
     {
         /* The 5 digit figures in decimal don't fit into 2 bytes of hex.
@@ -129,6 +130,7 @@ static void controls_to_data(struct mcast_settings * p_settings)
             p_settings->mcast_addr_.sin_addr.s_addr = htonl(address);
         }
     }
+    return result;
 }
 
 /*!
@@ -220,8 +222,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
     if (change)
     {   
         memcpy(&settings_copy, &g_settings, sizeof(struct mcast_settings));
-        controls_to_data(&settings_copy);
-        if (mcast_settings_validate(&settings_copy))
+        if (controls_to_data(&settings_copy) && mcast_settings_validate(&settings_copy))
         {
             memcpy(&g_settings, &settings_copy, sizeof(struct mcast_settings));
             EnableWindow(g_btok, TRUE);  
