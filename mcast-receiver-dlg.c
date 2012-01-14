@@ -41,15 +41,6 @@
 #include "receiver-settings.h"
 
 /**
- *  @brief Pointer to the WAV file being send.
- */
-static master_riff_chunk_t *   g_pWavChunk;
-
-/**
- */
-static struct mcast_settings const * g_p_defaultSettings;
-
-/**
  * 
  */
 static struct mcast_receiver * g_receiver;
@@ -223,21 +214,37 @@ static void UpdateUI(HWND hDlg)
     }
 }
 
+/*!
+ * @brief Handler for WM_INITDIALOG message.
+ * @details This handler does as follows:
+ * \li Initializes the control handles
+ * \li Presents the settings on the UI
+ * @param[in] hwnd handle to the window that received WM_INITDIALOG message
+ * @param[in] hwndFocus handle to the Window that is to be got the keyboard focus upon dialog initalizing. 
+ * @param[in] lParam client specific parameter passed to DialogBoxParam function. This is a way to pass to the
+ * handler some client specific data.
+ * @param returns TRUE if the window indicated as hWndFocus is to get keyboard focus. Returns FALSE otherwise.
+ */
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
     int result;
+    static master_riff_chunk_t *   g_pWavChunk;
     result = init_master_riff(&g_pWavChunk, g_hInst, MAKEINTRESOURCE(IDR_0_1));
     assert(0 == result);
     if (0 == result)
     {
         WAVEFORMATEX * p_wfex = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(WAVEFORMATEX)); 
         copy_waveformatex_2_WAVEFORMATEX(p_wfex, &g_pWavChunk->format_chunk_.format_);
-        g_p_defaultSettings = get_default_mcast_settings();
-        g_receiver = receiver_init(p_wfex, g_p_defaultSettings);
         receiver_get_default_settings(g_hInst, &g_settings);
+        g_receiver = receiver_init(p_wfex, &g_settings.mcast_settings_);
         assert(g_receiver);
+        UpdateUIwithCurrentState(hwnd, receiver_get_state(g_receiver));
     }
-    UpdateUIwithCurrentState(hwnd, receiver_get_state(g_receiver));
+    else
+    {
+        // Add a MessageBox here //
+        EndDialog(IDCANCEL);
+    }
     return FALSE; /* We return FALSE, as we do call SetFocus() ourselves */
 }
 

@@ -31,7 +31,53 @@
 
 extern HINSTANCE g_hInst;
 
-static struct sender_settings * p_settings;
+/*!
+ * @brief Copy of the mcast_settings object passed by the caller.
+ * @details On this copy all the dialog operation is performed.
+ */
+static struct mcast_settings g_settings;
+
+/*!
+ * @brief Handle to the IP address control object.
+ */ 
+static HWND g_ipaddr_ctrl;
+
+/*!
+ * @brief Handle to the IP port edit control.
+ */
+static HWND g_ipport_edit_ctrl;
+
+/*!
+ * @brief Transfer from data to UI
+ * @details Takes values from the settings object and presents them on the UI
+ * @param[in] p_settings pointer to the settings object whose contents are to be presented on the screen.
+ */
+static void data_to_controls(struct mcast_settings const * p_settings)
+{
+	char buffer[8];
+	StringCchPrintf(buffer, 8, "%hu", ntohs(p_settings->mcast_addr_.sin_port));
+}
+
+/*!
+ * @brief Handler for WM_INITDIALOG message.
+ * @details This handler does as follows:
+ * \li Initializes the control handles
+ * \li Presents the settings on the UI
+ * @param[in] hwnd handle to the window that received WM_INITDIALOG message
+ * @param[in] hwndFocus handle to the Window that is to be got the keyboard focus upon dialog initalizing. 
+ * @param[in] lParam client specific parameter passed to DialogBoxParam function. This is a way to pass to the
+ * handler some client specific data.
+ * @param returns TRUE if the window indicated as hWndFocus is to get keyboard focus. Returns FALSE otherwise.
+ */
+static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
+{
+		g_ipaddr_ctrl = GetDlgItem(hwnd, IDC_IPADDRESS1);
+		assert(g_ipaddr_ctrl);
+		g_ipport_edit_ctrl = GetDlgItem(hwnd, IDC_EDIT1);
+		assert(g_ipport_edit_ctrl);
+		data_to_controls(&g_settings);
+		return TRUE;
+} 
 
 /**
  * @brief Multicast settings dialog message processing routine.
@@ -44,25 +90,31 @@ static struct sender_settings * p_settings;
  */
 static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
-	switch (uMessage)
-	{
-		case WM_INITDIALOG:
-			return TRUE;
-		case WM_COMMAND:
-			switch(wParam)
-			{
-				case IDCANCEL:
-				case IDOK:
-					EndDialog(hDlg, wParam);
-					break;
-			}
-			return TRUE;
-	}
-	return FALSE;
+		switch (uMessage)
+		{
+				case WM_INITDIALOG:
+						return HANDLE_WM_INITDIALOG(HDLG, wParam, lParam, Handle_wm_initdialog);
+				case WM_COMMAND:
+						switch(wParam)
+						{
+								case IDCANCEL:
+								case IDOK:
+										EndDialog(hDlg, wParam);
+										break;
+						}
+						return TRUE;
+		}
+		return FALSE;
 }
 
 int get_settings_from_dialog(HWND hParent, struct mcast_settings * p_settings)
 {
-	return DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc, (LPARAM)p_settings);
+		memcpy(&g_settings, p_settings, sizeof(struct mcast_settings));
+		if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc))
+		{
+				memcpy(p_settings, &g_settings, sizeof(struct mcast_settings));
+				return 0;
+		}
+		return -1;
 }
 
