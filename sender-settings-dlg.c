@@ -1,3 +1,4 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @brief
  * @file sender-settings-dlg.c
@@ -36,26 +37,53 @@
 extern HINSTANCE g_hInst;
 
 /*!
- * @brief
+ * @brief A copy of the sender settings object that this dialog operates on.
+ * @details If the user blesses the dialog with an OK button, and all the data
+ * validates OK, then this copy becomes the settings object returned to the caller.
  */
-static struct sender_settings * g_settings;
+static struct sender_settings g_settings;
+
+/*!
+ * @brief Handle to the packet delay edit control.
+ */
 static HWND g_packet_delay_edit;
+
+/*!
+ * @brief Handle to the packet length edit control.
+ */
 static HWND g_packet_length_edit;
+
+/*!
+ * @brief Handle to the packet delay spin control.
+ */
 static HWND g_packet_delay_spin;
+
+/*!
+ * @brief Handle to the packet length spin control.
+ */
 static HWND g_packet_length_spin;
 
+/*!
+ * @brief Transfer from data to UI
+ * @details Takes values from the settings object and presents them on the UI
+ */
 static void data_to_controls(struct sender_settings const * p_settings)
 {
 	char text_buf[8];
-	StringCchPrintf(text_buf, 8, "%d", g_settings->send_delay_);
+	StringCchPrintf(text_buf, 8, "%d", p_settings->send_delay_);
 	SetWindowText(g_packet_delay_edit, text_buf);
-	StringCchPrintf(text_buf, 8, "%d", g_settings->chunk_size_);
+	StringCchPrintf(text_buf, 8, "%d", p_settings->chunk_size_);
 	SetWindowText(g_packet_length_edit, text_buf);
 }
 
+/*!
+ * @brief Handler for WM_INITDIALOG message.
+ * @details This handler does as follows:
+ * \li Initializes the control handles
+ * \li Presents the settings on the UI
+ */
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
-	g_settings = (struct sender_settings*)lParam;
 	g_packet_delay_edit = GetDlgItem(hwnd, IDC_PACKET_DELAY_EDIT);
 	g_packet_length_edit = GetDlgItem(hwnd, IDC_PACKET_LENGTH_EDIT);
 	g_packet_delay_spin = GetDlgItem(hwnd, IDC_PACKET_DELAY_SPIN);
@@ -68,7 +96,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 	SendMessage(g_packet_length_spin, UDM_SETBUDDY, (WPARAM)g_packet_length_edit, (LPARAM)0);
 	SendMessage(g_packet_delay_spin, UDM_SETPOS, (WPARAM)0, (LPARAM)0);
 	SendMessage(g_packet_length_spin, UDM_SETPOS, (WPARAM)0, (LPARAM)0);
-	data_to_controls(g_settings);
+	data_to_controls(&g_settings);
 	return FALSE;
 }
 
@@ -97,7 +125,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 				switch (p_notify_header->code)
 				{
 					case UDN_DELTAPOS:
-						memcpy(&sender_settings_copy, g_settings, sizeof(struct sender_settings));
+						memcpy(&sender_settings_copy, &g_settings, sizeof(struct sender_settings));
 						if (g_packet_delay_spin == p_notify_header->hwndFrom)
 						{
 							sender_settings_copy.send_delay_ -= p_up_down->iDelta;
@@ -112,8 +140,8 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 						}
 						if (sender_settings_validate(&sender_settings_copy))
 						{
-							memcpy(g_settings, &sender_settings_copy, sizeof(struct sender_settings));
-							data_to_controls(g_settings);
+							memcpy(&g_settings, &sender_settings_copy, sizeof(struct sender_settings));
+							data_to_controls(&g_settings);
 						}
 						break;
 					default:
@@ -125,7 +153,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 			switch(wParam)
 			{
 				case IDC_MCAST_SETTINGS:
-					get_settings_from_dialog(hDlg, &g_settings->mcast_settings_);
+					get_settings_from_dialog(hDlg, &g_settings.mcast_settings_);
 					break;
 				case IDCANCEL:
 				case IDOK:
@@ -139,11 +167,10 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 
 int do_dialog(HWND hWndParent, struct sender_settings * p_settings)
 {
-	struct sender_settings settings_copy;
-	memcpy(&settings_copy, p_settings, sizeof(struct sender_settings));
-	if (IDOK == DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), hWndParent, McastSettingsProc, (LPARAM)&settings_copy))
+	memcpy(&g_settings, p_settings, sizeof(struct sender_settings));
+	if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), hWndParent, McastSettingsProc))
 	{
-		memcpy(p_settings, &settings_copy, sizeof(struct sender_settings));
+		memcpy(p_settings, &g_settings, sizeof(struct sender_settings));
 		return 0;
 	}
 	return 1;

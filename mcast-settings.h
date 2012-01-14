@@ -1,3 +1,4 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @brief Describes the multicast settings.
  * @file mcast-settings.h
@@ -42,10 +43,12 @@ struct mcast_settings {
     char * bindAddr_; /*!< Name of the interface to bind to */
     char * interface_; /*!< Name of the interface to bind to */
 	int nTTL_; /*!< The 'Time To Live' parameter to set on the socket. */
-	struct sockaddr_in mcast_addr_; /*!< Internet address and port of the multicast group */
+	struct sockaddr_in mcast_addr_; /*!< IPv4 address and port of the multicast group */
 };
 
 struct mcast_settings const * get_default_mcast_settings(void);
+
+int mcast_settings_validate(struct mcast_settings const * p_settings);
 
 #if defined __cplusplus
 }

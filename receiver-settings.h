@@ -1,3 +1,4 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @brief
  * @file receiver-settings.h
@@ -37,7 +38,7 @@ extern "C" {
 struct master_riff_chunk;
 
 /*!
- * @brief
+ * @brief A structure that describes receiver parameters.
  */
 struct receiver_settings {
 	struct master_riff_chunk * chunk_;

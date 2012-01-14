@@ -1,3 +1,4 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @file mcast-settings.c
  * @brief Functions for multicast group membership settings manipulation.
@@ -56,5 +57,19 @@ struct mcast_settings const * get_default_mcast_settings(void)
 	memcpy(&g_default_settings.mcast_addr_.sin_addr, &net_addr, sizeof(unsigned long));
 	g_default_settings.mcast_addr_.sin_port = htons(DEFAULT_MCASTPORT);
 	return &g_default_settings;
+}
+
+#define MIN_MCAST_ADDR (0xe0000000)
+#define MAX_MCAST_ADDR (0xefffffff)
+
+int mcast_settings_validate(struct mcast_settings const * p_settings)
+{
+    unsigned short port = ntohs(p_settings->mcast_addr_.sin_port);
+    unsigned long addr  = ntohl(p_settings->mcast_addr_.sin_addr.s_addr); 
+    if (port < 1024)
+        return 0;
+    if (addr < MIN_MCAST_ADDR || addr > MAX_MCAST_ADDR)
+        return 0;
+    return 1;
 }
 

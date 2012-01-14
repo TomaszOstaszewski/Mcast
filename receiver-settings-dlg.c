@@ -1,3 +1,4 @@
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @brief Functions for multicast group membership settings manipulation.
  * @file receiver-settings-dlg.c
@@ -33,13 +34,37 @@
 
 extern HINSTANCE g_hInst;
 
-static struct receiver_settings * g_settings;
+/*!
+ * @brief A copy of the receiver settings object that this dialog operates on.
+ * @details If the user blesses the dialog with an OK button, and all the data
+ * validates OK, then this copy becomes the settings object returned to the caller.
+ */
+static struct receiver_settings g_settings;
 
+/*!
+ * @brief Handle to the poll sleep time delay edit control.
+ */
 static HWND g_poll_sleep_time_edit;
+
+/*!
+ * @brief Handle to the poll sleep time delay spin control.
+ */
 static HWND g_poll_sleep_time_spin;
+
+/*!
+ * @brief Handle to the play buffer size edit control.
+ */
 static HWND g_play_buffer_size_edit;
+
+/*!
+ * @brief Handle to the play buffer size spin control.
+ */
 static HWND g_play_buffer_size_spin;
 
+/*!
+ * @brief Transfer from data to UI
+ * @details Takes values from the settings object and presents them on the UI
+ */
 static void data_to_controls(struct receiver_settings const * p_settings)
 {
 	char text_buf[8];
@@ -49,9 +74,14 @@ static void data_to_controls(struct receiver_settings const * p_settings)
 	SetWindowText(g_play_buffer_size_edit, text_buf);
 }
 
+/*!
+ * @brief Handler for WM_INITDIALOG message.
+ * @details This handler does as follows:
+ * \li Initializes the control handles
+ * \li Presents the settings on the UI
+ */
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
-	g_settings = (struct receiver_settings*)lParam;
 	g_poll_sleep_time_edit = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_EDIT);
 	assert(g_poll_sleep_time_edit);
 	g_poll_sleep_time_spin = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_SPIN);
@@ -61,10 +91,9 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 	g_play_buffer_size_spin = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_SPIN);
 	assert(g_play_buffer_size_spin);
 
-
 	SendMessage(g_poll_sleep_time_spin, UDM_SETBUDDY, (WPARAM)g_poll_sleep_time_edit, (LPARAM)0);
 	SendMessage(g_play_buffer_size_spin, UDM_SETBUDDY, (WPARAM)g_play_buffer_size_edit, (LPARAM)0);
-	data_to_controls(g_settings);
+	data_to_controls(&g_settings);
 	return TRUE;
 } 
 
@@ -89,43 +118,37 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 		case WM_NOTIFY:
 			p_notify_header = (NMHDR*)lParam;
 			switch (p_notify_header->code)
-			{
-				case UDN_DELTAPOS:
-					p_up_down = (NMUPDOWN *)p_notify_header;
-					switch (p_up_down->hdr.idFrom)
-					{
-						case IDC_POLL_SLEEP_TIME_SPIN:
-							{
-								memcpy(&rcv_settings_copy, g_settings, sizeof(struct receiver_settings));
-								rcv_settings_copy.poll_sleep_time_ -= p_up_down->iDelta;
-								debug_outputln("%s %d : %d", __FILE__, __LINE__, p_up_down->iPos);
-								if (receiver_validate_settings(&rcv_settings_copy))
-									memcpy(g_settings, &rcv_settings_copy, sizeof(struct receiver_settings));
-							}
-							break;
-						case IDC_PLAY_BUFFER_SIZE_SPIN:
-							{
-								memcpy(&rcv_settings_copy, g_settings, sizeof(struct receiver_settings));
-								rcv_settings_copy.play_buffer_size_ -= p_up_down->iDelta;
-								if (receiver_validate_settings(&rcv_settings_copy))
-									memcpy(g_settings, &rcv_settings_copy, sizeof(struct receiver_settings));
-								debug_outputln("%s %d : %d", __FILE__, __LINE__, p_up_down->iPos);
-							}
-							break;
-						default:
-							break;
-					}
-					data_to_controls(g_settings);
-					break;
-				default:
-					break;
-			}
+            {
+                case UDN_DELTAPOS:
+                    p_up_down = (NMUPDOWN *)p_notify_header;
+                    memcpy(&rcv_settings_copy, &g_settings, sizeof(struct receiver_settings));
+                    if (g_poll_sleep_time_spin == p_up_down->hdr.hwndFrom)
+                    {
+                        rcv_settings_copy.poll_sleep_time_ -= p_up_down->iDelta;
+                    }
+                    else if (g_play_buffer_size_spin == p_up_down->hdr.hwndFrom)
+                    {
+                        rcv_settings_copy.play_buffer_size_ -= p_up_down->iDelta;
+                    }
+                    else 
+                    {
+                        break;
+                    }
+                    if (receiver_validate_settings(&rcv_settings_copy))
+                    {
+                        memcpy(&g_settings, &rcv_settings_copy, sizeof(struct receiver_settings));
+                        data_to_controls(&g_settings);
+                    }
+                    return TRUE;
+                default:
+                    break;
+            }
 			break;
 		case WM_COMMAND:
 			switch(wParam)
 			{
 				case IDC_MCAST_SETTINGS: 
-					get_settings_from_dialog(hDlg, &g_settings->mcast_settings_);
+					get_settings_from_dialog(hDlg, &g_settings.mcast_settings_);
 					break;
 				case IDCANCEL:
 				case IDOK:
@@ -139,11 +162,10 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 
 int receiver_settings_do_dialog(HWND hWndParent, struct receiver_settings * p_settings)
 {
-	struct receiver_settings rcv_settings_copy;
-	memcpy(&rcv_settings_copy, p_settings, sizeof(struct receiver_settings));
-	if (IDOK == DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_RECEIVER_SETTINGS), hWndParent, McastSettingsProc, (LPARAM)&rcv_settings_copy))
+	memcpy(&g_settings, p_settings, sizeof(struct receiver_settings));
+	if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_RECEIVER_SETTINGS), hWndParent, McastSettingsProc))
 	{
-		memcpy(p_settings, &rcv_settings_copy, sizeof(struct receiver_settings));
+		memcpy(p_settings, &g_settings, sizeof(struct receiver_settings));
 		return 0;
 	}
 	return 1;

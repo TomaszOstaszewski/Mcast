@@ -41,15 +41,6 @@
 #include "receiver-settings.h"
 
 /**
- *  @brief Pointer to the WAV file being send.
- */
-static master_riff_chunk_t *   g_pWavChunk;
-
-/**
- */
-static struct mcast_settings const * g_p_defaultSettings;
-
-/**
  * 
  */
 static struct mcast_receiver * g_receiver;
@@ -66,150 +57,195 @@ static struct receiver_settings g_settings;
 HINSTANCE   g_hInst;
 
 /**
- * @brief Main UI update function.
+ * @brief Helper UI update function.
  * @details Updates the UI widgets state so they reflect the internal state of the program.
  * Mainly lights up and ghosts out various controls.
- * @param[in] hDlg - a handle to the window to be updated
+ * @param[in] hDlg a handle to the window to be updated
+ * @param[in] curr_state current receiver state. Control on the dialog passed with hDlg will be updated accordingly.
+ */
+static void UpdateUIwithCurrentState(HWND hDlg, receiver_state_t curr_state)
+{
+    static HWND hSettingsBtn = NULL, 
+                hJoinMcastBtn = NULL, 
+                hLeaveMcast = NULL, 
+                hPlay = NULL, 
+                hStop = NULL,
+                hStartRcv = NULL,
+                hStopRcv = NULL;
+    static HMENU hMainMenu = NULL;
+    if (NULL == hSettingsBtn)
+        hSettingsBtn = GetDlgItem(hDlg, ID_RECEIVER_SETTINGS);    
+    if (NULL == hJoinMcastBtn)
+        hJoinMcastBtn = GetDlgItem(hDlg, ID_RECEIVER_JOINMCAST);  
+    if (NULL == hPlay)
+        hPlay = GetDlgItem(hDlg, ID_RECEIVER_PLAY);    
+    if (NULL == hStop)
+        hStop = GetDlgItem(hDlg, ID_RECEIVER_STOP);  
+    if (NULL == hLeaveMcast)
+        hLeaveMcast = GetDlgItem(hDlg, ID_RECEIVER_LEAVEMCAST);
+    if (NULL == hStopRcv)
+        hStopRcv = GetDlgItem(hDlg, ID_RECEIVER_STOPRCV);
+    if (NULL == hStartRcv)
+        hStartRcv = GetDlgItem(hDlg, ID_RECEIVER_STARTRCV);
+    if (NULL == hMainMenu)
+        hMainMenu = GetMenu(hDlg);
+    switch (curr_state)
+    {
+        case RECEIVER_INITIAL:
+            EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
+            EnableWindow(hSettingsBtn, TRUE);
+            EnableWindow(hJoinMcastBtn, TRUE);
+            EnableWindow(hLeaveMcast, FALSE);
+            EnableWindow(hPlay, TRUE);
+            EnableWindow(hStop, FALSE);
+            EnableWindow(hStartRcv, FALSE);
+            EnableWindow(hStopRcv, FALSE);
+            SetFocus(hJoinMcastBtn);
+            break;
+        case RECEIVER_MCASTJOINED:
+            EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
+            EnableWindow(hSettingsBtn, FALSE);
+            EnableWindow(hJoinMcastBtn, FALSE);
+            EnableWindow(hLeaveMcast, TRUE);
+            EnableWindow(hPlay, TRUE);
+            EnableWindow(hStop, FALSE);
+            EnableWindow(hStartRcv, TRUE);
+            EnableWindow(hStopRcv, FALSE);
+            SetFocus(hStartRcv);
+            break;
+        case RECEIVER_PLAYING:
+            EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_ENABLED);
+            EnableWindow(hSettingsBtn, TRUE);
+            EnableWindow(hJoinMcastBtn, TRUE);
+            EnableWindow(hLeaveMcast, FALSE);
+            EnableWindow(hPlay, FALSE);
+            EnableWindow(hStop, TRUE);
+            EnableWindow(hStartRcv, FALSE);
+            EnableWindow(hStopRcv, FALSE);
+            SetFocus(hStopRcv);
+            break;
+        case RECEIVER_MCASTJOINED_PLAYING:
+            EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
+            EnableWindow(hSettingsBtn, FALSE);
+            EnableWindow(hJoinMcastBtn, FALSE);
+            EnableWindow(hLeaveMcast, TRUE);
+            EnableWindow(hPlay, FALSE);
+            EnableWindow(hStop, TRUE);
+            EnableWindow(hStartRcv, TRUE);
+            EnableWindow(hStopRcv, FALSE);
+            SetFocus(hStartRcv);
+            break;
+        case RECEIVER_RECEIVING:
+            EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
+            EnableWindow(hSettingsBtn, FALSE);
+            EnableWindow(hJoinMcastBtn, FALSE);
+            EnableWindow(hLeaveMcast, FALSE);
+            EnableWindow(hPlay, TRUE);
+            EnableWindow(hStop, FALSE);
+            EnableWindow(hStartRcv, FALSE);
+            EnableWindow(hStopRcv, TRUE);
+            SetFocus(hPlay);
+            break;
+        case RECEIVER_RECEIVING_PLAYING:
+            EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_ENABLED);
+            EnableWindow(hSettingsBtn, FALSE);
+            EnableWindow(hJoinMcastBtn, FALSE);
+            EnableWindow(hLeaveMcast, FALSE);
+            EnableWindow(hPlay, FALSE);
+            EnableWindow(hStop, TRUE);
+            EnableWindow(hStartRcv, FALSE);
+            EnableWindow(hStopRcv, TRUE);
+            SetFocus(hStop);
+            break;
+        default:
+            break;
+    }
+}
+/**
+ * @brief Main UI update function.
+ * @details Updates the UI widgets if the reciever state changes (i.e. previously stored state is different than current one).
+ * @param[in] hDlg a handle to the dialog window to be updated
+ * @attention This is usually called by the application's idle handler.
  */
 static void UpdateUI(HWND hDlg)
 {
-    static receiver_state_t prev_state = -1;
+    static receiver_state_t prev_state = RECEIVER_INITIAL;
     receiver_state_t new_state = receiver_get_state(g_receiver);
     if (prev_state != new_state)
     {
-        static HWND hSettingsBtn = NULL, 
-                    hJoinMcastBtn = NULL, 
-                    hLeaveMcast = NULL, 
-                    hPlay = NULL, 
-                    hStop = NULL,
-                    hStartRcv = NULL,
-                    hStopRcv = NULL;
-        static HMENU hMainMenu = NULL;
-        if (NULL == hSettingsBtn)
-            hSettingsBtn = GetDlgItem(hDlg, ID_RECEIVER_SETTINGS);    
-        if (NULL == hJoinMcastBtn)
-            hJoinMcastBtn = GetDlgItem(hDlg, ID_RECEIVER_JOINMCAST);  
-        if (NULL == hPlay)
-            hPlay = GetDlgItem(hDlg, ID_RECEIVER_PLAY);    
-        if (NULL == hStop)
-            hStop = GetDlgItem(hDlg, ID_RECEIVER_STOP);  
-        if (NULL == hLeaveMcast)
-            hLeaveMcast = GetDlgItem(hDlg, ID_RECEIVER_LEAVEMCAST);
-        if (NULL == hStopRcv)
-            hStopRcv = GetDlgItem(hDlg, ID_RECEIVER_STOPRCV);
-        if (NULL == hStartRcv)
-            hStartRcv = GetDlgItem(hDlg, ID_RECEIVER_STARTRCV);
-        if (NULL == hMainMenu)
-            hMainMenu = GetMenu(hDlg);
-        switch (new_state)
-        {
-            case RECEIVER_INITIAL:
-                EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
-                EnableWindow(hSettingsBtn, TRUE);
-                EnableWindow(hJoinMcastBtn, TRUE);
-                EnableWindow(hLeaveMcast, FALSE);
-                EnableWindow(hPlay, TRUE);
-                EnableWindow(hStop, FALSE);
-                EnableWindow(hStartRcv, FALSE);
-                EnableWindow(hStopRcv, FALSE);
-                SetFocus(hJoinMcastBtn);
-                break;
-            case RECEIVER_MCASTJOINED:
-                EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
-                EnableWindow(hSettingsBtn, FALSE);
-                EnableWindow(hJoinMcastBtn, FALSE);
-                EnableWindow(hLeaveMcast, TRUE);
-                EnableWindow(hPlay, TRUE);
-                EnableWindow(hStop, FALSE);
-                EnableWindow(hStartRcv, TRUE);
-                EnableWindow(hStopRcv, FALSE);
-                SetFocus(hStartRcv);
-                break;
-            case RECEIVER_PLAYING:
-                EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_ENABLED);
-                EnableWindow(hSettingsBtn, TRUE);
-                EnableWindow(hJoinMcastBtn, TRUE);
-                EnableWindow(hLeaveMcast, FALSE);
-                EnableWindow(hPlay, FALSE);
-                EnableWindow(hStop, TRUE);
-                EnableWindow(hStartRcv, FALSE);
-                EnableWindow(hStopRcv, FALSE);
-                SetFocus(hStopRcv);
-                break;
-            case RECEIVER_MCASTJOINED_PLAYING:
-                EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
-                EnableWindow(hSettingsBtn, FALSE);
-                EnableWindow(hJoinMcastBtn, FALSE);
-                EnableWindow(hLeaveMcast, TRUE);
-                EnableWindow(hPlay, FALSE);
-                EnableWindow(hStop, TRUE);
-                EnableWindow(hStartRcv, TRUE);
-                EnableWindow(hStopRcv, FALSE);
-                SetFocus(hStartRcv);
-                break;
-            case RECEIVER_RECEIVING:
-                EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
-                EnableWindow(hSettingsBtn, FALSE);
-                EnableWindow(hJoinMcastBtn, FALSE);
-                EnableWindow(hLeaveMcast, FALSE);
-                EnableWindow(hPlay, TRUE);
-                EnableWindow(hStop, FALSE);
-                EnableWindow(hStartRcv, FALSE);
-                EnableWindow(hStopRcv, TRUE);
-                SetFocus(hPlay);
-                break;
-            case RECEIVER_RECEIVING_PLAYING:
-                EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_ENABLED);
-                EnableWindow(hSettingsBtn, FALSE);
-                EnableWindow(hJoinMcastBtn, FALSE);
-                EnableWindow(hLeaveMcast, FALSE);
-                EnableWindow(hPlay, FALSE);
-                EnableWindow(hStop, TRUE);
-                EnableWindow(hStartRcv, FALSE);
-                EnableWindow(hStopRcv, TRUE);
-                SetFocus(hStop);
-                break;
-            default:
-                break;
-        }
+        UpdateUIwithCurrentState(hDlg, new_state);
         prev_state = new_state;
     }
+}
+
+/*!
+ * @brief Handler for WM_INITDIALOG message.
+ * @details This handler does as follows:
+ * \li Initializes the control handles
+ * \li Presents the settings on the UI
+ * @param[in] hwnd handle to the window that received WM_INITDIALOG message
+ * @param[in] hwndFocus handle to the Window that is to be got the keyboard focus upon dialog initalizing. 
+ * @param[in] lParam client specific parameter passed to DialogBoxParam function. This is a way to pass to the
+ * handler some client specific data.
+ * @param returns TRUE if the window indicated as hWndFocus is to get keyboard focus. Returns FALSE otherwise.
+ */
+static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
+{
+    int result;
+    static master_riff_chunk_t *   g_pWavChunk;
+    result = init_master_riff(&g_pWavChunk, g_hInst, MAKEINTRESOURCE(IDR_0_1));
+    assert(0 == result);
+    if (0 == result)
+    {
+        WAVEFORMATEX * p_wfex = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(WAVEFORMATEX)); 
+        copy_waveformatex_2_WAVEFORMATEX(p_wfex, &g_pWavChunk->format_chunk_.format_);
+        receiver_get_default_settings(g_hInst, &g_settings);
+        g_receiver = receiver_init(p_wfex, &g_settings);
+        assert(g_receiver);
+        UpdateUIwithCurrentState(hwnd, receiver_get_state(g_receiver));
+    }
+    else
+    {
+        // Add a MessageBox here //
+        EndDialog(hwnd, IDCANCEL);
+    }
+    return FALSE; /* We return FALSE, as we do call SetFocus() ourselves */
 }
 
 /**
@@ -225,21 +261,7 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
     switch (uMessage)
     {
         case WM_INITDIALOG:
-            {
-                int result;
-                result = init_master_riff(&g_pWavChunk, g_hInst, MAKEINTRESOURCE(IDR_0_1));
-                assert(0 == result);
-                if (0 == result)
-                {
-                    WAVEFORMATEX * p_wfex = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(WAVEFORMATEX)); 
-                    copy_waveformatex_2_WAVEFORMATEX(p_wfex, &g_pWavChunk->format_chunk_.format_);
-                    g_p_defaultSettings = get_default_mcast_settings();
-                    g_receiver = receiver_init(p_wfex, g_p_defaultSettings);
-                    receiver_get_default_settings(g_hInst, &g_settings);
-                    assert(g_receiver);
-                }
-            } 
-            return TRUE;
+            return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
         case WM_COMMAND:
             switch(wParam)
             {

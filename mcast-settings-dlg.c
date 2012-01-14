@@ -26,12 +26,135 @@
  * @endcode
  */
 #include "pcc.h"
+#include "mcast-settings.h"
 #include "mcast-settings-dlg.h"
+#include "debug_helpers.h"
 #include "resource.h"
 
 extern HINSTANCE g_hInst;
 
-static struct sender_settings * p_settings;
+/*!
+ * @brief Copy of the mcast_settings object passed by the caller.  * @details On this copy all the dialog operation is performed.
+ */
+static struct mcast_settings g_settings;
+
+/*!
+ * @brief Handle to the IP address control object.
+ */ 
+static HWND g_ipaddr_ctrl;
+
+/*!
+ * @brief Handle to the IP port edit control.
+ */
+static HWND g_ipport_edit_ctrl;
+
+/*!
+ * @brief Handle to the IP port edit control.
+ */
+static HWND g_btok;
+
+/*!
+ * @brief A table that describes valid multicast address ranges for each of 4 octets of the IPv4 address.
+ * sa http://en.wikipedia.org/wiki/Multicast_address 
+ */
+static const struct mcast_range {
+    uint8_t low_; /*!< Low range */
+    uint8_t high_; /*!< High range */
+} valid_mcast_range_table[4] = {
+    { 224, 239 },
+    { 0, 255 },
+    { 0, 255 },
+    { 0, 255 },
+};
+
+/*!
+ * @brief Maximum number of characters to be typed in the port control.
+ */
+#define TEXT_LIMIT (5)
+
+/*!
+ * @brief Buffer for characters typed in the port control.
+ */
+static TCHAR port_buffer[TEXT_LIMIT+1];
+
+/*!
+ * @brief Transfer from data to UI
+ * @details Takes values from the settings object and presents them on the UI
+ * @param[in] p_settings pointer to the settings object whose contents are to be presented on the screen.
+ */
+static void data_to_controls(struct mcast_settings const * p_settings)
+{
+    int result;
+    unsigned long ipaddr_host_order;
+    uint8_t ip_addr[4];
+    StringCchPrintf(port_buffer, 8, "%hu", ntohs(p_settings->mcast_addr_.sin_port));
+    SetWindowText(g_ipport_edit_ctrl, port_buffer);
+    ipaddr_host_order = ntohl(g_settings.mcast_addr_.sin_addr.s_addr);
+    ip_addr[0] = (uint8_t)(0xff & (ipaddr_host_order >> 24));
+    ip_addr[1] = (uint8_t)(0xff & (ipaddr_host_order >> 16));
+    ip_addr[2] = (uint8_t)(0xff & (ipaddr_host_order >> 8));
+    ip_addr[3] = (uint8_t)(0xff & (ipaddr_host_order >> 0));
+    //SendMessage(g_ipaddr_ctrl, IPM_SETADDRESS, (WPARAM)0, (LPARAM)ipaddr_host_order); 
+    result = SendMessage(g_ipaddr_ctrl, IPM_SETADDRESS, (WPARAM)0, (LPARAM)MAKEIPADDRESS(ip_addr[0],ip_addr[1],ip_addr[2],ip_addr[3])); 
+}
+
+/*!
+ * @brief Transfer from data to UI
+ * @details Takes values from the settings object and presents them on the UI
+ * @param[in] p_settings pointer to the settings object whose contents are to be presented on the screen.
+ */
+static void controls_to_data(struct mcast_settings * p_settings)
+{
+    int result;
+    uint16_t port_host_order;
+    DWORD address;
+    memset(port_buffer, 0, sizeof(port_buffer));
+    *((WORD *)port_buffer) = TEXT_LIMIT;
+    result = SendMessage(g_ipport_edit_ctrl, EM_GETLINE, 0, (LPARAM)port_buffer);
+    result = sscanf(port_buffer, "%hu", &port_host_order);
+    if (result) 
+    {
+        p_settings->mcast_addr_.sin_port = htons(port_host_order);
+    }
+    SendMessage(g_ipaddr_ctrl, IPM_GETADDRESS, (WPARAM)0, (LPARAM)&address);
+    p_settings->mcast_addr_.sin_addr.s_addr = htonl(address);
+}
+
+/*!
+ * @brief Handler for WM_INITDIALOG message.
+ * @details This handler does as follows:
+ * \li Initializes the control handles
+ * \li Presents the settings on the UI
+ * @param[in] hwnd handle to the window that received WM_INITDIALOG message
+ * @param[in] hwndFocus handle to the Window that is to be got the keyboard focus upon dialog initalizing. 
+ * @param[in] lParam client specific parameter passed to DialogBoxParam function. This is a way to pass to the
+ * handler some client specific data.
+ * @param returns TRUE if the window indicated as hWndFocus is to get keyboard focus. Returns FALSE otherwise.
+ */
+static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
+{
+    int result;
+    g_ipaddr_ctrl = GetDlgItem(hwnd, IDC_IPADDRESS1);
+    assert(g_ipaddr_ctrl);
+    g_ipport_edit_ctrl = GetDlgItem(hwnd, IDC_EDIT1);
+    assert(g_ipport_edit_ctrl);
+
+    result = SendMessage(g_ipaddr_ctrl, IPM_SETRANGE, (WPARAM)0, (LPARAM)MAKEIPRANGE(valid_mcast_range_table[0].low_,valid_mcast_range_table[0].high_)); 
+    assert(0 != result);
+    result = SendMessage(g_ipaddr_ctrl, IPM_SETRANGE, (WPARAM)1, (LPARAM)MAKEIPRANGE(valid_mcast_range_table[1].low_,valid_mcast_range_table[1].high_)); 
+    assert(0 != result);
+    result = SendMessage(g_ipaddr_ctrl, IPM_SETRANGE, (WPARAM)2, (LPARAM)MAKEIPRANGE(valid_mcast_range_table[2].low_,valid_mcast_range_table[2].high_)); 
+    assert(0 != result);
+    result = SendMessage(g_ipaddr_ctrl, IPM_SETRANGE, (WPARAM)3, (LPARAM)MAKEIPRANGE(valid_mcast_range_table[3].low_,valid_mcast_range_table[3].high_)); 
+    assert(0 != result);
+    SendMessage(g_ipport_edit_ctrl, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    
+    g_btok = GetDlgItem(hwnd, IDOK);
+    assert(g_btok);
+    data_to_controls(&g_settings);
+    EnableWindow(g_btok, TRUE) ;
+    return TRUE;
+} 
 
 /**
  * @brief Multicast settings dialog message processing routine.
@@ -44,25 +167,70 @@ static struct sender_settings * p_settings;
  */
 static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
-	switch (uMessage)
-	{
-		case WM_INITDIALOG:
-			return TRUE;
-		case WM_COMMAND:
-			switch(wParam)
-			{
-				case IDCANCEL:
-				case IDOK:
-					EndDialog(hDlg, wParam);
-					break;
-			}
-			return TRUE;
-	}
-	return FALSE;
+    static struct mcast_settings settings_copy;
+    int change = 0;
+    NMHDR * p_nmhdr;
+    switch (uMessage)
+    {
+        case WM_INITDIALOG:
+            return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
+        case WM_NOTIFY:
+            p_nmhdr = (NMHDR*)lParam;
+            switch (p_nmhdr->code)
+            {
+                case IPN_FIELDCHANGED:
+                change = 1;
+                break;
+            }
+            break;
+        case WM_COMMAND:
+            /* Handle notifications that come in form of WM_COMMAND messages */
+            switch (HIWORD(wParam))
+            {
+                case EN_CHANGE:
+                    if (lParam == (LPARAM) g_ipport_edit_ctrl)
+                    {
+                        change = 1;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            switch(wParam)
+            {
+                case IDCANCEL:
+                case IDOK:
+                    EndDialog(hDlg, wParam);
+                    return TRUE;
+            }
+            default:
+            break;
+    }
+    if (change)
+    {   
+        memcpy(&settings_copy, &g_settings, sizeof(struct mcast_settings));
+        controls_to_data(&settings_copy);
+        if (mcast_settings_validate(&settings_copy))
+        {
+            memcpy(&g_settings, &settings_copy, sizeof(struct mcast_settings));
+            EnableWindow(g_btok, TRUE);  
+        }
+        else
+        {
+            EnableWindow(g_btok, FALSE);  
+        }
+    }
+    return FALSE;
 }
 
 int get_settings_from_dialog(HWND hParent, struct mcast_settings * p_settings)
 {
-	return DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc, (LPARAM)p_settings);
+    memcpy(&g_settings, p_settings, sizeof(struct mcast_settings));
+    if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc))
+    {
+        memcpy(p_settings, &g_settings, sizeof(struct mcast_settings));
+        return 0;
+    }
+    return -1;
 }
 
