@@ -56,21 +56,6 @@ HRESULT debug_output(LPCTSTR formatString, ...);
  */
 HRESULT debug_outputln(LPCTSTR formatString, ...);
 
-/*!
- * @brief Outputs a formated text into the debug window, appends newline at the end.
- * @details The debug window is the one to which we write using OutputDebugString. 
- * Usually, it is attached to a debugger, but can also be seen using DebugView application
- * from Sysinternal.
- * @code
- * hr = CoCreateInstance(CLSID_..., ...);
- * if (FAILED(hr))
- *  ErrorHandlerEx(__LINE__, __FILE__);
- * @endcode
- * @param[in] wLine line number to be displayed in the message box.
- * @param[in] lpszFile file name to be displayed in the message box.
- */
-void ErrorHandlerEx(WORD wLine, LPSTR lpszFile);
-
 #if defined __cplusplus
 }
 #endif 
