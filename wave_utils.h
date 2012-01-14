@@ -134,11 +134,13 @@ void copy_waveformatex_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, const struct wavefo
  *     return (int)0;
  * }
  * @endcode
+ * @param[in] pp_chunk this pointer will be written with a pointer value (because its a pointer to a pointer). The pointer value, in turn
+ * will point to the WAV file data.
  * @param[in] hModule describes from which module resources will be loaded.
  * @param[in] lpResName describes what resource to load
  * @return returns 0 on success, <>0 otherwise.
  */
-int init_master_riff(PC_master_riff_chunk_t * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName);
+int init_master_riff(master_riff_chunk_t ** pp_chunk, HINSTANCE hModule, LPCTSTR lpResName);
 
 #if defined __cplusplus
 }
