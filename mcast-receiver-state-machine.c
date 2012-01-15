@@ -39,6 +39,10 @@
 #include "fifo-circular-buffer.h"
 #include "wave_utils.h"
 
+/*!
+ * @brief The multicast receiver object.
+ * @details This structure represents the multicast receiver object.
+ */
 struct mcast_receiver { 
     receiver_state_t state_; /*!< Receiver's current state. */
     DSOUNDPLAY player_; /*!< Pointer to the data player buffer */

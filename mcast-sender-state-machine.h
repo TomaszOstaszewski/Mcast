@@ -57,14 +57,19 @@ void sender_destroy(struct mcast_sender * p_sender);
 
 /*! 
  * @brief Returns current sender state.
+ * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
+ * @return returns a state that the sender is currently (at the time of the call) in.
+ * @sa sender_create()
  */
 sender_state_t sender_get_current_state(struct mcast_sender * p_sender);
 
 /*! 
- * @brief Causes the sender to join multicast group (if not a member already or not sending already).:w
+ * @brief Causes the sender to join multicast group (if not a member already or not sending already).
  * @details If the sender is in the state SENDER_INITIAL, then it joins the multicast group and transits to the
  * SENDER_MCAST_JOINED state. Otherwise, i.e. the sender state is different than SENDER_INITIAL, this handler does nothing.
  * While in the SENDER_MCAST_JOINED state, the sender maintains a membership to the multicast group.
+ * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
+ * @sa sender_create()
  */
 void sender_handle_mcastjoin(struct mcast_sender * p_sender);
 
@@ -73,6 +78,8 @@ void sender_handle_mcastjoin(struct mcast_sender * p_sender);
  * @details If the sender is in the state SENDER_MCAST_JOINED, then it transits to the SENDER_INITIAL state.
  * Otherwise, does nothing. While in the SENDER_INITIAL state, 
  * the sender is virtually idle, i.e. it does not maintain a multicast group membership neither it does send any data.
+ * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
+ * @sa sender_create()
  */
 void sender_handle_mcastleave(struct mcast_sender * p_sender);
 
@@ -82,6 +89,8 @@ void sender_handle_mcastleave(struct mcast_sender * p_sender);
  * SENDER_SENDING state. Otherwise, does nothing. While in the SENDER_SENDING state, 
  * the sender runs a background thread that sends the WAV file over and over again to the
  * multicast group.
+ * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
+ * @sa sender_create()
  */
 void sender_handle_startsending(struct mcast_sender * p_sender);
 
@@ -89,6 +98,8 @@ void sender_handle_startsending(struct mcast_sender * p_sender);
  * @brief Causes the sender to stop sending data (if it was doing so).
  * @details If the sender is in the SENDER_SENDING state, then it transits to the
  * SENDER_MCAST_JOINED state. Otherwise, does nothing.
+ * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
+ * @sa sender_create()
  */
 void sender_handle_stopsending(struct mcast_sender * p_sender);
 
