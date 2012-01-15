@@ -35,6 +35,13 @@ extern "C" {
 
 struct receiver_settings;
 
+/*!
+ * @brief Displays a dialog from which settings are obtained.
+ * @details Dialog controls allow for modification of the parameters.
+ * @param[in] hWndParent handle to the parent window.
+ * @param[in,out] p_settings points to the settings which will be altered by the dialog
+ * @return returns <>0 if the settings were changed by the dialog (UI), returns 0 otherwise.
+ */
 int receiver_settings_do_dialog(HWND hWndParent, struct receiver_settings * p_settings);
 
 #if defined __cplusplus

@@ -234,8 +234,8 @@ int get_settings_from_dialog(HWND hParent, struct mcast_settings * p_settings)
     if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc))
     {
         CopyMemory(p_settings, &g_settings, sizeof(struct mcast_settings));
-        return 0;
+        return 1;
     }
-    return -1;
+    return 0;
 }
 
