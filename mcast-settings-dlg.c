@@ -214,10 +214,10 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
     }
     if (change)
     {   
-        memcpy(&settings_copy, &g_settings, sizeof(struct mcast_settings));
+        CopyMemory(&settings_copy, &g_settings, sizeof(struct mcast_settings));
         if (controls_to_data(&settings_copy) && mcast_settings_validate(&settings_copy))
         {
-            memcpy(&g_settings, &settings_copy, sizeof(struct mcast_settings));
+            CopyMemory(&g_settings, &settings_copy, sizeof(struct mcast_settings));
             EnableWindow(g_btok, TRUE);  
         }
         else
@@ -230,10 +230,10 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 
 int get_settings_from_dialog(HWND hParent, struct mcast_settings * p_settings)
 {
-    memcpy(&g_settings, p_settings, sizeof(struct mcast_settings));
+    CopyMemory(&g_settings, p_settings, sizeof(struct mcast_settings));
     if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc))
     {
-        memcpy(p_settings, &g_settings, sizeof(struct mcast_settings));
+        CopyMemory(p_settings, &g_settings, sizeof(struct mcast_settings));
         return 0;
     }
     return -1;

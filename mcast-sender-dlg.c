@@ -170,7 +170,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     if (SENDER_INITIAL == curr_state)
                     {
                         /* Open up the settings dialog with the MCAST settings parameters */
-                        if (IDOK == do_dialog(hDlg, &g_settings))
+                        if (sender_settings_from_dialog(hDlg, &g_settings))
                         {
                             sender_destroy(g_sender);
                             g_sender = sender_create(&g_settings);

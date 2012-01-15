@@ -114,7 +114,8 @@ static void data_to_controls(struct sender_settings const * p_settings)
  * @brief Transfer data from UI to the object.
  * @details Takes the values form the UI controls and saves them to the provided object.
  * @param[in] p_settings object to be written with UI data.
- * @return returns a non-zero value on success, 0 if failure has occured.
+ * @return returns a non-zero value on success, 0 if failure has occured. The failure is usually attributed to the fact
+ * that data from controls cannot fit into representation offered by the target object.
  */
 static int controls_to_data(struct sender_settings * p_settings)
 {
@@ -142,6 +143,7 @@ static int controls_to_data(struct sender_settings * p_settings)
 error:
     return 0;
 }
+
 /*!
  * @brief Handler for WM_INITDIALOG message.
  * @details This handler does as follows:
@@ -197,7 +199,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
             switch (p_notify_header->code)
             {
                 case UDN_DELTAPOS:
-                    memcpy(&copy_for_spins, &g_settings, sizeof(struct sender_settings));
+                    CopyMemory(&copy_for_spins, &g_settings, sizeof(struct sender_settings));
                     switch (p_notify_header->idFrom)
                     {
                         case IDC_PACKET_LENGTH_SPIN:
@@ -228,12 +230,12 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                 case IDC_PACKET_LENGTH_EDIT:
                     if (EN_CHANGE == HIWORD(wParam))
                     {
-                        memcpy(&copy_for_edits, &g_settings, sizeof(struct sender_settings));
+                        CopyMemory(&copy_for_edits, &g_settings, sizeof(struct sender_settings));
                         if (controls_to_data(&copy_for_edits)) 
                         {
-                            if ( sender_settings_validate(&copy_for_edits))
+                            if (sender_settings_validate(&copy_for_edits))
                             {
-                                memcpy(&g_settings, &copy_for_edits, sizeof(struct sender_settings));
+                                CopyMemory(&g_settings, &copy_for_edits, sizeof(struct sender_settings));
                                 EnableWindow(g_btok, TRUE);
                             }
                             else
@@ -243,8 +245,6 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                         }
                         update_ro_controls(&copy_for_edits);
                     }
-                    break;
-                case IDC_PACKET_LENGTH_MS_EDIT:
                     break;
                 case IDCANCEL:
                 case IDOK:
@@ -257,14 +257,14 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
     return FALSE;
 }
 
-int do_dialog(HWND hWndParent, struct sender_settings * p_settings)
+int sender_settings_from_dialog(HWND hWndParent, struct sender_settings * p_settings)
 {
-    memcpy(&g_settings, p_settings, sizeof(struct sender_settings));
+    CopyMemory(&g_settings, p_settings, sizeof(struct sender_settings));
     if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), hWndParent, McastSettingsProc))
     {
-        memcpy(p_settings, &g_settings, sizeof(struct sender_settings));
-        return 0;
+        CopyMemory(p_settings, &g_settings, sizeof(struct sender_settings));
+        return 1;
     }
-    return 1;
+    return 0;
 }
 

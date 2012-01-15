@@ -35,7 +35,14 @@ extern "C" {
 
 struct sender_settings;
 
-int do_dialog(HWND hWndParent, struct sender_settings * p_settings);
+/*!
+ * @brief Displays a dialog from which settings are obtained.
+ * @details Displays a dialog from which settings are obtained.
+ * @param[in] hWndParent handle to the parent window.
+ * @param[in,out] p_settings points to the settings which will be altered by the dialog
+ * @return returns <>0 if the settings were changed by the dialog (UI), returns 0 otherwise.
+ */
+int sender_settings_from_dialog(HWND hWndParent, struct sender_settings * p_settings);
 
 #if defined __cplusplus
 }
