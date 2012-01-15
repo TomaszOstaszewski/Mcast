@@ -17,7 +17,9 @@
 #define IDC_RECEIVER_BUFFER                     1001
 #define IDC_EDIT1                               1002
 #define IDC_MCAST_SETTINGS                      1002
+#define IDC_MMTIMER_EDIT_CTRL                   1003
 #define IDC_WAVCOMBO                            1003
+#define IDC_MMTIMER_SPIN                        1004
 #define IDC_PACKET_DELAY_EDIT                   1004
 #define IDC_PACKET_DELAY_SPIN                   1006
 #define IDC_POLL_SLEEP_TIME_EDIT                1006

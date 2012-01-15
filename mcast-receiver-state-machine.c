@@ -33,7 +33,6 @@
 #include "pcc.h"
 #include "mcast-receiver-state-machine.h"
 #include "receiver-settings.h"
-#include "mcast-settings.h"
 #include "mcast_setup.h"
 #include "debug_helpers.h"
 #include "dsoundplay.h"
@@ -45,15 +44,14 @@
  * @details This structure represents the multicast receiver object.
  */
 struct mcast_receiver { 
-    struct mcast_settings const * settings_; /*!< Receiver settings for multicast connection. */
     receiver_state_t state_; /*!< Receiver's current state. */
     DSOUNDPLAY player_; /*!< Pointer to the data player buffer */
-    WAVEFORMATEX * wfex_; /*!< Pointer to the object describing the PCM data being received */
     struct mcast_connection * conn_; /*!< Pointer to the multicast connection object */
     struct fifo_circular_buffer * fifo_; /*!< Pointer to the jitter buffer */
     HANDLE hStopEvent_;/*!< The receiver's stop event. When this event is signalled via SetEvent() call, the receiver thread exits. */
     HANDLE hStopEventThread_;/*!< The receiver's stop event. When this event is signalled via SetEvent() call, the receiver thread exits. */
     HANDLE hRcvThread_; /*!< Handle to the receiver's thread */
+    struct receiver_settings settings_; /*!< Receiver settings for multicast connection. */
 };
 
 #define MAX_UDP_PACKET_LENGHT (2048)
@@ -70,6 +68,9 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
     struct mcast_receiver * p_receiver;
     struct data_item item;
     struct sockaddr_in sock_addr;
+    DWORD dwWaitTimeout;
+    int bytes_recevied;
+    DWORD dwWaitResult;
     socklen_t sock_addr_size;
     p_receiver = (struct mcast_receiver*)param;
     assert(p_receiver);
@@ -78,11 +79,11 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
     sock_addr_size  = sizeof(struct sockaddr_in);
     item.data_      = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, MAX_UDP_PACKET_LENGHT);
     item.count_     = MAX_UDP_PACKET_LENGHT;
+    dwWaitTimeout   = p_receiver->settings_.poll_sleep_time_;
+    debug_outputln("%s %d : %u", __FILE__, __LINE__, dwWaitTimeout);
     for (count = 0; ; ++count)
     {
-        int bytes_recevied;
-        DWORD dwWaitResult;
-        dwWaitResult = WaitForSingleObject(p_receiver->hStopEventThread_, 50);
+        dwWaitResult = WaitForSingleObject(p_receiver->hStopEventThread_, dwWaitTimeout);
         if (WAIT_TIMEOUT == dwWaitResult) /* Timedout - hence, nobody wants us to finish yet */
         {
             /* Receive data from the socket until you receiving this WSAMSGSIZE error
@@ -169,9 +170,12 @@ static int handle_rcvstop_internal(struct mcast_receiver * p_receiver)
     assert(NULL != p_receiver->hRcvThread_);
     if (NULL != p_receiver->hStopEvent_)
     {
+        DWORD dwWaitResult;
         SetEvent(p_receiver->hStopEvent_);
         CloseHandle(p_receiver->hStopEvent_);
         p_receiver->hStopEvent_ = NULL;
+        dwWaitResult = WaitForSingleObject(p_receiver->hRcvThread_, INFINITE); 
+        assert(WAIT_OBJECT_0 == dwWaitResult);
         CloseHandle(p_receiver->hRcvThread_);
         p_receiver->hRcvThread_ = NULL;
         return 0;
@@ -192,7 +196,7 @@ static int handle_mcastjoin_internal(struct mcast_receiver * p_receiver)
 	assert(NULL != p_receiver->conn_);
     if (NULL != p_receiver->conn_)
     {
-        result = setup_multicast_addr(FALSE, TRUE, NULL, NULL, 8, &p_receiver->settings_->mcast_addr_, p_receiver->conn_);
+        result = setup_multicast_addr(FALSE, TRUE, NULL, NULL, 8, &p_receiver->settings_.mcast_settings_.mcast_addr_, p_receiver->conn_);
         assert(0 == result);
         if (0 == result)
         {
@@ -253,11 +257,10 @@ static int handle_stop_internal(struct mcast_receiver * p_receiver)
 static int handle_play_internal(HWND hMainWnd, struct mcast_receiver * p_receiver)
 {
     assert(NULL == p_receiver->player_);
-    assert(NULL != p_receiver->wfex_);
     assert(NULL != p_receiver->fifo_);
-    if (NULL == p_receiver->player_ && NULL != p_receiver->wfex_ && NULL != p_receiver->fifo_)
+    if (NULL == p_receiver->player_ && NULL != p_receiver->fifo_)
     {
-        p_receiver->player_ = dsoundplayer_create(hMainWnd, p_receiver->wfex_, p_receiver->fifo_);
+        p_receiver->player_ = dsoundplayer_create(hMainWnd, &p_receiver->settings_.wfex_, p_receiver->fifo_);
         assert(NULL != p_receiver->player_);
         if (NULL != p_receiver->player_)
         {
@@ -268,14 +271,25 @@ static int handle_play_internal(HWND hMainWnd, struct mcast_receiver * p_receive
     return -1;
 }
 
-struct mcast_receiver * receiver_init(WAVEFORMATEX * p_wfex, struct receiver_settings const * p_settings)
+struct mcast_receiver * receiver_create(struct receiver_settings const * p_settings)
 {
     struct mcast_receiver * p_receiver = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_receiver)); 
     assert(p_receiver);
-    p_receiver->wfex_ = p_wfex; 
-    p_receiver->settings_ = &p_settings->mcast_settings_;
+    assert(p_settings);
+    receiver_settings_copy(&p_receiver->settings_, p_settings);
     p_receiver->fifo_ = fifo_circular_buffer_create();
     return p_receiver;
+}
+
+int receiver_destroy(struct mcast_receiver * p_receiver)
+{
+    assert(RECEIVER_INITIAL == p_receiver->state_);
+    if (RECEIVER_INITIAL == p_receiver->state_);
+    {
+        HeapFree(GetProcessHeap(), 0, p_receiver);
+        return 1;
+    }
+    return 0;
 }
 
 void handle_play(struct mcast_receiver * p_receiver, HWND hMainWnd)
@@ -362,6 +376,7 @@ void handle_rcvstop(struct mcast_receiver * p_receiver)
 
 void handle_mcastjoin(struct mcast_receiver * p_receiver)
 {
+    debug_outputln("%s %u", __FILE__, __LINE__);
     if (RECEIVER_INITIAL == p_receiver->state_)
     {
         if (0 == handle_mcastjoin_internal(p_receiver))

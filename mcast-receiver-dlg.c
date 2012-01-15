@@ -228,21 +228,16 @@ static void UpdateUI(HWND hDlg)
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
     int result;
-    static master_riff_chunk_t *   g_pWavChunk;
-    result = init_master_riff(&g_pWavChunk, g_hInst, MAKEINTRESOURCE(IDR_0_1));
-    assert(0 == result);
-    if (0 == result)
+    result = receiver_get_default_settings(g_hInst, &g_settings);
+    assert(result);
+    if (result)
     {
-        WAVEFORMATEX * p_wfex = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(WAVEFORMATEX)); 
-        copy_waveformatex_2_WAVEFORMATEX(p_wfex, &g_pWavChunk->format_chunk_.format_);
-        receiver_get_default_settings(g_hInst, &g_settings);
-        g_receiver = receiver_init(p_wfex, &g_settings);
+        g_receiver = receiver_create(&g_settings);
         assert(g_receiver);
         UpdateUIwithCurrentState(hwnd, receiver_get_state(g_receiver));
     }
-    else
+    else 
     {
-        // Add a MessageBox here //
         EndDialog(hwnd, IDCANCEL);
     }
     return FALSE; /* We return FALSE, as we do call SetFocus() ourselves */
@@ -266,9 +261,16 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
             switch(wParam)
             {
                 case ID_RECEIVER_SETTINGS:
-                    if (RECEIVER_INITIAL == receiver_get_state(g_receiver))
+                    if (RECEIVER_INITIAL == receiver_get_state(g_receiver) && receiver_settings_do_dialog(hDlg, &g_settings))
                     {
-                        receiver_settings_do_dialog(hDlg, &g_settings);
+                        int result;
+                        result = receiver_destroy(g_receiver); 
+                        assert(result);
+                        if (result)
+                        {
+                            g_receiver = receiver_create(&g_settings);
+                            assert(g_receiver);
+                        }
                     }
                     else
                     {

@@ -47,9 +47,11 @@
 int receiver_get_default_settings(HINSTANCE hInst, struct receiver_settings * p_settings)
 {
 	int result;
-	result = init_master_riff(&p_settings->chunk_, hInst, MAKEINTRESOURCE(IDR_0_1));
-	assert(0 == result);
-	if (0 == result) 
+    master_riff_chunk_t * p_riff_chunk;
+    /*! \todo Add function to unload WAV resource */
+	result = init_master_riff(&p_riff_chunk, hInst, MAKEINTRESOURCE(IDR_0_1));
+	assert(result);
+    if (result) 
 	{
 		struct mcast_settings const * p_default_mcast_settings;
 		p_settings->play_buffer_size_ = 1024;
@@ -57,6 +59,7 @@ int receiver_get_default_settings(HINSTANCE hInst, struct receiver_settings * p_
 		p_settings->timer_delay_ = 10 ;
 		p_default_mcast_settings = get_default_mcast_settings();
 		memcpy(&p_settings->mcast_settings_, p_default_mcast_settings, sizeof(struct mcast_settings));
+        copy_waveformatex_2_WAVEFORMATEX(&p_settings->wfex_, &p_riff_chunk->format_chunk_.format_);
 	}
 	return result;
 }
@@ -65,10 +68,23 @@ int receiver_validate_settings(struct receiver_settings const * p_settings)
 {
 	if (p_settings->timer_delay_ < 1 || p_settings->timer_delay_ > 1000)
 		return 0;	
-	if (p_settings->poll_sleep_time_ < 1 || p_settings->poll_sleep_time_ > 10000)
+	if (p_settings->poll_sleep_time_ < 1 || p_settings->poll_sleep_time_ > 1000)
 		return 0;	
 	if (p_settings->play_buffer_size_ < 128 || p_settings->play_buffer_size_ > 8192)
 		return 0;	
 	return 1;
+}
+
+void receiver_settings_copy(struct receiver_settings * p_dest, struct receiver_settings const * p_source)
+{
+    memcpy(p_dest, p_source, sizeof(struct receiver_settings));
+}
+
+void receiver_settings_swap(struct receiver_settings * p_left, struct receiver_settings * p_right)
+{
+    struct receiver_settings tmp;
+    memcpy(&tmp, p_left, sizeof(struct receiver_settings));
+    memcpy(p_left, p_right, sizeof(struct receiver_settings));
+    memcpy(p_right, &tmp, sizeof(struct receiver_settings));
 }
 
