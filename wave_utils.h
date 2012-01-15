@@ -39,23 +39,31 @@ extern "C" {
 #endif 
 
 /*!
- * 
+ * @brief WAV file description
+ * @details This structure is binary compatible with WAV bytes, 16 bytes from the beginning.
+ * It describes number of channels in WAV file, its format, how many samples per second, 
+ * how many bytes per second, how many bits per sample and so on.
+ * @attention All the data in the WAV file is stored in little endian. So on the little endian machine 
+ * it is enough to load a WAV file into this structure.
  */
 typedef struct waveformatex {
-    uint16_t  wFormatTag;
-    uint16_t  nChannels;
-    uint32_t  nSamplesPerSec;
-    uint32_t  nAvgBytesPerSec;
-    uint16_t  nBlockAlign;
-    uint16_t  wBitsPerSample;
+    uint16_t  wFormatTag; /*!< Format tag */
+    uint16_t  nChannels; /*!< Number of interleaved channels */
+    uint32_t  nSamplesPerSec; /*!< Sampling rate, blocks per second */
+    uint32_t  nAvgBytesPerSec; /*!< Data rate */
+    uint16_t  nBlockAlign; /*!< Data block size */
+    uint16_t  wBitsPerSample; /*!< Bits per sample */
 } waveformatex_t;
 
 /*!
- * 
- */
+ * @brief A sub-chunk header
+ * @details This is the last header, what follows is data. 
+ * @attention All the data in the WAV file is stored in little endian. So on the little endian machine 
+ * it is enough to load a WAV file into this structure.
+  */
 typedef struct wav_subchunk { 
-    uint8_t     subchunkId_[4];
-    uint32_t    subchunk_size_; 
+    uint8_t     subchunkId_[4]; /*!< 4 bytes, they give string 'data', 0x64 0x61 0x74 0x61 */
+    uint32_t    subchunk_size_;  /*!< Number of bytes that follow. */
     union {
         int8_t      samples8_[1];
         int16_t     samples16_[1];
@@ -63,64 +71,76 @@ typedef struct wav_subchunk {
 } wav_subchunk_t;
 
 /*!
- * 
+ * @brief WAV file header.
+ * @details Each WAV file begins with this bytes. 
+ * @attention All the data in the file is stored in little endian. Thus, on little endian machine, 
+ * it will suffice to read a WAV file into that structure and then you have it. On the big endian machine, 
+ * you will need to do a lot of byte swapping.
  */
 typedef struct wav_format_chunk {
-    uint8_t     waveid_[4];
-    uint8_t     ckid_[4];
-    uint32_t    cksize_;
-    struct waveformatex format_; 
-    struct wav_subchunk subchunk_;
+    uint8_t     waveid_[4]; /*!< WaveID, 4 bytes that give "WAVE", 0x57 0x41 0x56 0x45 */ 
+    uint8_t     ckid_[4]; /*!< Yet another chunk id, 4 bytes that give "fmt ", 0x66 0x6d 0x74 0x20 */
+    uint32_t    cksize_; /*!< Chunk size, either 16, 18 or 40 decimal */
+    struct waveformatex format_; /*!< Format of the chunk */
+    struct wav_subchunk subchunk_; /*!< The chunk itself, prepended with some rudimentary header. */
 } wav_format_chunk_t; 
 
 /*!
- * @brief 
+ * @brief WAV file header.
+ * @details  
+ * @attention All the data in the WAV file is stored in little endian. So on the little endian machine 
+ * it is enough to load a WAV file into this structure.
  */
 typedef struct master_riff_chunk {
-    uint8_t     ckid_[4];
-    uint32_t    cksize_;
+    uint8_t     ckid_[4]; /*!< ChunkID, 4 bytes that give "RIFF", 0x52 0x49 0x46 0x46 in hex */
+    uint32_t    cksize_; /*!< Chunk size, 4+n */
     union {
+        wav_format_chunk_t format_chunk_;
         uint8_t     data_u8_[1];
         uint16_t    data_u16_[1];
         uint32_t    data_u32_[1];
-        wav_format_chunk_t format_chunk_;
     };
 } master_riff_chunk_t;
 
 /*!
- * @brief
+ * @brief Helper function, dumps the WAVEFORMATEX to the debug view window.
  */
-typedef master_riff_chunk_t * P_master_riff_chunk_t;
-
-/*!
- * @brief 
- */
-typedef master_riff_chunk_t const * PC_master_riff_chunk_t;
-
 void dump_waveformatex(WAVEFORMATEX const * p_wfe);
 
-WORD waveformatex_getFormatTag(WAVEFORMATEX const * p_wfe);
-DWORD waveformatex_getChannels(WAVEFORMATEX const * p_wfe);
-DWORD waveformatex_getSamplesPerSec(WAVEFORMATEX const * p_wfe);
-DWORD waveformatex_getAvgBytesPerSec(WAVEFORMATEX const * p_wfe);
-WORD waveformatex_getBlockAlign(WAVEFORMATEX const * p_wfe);
-WORD waveformatex_getBitsPerSample(WAVEFORMATEX const * p_wfe);
-
 /*!
- * @brief 
- * @details
+ * @brief Copies the waveformatex structure into a valid WAVEFORMATEX structure.
+ * @details The layout of both waveformatex and WAVEFORMATEX is almost the same. The only difference
+ * is that to get a pointer to 'waveformatex' it is sufficient to cast a pointer to memory mapped WAV file 
+ * to the 'waveformatex *' and then you get it. The WAVEFORMATEX this trick will not work, as it has the 
+ * cbSize member. 
+ * In short, you will need this function. 
+ * @param[out] p_dest pointer to the memory location which will be written with data copied from p_source parameter.
+ * @param[in] p_source pointer to the memory location which will be written with data copied from p_source parameter.
  */
 void copy_waveformatex_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, const struct waveformatex * p_source);
 
 /*!
  * @brief Loads the WAV file from the resources.
- * @details  
- * @param[out] pp_chunk
- * @param[in] hModule
- * @param[in] lpResName
- * @return
+ * @details The WAV files are stored as binary data in the resources.  
+ * @param[out] pp_chunk this pointer will be written with a reference to the memory location, where the WAV file is stored. 
+ * Example usage:
+ * @code
+ * int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+ * {
+ *     int result;
+ *     master_riff_chunk_t * g_pWavChunk;
+ *     result = init_master_riff(&g_pWavChunk, hInstance, MAKEINTRESOURCE(IDR_0_1));
+ *     assert(0 == result);
+ *     return (int)0;
+ * }
+ * @endcode
+ * @param[in] pp_chunk this pointer will be written with a pointer value (because its a pointer to a pointer). The pointer value, in turn
+ * will point to the WAV file data.
+ * @param[in] hModule describes from which module resources will be loaded.
+ * @param[in] lpResName describes what resource to load
+ * @return returns 0 on success, <>0 otherwise.
  */
-int init_master_riff(PC_master_riff_chunk_t * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName);
+int init_master_riff(master_riff_chunk_t ** pp_chunk, HINSTANCE hModule, LPCTSTR lpResName);
 
 #if defined __cplusplus
 }

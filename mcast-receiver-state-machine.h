@@ -88,6 +88,8 @@ void handle_mcastleave(struct mcast_receiver * p_receiver);
  * start playing without any network data being fetched - in that case
  * they will only hear silence.
  * @param[in] p_receiver handle to the receiver object. 
+ * @param[in] hMainWnd handle to the window that will be used for playbac. This handle can be the handle of 
+ * your main application window. Or it can be NULL, in which case the foreground window or the desktop window will be hijacked.
  */
 void handle_play(struct mcast_receiver * p_receiver, HWND hMainWnd);
 

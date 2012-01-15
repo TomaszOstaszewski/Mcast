@@ -32,9 +32,13 @@
 #include "wave_utils.h"
 #include "debug_helpers.h"
 
+/*! 
+ * @brief Macro to facilitate structure creation.
+ */
+#define MAKE_STRUCT(x)	{x, #x}
+
 static const char * wFormatTag2String(WORD wFormatTag)
 {
-#define MAKE_STRUCT(x)	{x, #x}
 	static const struct tag_wFormatTag2String {
 		WORD wFormatTag_;
 		const char * string_;
@@ -43,9 +47,6 @@ static const char * wFormatTag2String(WORD wFormatTag)
 		 MAKE_STRUCT(WAVE_FORMAT_IEEE_FLOAT),
 		 MAKE_STRUCT(WAVE_FORMAT_EXTENSIBLE),
 		 MAKE_STRUCT(WAVE_FORMAT_ADPCM),
-		 //MAKE_STRUCT(WAVE_FORMAT_XMA2),
-		 //MAKE_STRUCT(WAVE_FORMAT_WMAUDIO2),
-		 //MAKE_STRUCT(WAVE_FORMAT_WMAUDIO3),
 	};
 	size_t idx = 0;
 	for (idx = 0; idx < sizeof(format2String_)/sizeof(format2String_[0]); ++idx)
@@ -69,36 +70,6 @@ void dump_waveformatex(WAVEFORMATEX const * p_wfe)
 			);
 }
 
-WORD waveformatex_getFormatTag(WAVEFORMATEX const * p_wfe)
-{
-	return p_wfe->wFormatTag;
-}
-
-DWORD waveformatex_getChannels(WAVEFORMATEX const * p_wfe)
-{
-	return p_wfe->nChannels;
-}
-
-DWORD waveformatex_getSamplesPerSec(WAVEFORMATEX const * p_wfe)
-{
-	return p_wfe->nSamplesPerSec;
-}
-
-DWORD waveformatex_getAvgBytesPerSec(WAVEFORMATEX const * p_wfe)
-{
-	return p_wfe->nAvgBytesPerSec;
-}
-
-WORD waveformatex_getBlockAlign(WAVEFORMATEX const * p_wfe)
-{
-	return p_wfe->nBlockAlign;
-}
-
-WORD waveformatex_getBitsPerSample(WAVEFORMATEX const * p_wfe)
-{
-	return p_wfe->wBitsPerSample;
-}
-
 void copy_waveformatex_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, const struct waveformatex * p_source)
 {
 	p_dest->wFormatTag 		= p_source->wFormatTag;
@@ -110,7 +81,7 @@ void copy_waveformatex_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, const struct wavefo
 	p_dest->cbSize 			= sizeof(WAVEFORMATEX);
 }
 
-int init_master_riff(PC_master_riff_chunk_t * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName)
+int init_master_riff(master_riff_chunk_t ** pp_chunk, HINSTANCE hModule, LPCTSTR lpResName)
 {
     HRSRC hRes;
     int result = -1;
@@ -121,9 +92,12 @@ int init_master_riff(PC_master_riff_chunk_t * pp_chunk, HINSTANCE hModule, LPCTS
         globRes = LoadResource(hModule, hRes);
         if (NULL != hRes)
         {
-            *pp_chunk = (PC_master_riff_chunk_t)LockResource(globRes);
+            *pp_chunk = (master_riff_chunk_t *)LockResource(globRes);
             if (NULL != *pp_chunk)
+            {
+                debug_outputln("%s %5.5d : %p", __FILE__, __LINE__, *pp_chunk);
                 result = 0;
+            }
         }
         else
         {
@@ -134,6 +108,6 @@ int init_master_riff(PC_master_riff_chunk_t * pp_chunk, HINSTANCE hModule, LPCTS
     {
         debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, GetLastError(), GetLastError());
     }
-    return 0;
+    return result;
 }
 
