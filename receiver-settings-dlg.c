@@ -76,9 +76,14 @@ static HWND g_mmtimer_spin_ctrl;
  */
 static HWND g_btok;
 
-
+/*!
+ * @brief Maximum number of digits in the dialogs edit controls.
+ */
 #define TEXT_LIMIT (4)
 
+/*!
+ * @brief Buffer that holds a number typed into one of the edit controls.
+ */
 static TCHAR text_buffer[TEXT_LIMIT+1];
 
 /*!
@@ -88,14 +93,11 @@ static TCHAR text_buffer[TEXT_LIMIT+1];
 static void data_to_controls(struct receiver_settings const * p_settings)
 {
 	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->poll_sleep_time_);
-	//SetWindowText(g_poll_sleep_time_edit, text_buffer);
-    SendMessage(g_poll_sleep_time_edit, WM_SETTEXT, (WPARAM)0, (LPARAM)text_buffer);
+	SetWindowText(g_poll_sleep_time_edit, text_buffer);
 	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_buffer_size_);
-    SendMessage(g_play_buffer_size_edit, WM_SETTEXT, (WPARAM)0, (LPARAM)text_buffer);
-	//SetWindowText(g_play_buffer_size_edit, text_buffer);
+	SetWindowText(g_play_buffer_size_edit, text_buffer);
 	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->timer_delay_);
-    SendMessage(g_mmtimer_edit_ctrl, WM_SETTEXT, (WPARAM)0, (LPARAM)text_buffer);
-	//SetWindowText(g_mmtimer_edit_ctrl, text_buffer);
+	SetWindowText(g_mmtimer_edit_ctrl, text_buffer);
     //debug_outputln("%s %d : %u", __FILE__, __LINE__, p_settings->timer_delay_);
 }
 
@@ -242,9 +244,6 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                         {
                             EnableWindow(g_btok, FALSE);
                         }
-                    }
-                    else 
-                    {
                     }
                     break;
                 case IDC_MCAST_SETTINGS: 
