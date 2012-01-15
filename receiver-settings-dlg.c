@@ -141,7 +141,6 @@ static int controls_to_data(struct receiver_settings * p_settings)
     //debug_outputln("%u : %hu ", __LINE__, p_settings->timer_delay_); 
     return 1;
 error:
-    assert(result);
     return 0;
 }
 
@@ -208,15 +207,18 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                     {
                         case IDC_POLL_SLEEP_TIME_SPIN:
                             copy_for_spins.poll_sleep_time_ -= p_up_down->iDelta;
-                            data_to_controls(&copy_for_spins);
+                            if (receiver_validate_settings(&copy_for_spins))
+                                data_to_controls(&copy_for_spins);
                             break;
                         case IDC_PLAY_BUFFER_SIZE_SPIN:
                             copy_for_spins.play_buffer_size_ -= p_up_down->iDelta;
-                            data_to_controls(&copy_for_spins);
+                            if (receiver_validate_settings(&copy_for_spins))
+                                data_to_controls(&copy_for_spins);
                             break;
                         case IDC_MMTIMER_SPIN:
                             copy_for_spins.timer_delay_ -= p_up_down->iDelta;
-                            data_to_controls(&copy_for_spins);
+                            if (receiver_validate_settings(&copy_for_spins))
+                                data_to_controls(&copy_for_spins);
                             break;
                         default:
                             break;

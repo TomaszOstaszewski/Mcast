@@ -140,7 +140,6 @@ static int controls_to_data(struct sender_settings * p_settings)
     p_settings->chunk_size_ = packet_length;
     return 1;
 error:
-    assert(result);
     return 0;
 }
 /*!
@@ -203,11 +202,13 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                     {
                         case IDC_PACKET_LENGTH_SPIN:
                             copy_for_spins.chunk_size_ -= p_up_down->iDelta;
-                            data_to_controls(&copy_for_spins);
+                            if (sender_settings_validate(&copy_for_spins))
+                                data_to_controls(&copy_for_spins);
                             break;
                         case IDC_PACKET_DELAY_SPIN:
                             copy_for_spins.send_delay_ -= p_up_down->iDelta;
-                            data_to_controls(&copy_for_spins);
+                            if (sender_settings_validate(&copy_for_spins))
+                                data_to_controls(&copy_for_spins);
                             break;
                         default:
                             break;

@@ -110,24 +110,21 @@ static int controls_to_data(struct mcast_settings * p_settings)
     DWORD address;
     memset(port_buffer, 0, sizeof(port_buffer));
     *((WORD *)port_buffer) = TEXT_LIMIT;
-    result = SendMessage(g_ipport_edit_ctrl, EM_GETLINE, 0, (LPARAM)port_buffer);
+    SendMessage(g_ipport_edit_ctrl, EM_GETLINE, 0, (LPARAM)port_buffer);
     result = sscanf(port_buffer, "%u", &port_host_order);
-    assert(result);
     if (!result) 
         goto error;
     /* The 5 digit figures in decimal don't fit into 2 bytes of hex.
      * Therefore we may need to make some exceptions for values above 65535 - we enter the 65535 insted.
      */
     if (port_host_order > USHRT_MAX)
-    {
-        result = 0;
         goto error;
-    }
     p_settings->mcast_addr_.sin_port = htons((unsigned short)port_host_order);
     SendMessage(g_ipaddr_ctrl, IPM_GETADDRESS, (WPARAM)0, (LPARAM)&address);
     p_settings->mcast_addr_.sin_addr.s_addr = htonl(address);
+    return 1;
 error:
-    return result;
+    return 0;
 }
 
 /*!
