@@ -85,14 +85,14 @@ static HWND g_btok;
  */
 static TCHAR text_buffer[TEXT_LIMIT+1];
 
-#define SAMPLES_PER_SEC (8000)
-#define BYTES_PER_SAMPLE (2)
-#define MILLISECOND_IN_SEC (1000)
+#define SAMPLES_PER_SEC (8000.0)
+#define BYTES_PER_SAMPLE (2.0)
+#define MILLISECOND_IN_SEC (1000.0)
 
-static void update_ro_controls(struct sender_settings const * p_settings)
+static void update_calculated_controls(struct sender_settings const * p_settings)
 {
-    unsigned int length_in_ms = (MILLISECOND_IN_SEC * p_settings->chunk_size_/BYTES_PER_SAMPLE)/SAMPLES_PER_SEC;
-    StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%u", length_in_ms);
+    double length_in_ms = (MILLISECOND_IN_SEC * p_settings->chunk_size_/BYTES_PER_SAMPLE)/SAMPLES_PER_SEC;
+    StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%2.2f", length_in_ms);
     SetWindowText(g_packet_lenght_ms_edit, text_buffer);
 }
 
@@ -103,7 +103,7 @@ static void update_ro_controls(struct sender_settings const * p_settings)
 static void data_to_controls(struct sender_settings const * p_settings)
 {
     /*! \todo Remove this nasty magic numbers with variables, whose values are taken form the WAV file being send */
-    update_ro_controls(p_settings);
+    update_calculated_controls(p_settings);
     StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%u", p_settings->send_delay_);
     SetWindowText(g_packet_delay_edit, text_buffer);
     StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%u", p_settings->chunk_size_);
@@ -231,19 +231,16 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                     if (EN_CHANGE == HIWORD(wParam))
                     {
                         CopyMemory(&copy_for_edits, &g_settings, sizeof(struct sender_settings));
-                        if (controls_to_data(&copy_for_edits)) 
+                        if (controls_to_data(&copy_for_edits) && sender_settings_validate(&copy_for_edits)) 
                         {
-                            if (sender_settings_validate(&copy_for_edits))
-                            {
-                                CopyMemory(&g_settings, &copy_for_edits, sizeof(struct sender_settings));
-                                EnableWindow(g_btok, TRUE);
-                            }
-                            else
-                            {
-                                EnableWindow(g_btok, FALSE);
-                            }
+                            CopyMemory(&g_settings, &copy_for_edits, sizeof(struct sender_settings));
+                            EnableWindow(g_btok, TRUE);
+                            update_calculated_controls(&copy_for_edits);
                         }
-                        update_ro_controls(&copy_for_edits);
+                        else
+                        {
+                            EnableWindow(g_btok, FALSE);
+                        }
                     }
                     break;
                 case IDCANCEL:
