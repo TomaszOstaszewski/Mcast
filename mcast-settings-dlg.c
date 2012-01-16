@@ -112,7 +112,7 @@ static int controls_to_data(struct mcast_settings * p_settings)
     *((WORD *)port_buffer) = TEXT_LIMIT;
     SendMessage(g_ipport_edit_ctrl, EM_GETLINE, 0, (LPARAM)port_buffer);
     result = sscanf(port_buffer, "%u", &port_host_order);
-    if (!result) 
+    if (result<=0) 
         goto error;
     /* The 5 digit figures in decimal don't fit into 2 bytes of hex.
      * Therefore we may need to make some exceptions for values above 65535 - we enter the 65535 insted.
