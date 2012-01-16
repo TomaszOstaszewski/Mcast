@@ -80,7 +80,6 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
     item.data_      = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, MAX_UDP_PACKET_LENGHT);
     item.count_     = MAX_UDP_PACKET_LENGHT;
     dwWaitTimeout   = p_receiver->settings_.poll_sleep_time_;
-    debug_outputln("%s %d : %u", __FILE__, __LINE__, dwWaitTimeout);
     for (count = 0; ; ++count)
     {
         dwWaitResult = WaitForSingleObject(p_receiver->hStopEventThread_, dwWaitTimeout);
@@ -196,15 +195,15 @@ static int handle_rcvstop_internal(struct mcast_receiver * p_receiver)
 static int handle_mcastjoin_internal(struct mcast_receiver * p_receiver)
 {
     int result = 0;
-    int mcast_result = -1;
+    int mcast_result = 0;
     assert(p_receiver->conn_ == NULL);
     p_receiver->conn_ = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_connection));
     assert(NULL != p_receiver->conn_);
     if (NULL != p_receiver->conn_)
     {
         mcast_result = setup_multicast_addr(FALSE, TRUE, NULL, NULL, 8, &p_receiver->settings_.mcast_settings_.mcast_addr_, p_receiver->conn_);
-        assert(0 == mcast_result);
-        if (0 == mcast_result)
+        assert(mcast_result);
+        if (mcast_result)
         {
             /* Set the non-blocking mode on the socket */
             unsigned long non_block = 1;
@@ -216,7 +215,7 @@ static int handle_mcastjoin_internal(struct mcast_receiver * p_receiver)
     }
     if (!result)
     {
-        if (p_receiver->conn_ && 0 == mcast_result)
+        if (p_receiver->conn_ && mcast_result)
             close_multicast(p_receiver->conn_); 
         if (p_receiver->conn_)
             HeapFree(GetProcessHeap(), 0, p_receiver->conn_);

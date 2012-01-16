@@ -13,6 +13,7 @@
 #define IDD_SENDER_SETTINGS                     122
 #define IDD_MCAST_SETTINGS                      124
 #define IDD_RECEIVER_SETTINGS                   125
+#define IDD_VERSION_DIALOG                      127
 #define IDC_IPADDRESS1                          1000
 #define IDC_RECEIVER_BUFFER                     1001
 #define IDC_EDIT1                               1002
