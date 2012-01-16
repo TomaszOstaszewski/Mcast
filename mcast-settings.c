@@ -50,13 +50,13 @@
 
 static struct mcast_settings g_default_settings;
 
-struct mcast_settings const * get_default_mcast_settings(void)
+int mcast_settings_get_default(struct mcast_settings * p_target)
 {
 	unsigned long net_addr = inet_addr(DEFAULT_MCASTADDRV4);
-	g_default_settings.bReuseAddr_ = TRUE;
-	memcpy(&g_default_settings.mcast_addr_.sin_addr, &net_addr, sizeof(unsigned long));
-	g_default_settings.mcast_addr_.sin_port = htons(DEFAULT_MCASTPORT);
-	return &g_default_settings;
+	p_target->bReuseAddr_ = TRUE;
+	memcpy(&p_target->mcast_addr_.sin_addr, &net_addr, sizeof(unsigned long));
+	p_target->mcast_addr_.sin_port = htons(DEFAULT_MCASTPORT);
+    return 1;
 }
 
 #define MIN_MCAST_ADDR (0xe0000000)
@@ -71,5 +71,10 @@ int mcast_settings_validate(struct mcast_settings const * p_settings)
     if (addr < MIN_MCAST_ADDR || addr > MAX_MCAST_ADDR)
         return 0;
     return 1;
+}
+
+void mcast_settings_copy(struct mcast_settings * p_dest, struct mcast_settings const * p_source)
+{
+   memcpy(p_dest, p_source, sizeof(struct mcast_settings)); 
 }
 

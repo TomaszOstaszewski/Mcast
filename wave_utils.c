@@ -84,7 +84,7 @@ void copy_waveformatex_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, const struct wavefo
 int init_master_riff(master_riff_chunk_t ** pp_chunk, HINSTANCE hModule, LPCTSTR lpResName)
 {
     HRSRC hRes;
-    int result = -1;
+    int result = 0;
     hRes = FindResource(hModule, lpResName, "0");
     if (NULL != hRes)
     {
@@ -94,10 +94,7 @@ int init_master_riff(master_riff_chunk_t ** pp_chunk, HINSTANCE hModule, LPCTSTR
         {
             *pp_chunk = (master_riff_chunk_t *)LockResource(globRes);
             if (NULL != *pp_chunk)
-            {
-                debug_outputln("%s %5.5d : %p", __FILE__, __LINE__, *pp_chunk);
-                result = 0;
-            }
+                result = 1;
         }
         else
         {

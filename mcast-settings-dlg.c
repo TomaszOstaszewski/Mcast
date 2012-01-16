@@ -110,27 +110,21 @@ static int controls_to_data(struct mcast_settings * p_settings)
     DWORD address;
     memset(port_buffer, 0, sizeof(port_buffer));
     *((WORD *)port_buffer) = TEXT_LIMIT;
-    result = SendMessage(g_ipport_edit_ctrl, EM_GETLINE, 0, (LPARAM)port_buffer);
+    SendMessage(g_ipport_edit_ctrl, EM_GETLINE, 0, (LPARAM)port_buffer);
     result = sscanf(port_buffer, "%u", &port_host_order);
-    assert(result);
-    if (result) 
-    {
-        /* The 5 digit figures in decimal don't fit into 2 bytes of hex.
-         * Therefore we may need to make some exceptions for values above 65535 - we enter the 65535 insted.
-         */
-        if (port_host_order > USHRT_MAX)
-        {
-            p_settings->mcast_addr_.sin_port = htons(USHRT_MAX);
-            data_to_controls(p_settings);
-        }
-        else
-        {
-            p_settings->mcast_addr_.sin_port = htons((unsigned short)port_host_order);
-            SendMessage(g_ipaddr_ctrl, IPM_GETADDRESS, (WPARAM)0, (LPARAM)&address);
-            p_settings->mcast_addr_.sin_addr.s_addr = htonl(address);
-        }
-    }
-    return result;
+    if (result<=0) 
+        goto error;
+    /* The 5 digit figures in decimal don't fit into 2 bytes of hex.
+     * Therefore we may need to make some exceptions for values above 65535 - we enter the 65535 insted.
+     */
+    if (port_host_order > USHRT_MAX)
+        goto error;
+    p_settings->mcast_addr_.sin_port = htons((unsigned short)port_host_order);
+    SendMessage(g_ipaddr_ctrl, IPM_GETADDRESS, (WPARAM)0, (LPARAM)&address);
+    p_settings->mcast_addr_.sin_addr.s_addr = htonl(address);
+    return 1;
+error:
+    return 0;
 }
 
 /*!
@@ -169,6 +163,11 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     return TRUE;
 } 
 
+/*
+#define HANDLE_WM_COMMAND(hwnd, wParam, lParam, fn) \
+    ((fn)((hwnd), (int)(LOWORD(wParam)), (HWND)(lParam), (UINT)HIWORD(wParam)), 0L)
+*/
+
 /**
  * @brief Multicast settings dialog message processing routine.
  * @details Processes the messages for the dialog, mainly the WM_COMMAND type.
@@ -181,7 +180,6 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
     static struct mcast_settings settings_copy;
-    int change = 0;
     NMHDR * p_nmhdr;
     switch (uMessage)
     {
@@ -192,57 +190,46 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
             switch (p_nmhdr->code)
             {
                 case IPN_FIELDCHANGED:
-                change = 1;
-                break;
+                    break;
             }
             break;
         case WM_COMMAND:
             /* Handle notifications that come in form of WM_COMMAND messages */
-            switch (HIWORD(wParam))
+            switch (LOWORD(wParam))
             {
-                case EN_CHANGE:
-                    if (lParam == (LPARAM) g_ipport_edit_ctrl)
+                case IDC_EDIT1:
+                    mcast_settings_copy(&settings_copy, &g_settings);
+                    if (controls_to_data(&settings_copy) && mcast_settings_validate(&settings_copy))
                     {
-                        change = 1;
+                        mcast_settings_copy(&g_settings, &settings_copy);
+                        EnableWindow(g_btok, TRUE);  
+                    }
+                    else
+                    {
+                        EnableWindow(g_btok, FALSE);  
                     }
                     break;
-                default:
-                    break;
-            }
-            switch(wParam)
-            {
                 case IDCANCEL:
                 case IDOK:
                     EndDialog(hDlg, wParam);
                     return TRUE;
+                default:
+                    break;
             }
-            default:
+        default:
             break;
-    }
-    if (change)
-    {   
-        memcpy(&settings_copy, &g_settings, sizeof(struct mcast_settings));
-        if (controls_to_data(&settings_copy) && mcast_settings_validate(&settings_copy))
-        {
-            memcpy(&g_settings, &settings_copy, sizeof(struct mcast_settings));
-            EnableWindow(g_btok, TRUE);  
-        }
-        else
-        {
-            EnableWindow(g_btok, FALSE);  
-        }
     }
     return FALSE;
 }
 
 int get_settings_from_dialog(HWND hParent, struct mcast_settings * p_settings)
 {
-    memcpy(&g_settings, p_settings, sizeof(struct mcast_settings));
+    mcast_settings_copy(&g_settings, p_settings);
     if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc))
     {
-        memcpy(p_settings, &g_settings, sizeof(struct mcast_settings));
-        return 0;
+        mcast_settings_copy(p_settings, &g_settings);
+        return 1;
     }
-    return -1;
+    return 0;
 }
 

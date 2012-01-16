@@ -13,11 +13,14 @@
 #define IDD_SENDER_SETTINGS                     122
 #define IDD_MCAST_SETTINGS                      124
 #define IDD_RECEIVER_SETTINGS                   125
+#define IDD_VERSION_DIALOG                      127
 #define IDC_IPADDRESS1                          1000
 #define IDC_RECEIVER_BUFFER                     1001
 #define IDC_EDIT1                               1002
 #define IDC_MCAST_SETTINGS                      1002
+#define IDC_MMTIMER_EDIT_CTRL                   1003
 #define IDC_WAVCOMBO                            1003
+#define IDC_MMTIMER_SPIN                        1004
 #define IDC_PACKET_DELAY_EDIT                   1004
 #define IDC_PACKET_DELAY_SPIN                   1006
 #define IDC_POLL_SLEEP_TIME_EDIT                1006
@@ -30,6 +33,8 @@
 #define IDS_APPTITLE_RECEIVER                   40001
 #define ID_RECEIVER_STOPRCV                     40001
 #define ID_SENDER_SETTINGS                      40001
+#define IDM__ABOUT_RECIEVER1                    40002
+#define IDM__ABOUT_SENDER1                      40002
 #define IDT_TIMER_1                             40002
 #define IDS_APPTITLE                            40003
 #define ID_SENDER_JOINMCAST                     40008

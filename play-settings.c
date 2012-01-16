@@ -1,7 +1,11 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @brief
- * @file receiver-settings-dlg.h
+ * @file play-settings.c
+ * @brief Implementation of the sender's settings representation.
+ * @details Contains functions for:
+ * \li returning a default settings.
+ * \li validating settings for correctness.
  * @author T.Ostaszewski
  * @date Jan-2012
  * @par License
@@ -25,28 +29,50 @@
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
  */
-#if !defined RECEIVER_SETTINGS_DLG_4C679ECA_2A7A_4CDF_9FE0_FB4BE43B52C2
-#define RECEIVER_SETTINGS_DLG_4C679ECA_2A7A_4CDF_9FE0_FB4BE43B52C2
-
-#if defined __cplusplus
-extern "C" {
-#endif
-#include <windows.h>
-
-struct receiver_settings;
+#include "pcc.h"
+#include "play-settings.h"
 
 /*!
- * @brief Displays a dialog from which settings are obtained.
- * @details Dialog controls allow for modification of the parameters.
- * @param[in] hWndParent handle to the parent window.
- * @param[in,out] p_settings points to the settings which will be altered by the dialog
- * @return returns <>0 if the settings were changed by the dialog (UI), returns 0 otherwise.
+ * @brief 
  */
-int receiver_settings_do_dialog(HWND hWndParent, struct receiver_settings * p_settings);
+#define DEFAULT_PLAY_BUFFER_SIZE (4096)
 
-#if defined __cplusplus
+#define DEFAULT_TIMER_DELAY (5)
+
+#define DEFAULT_TIMER_RESOLUTION (1)
+
+int play_settings_get_default(struct play_settings * p_settings)
+{
+    p_settings->timer_delay_ = DEFAULT_TIMER_DELAY;
+    p_settings->timer_resolution_ = DEFAULT_TIMER_RESOLUTION;
+    p_settings->play_buffer_size_ = DEFAULT_PLAY_BUFFER_SIZE;
+	return 1;
 }
-#endif
 
-#endif /* RECEIVER_SETTINGS_DLG_4C679ECA_2A7A_4CDF_9FE0_FB4BE43B52C2 */
+int play_settings_validate(struct play_settings const * p_settings)
+{
+	if (p_settings->timer_delay_ < 1 || p_settings->timer_delay_ > 1000)
+		return 0;	
+	if (p_settings->play_buffer_size_ < 1024 || p_settings->play_buffer_size_ > 16384)
+		return 0;	
+	return 1;
+}
+
+void play_settings_copy(struct play_settings * p_dest, struct play_settings const * p_source)
+{
+    memcpy(p_dest, p_source, sizeof(struct play_settings));
+}
+
+void play_settings_swap(struct play_settings * p_left, struct play_settings * p_right)
+{
+    struct play_settings tmp;
+    memcpy(&tmp, p_left, sizeof(struct play_settings));
+    memcpy(p_left, p_right, sizeof(struct play_settings));
+    memcpy(p_right, &tmp, sizeof(struct play_settings));
+}
+
+int play_settings_compare(struct play_settings const * p_left, struct play_settings const * p_right)
+{
+    return !memcmp(p_left, p_right, sizeof(struct play_settings));
+}
 
