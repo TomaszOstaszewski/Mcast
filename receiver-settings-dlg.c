@@ -62,16 +62,85 @@ static HWND g_play_buffer_size_edit;
 static HWND g_play_buffer_size_spin;
 
 /*!
+ * @brief Handle to the Multimedit timer timeout edit control.
+ */
+static HWND g_mmtimer_edit_ctrl;
+
+/*!
+ * @brief Handle to the Multimedit timer timeout spin control.
+ */
+static HWND g_mmtimer_spin_ctrl;
+
+/*!
+ * @brief Handle to the Multimedit timer timeout spin control.
+ */
+static HWND g_btok;
+
+/*!
+ * @brief Maximum number of digits in the dialogs edit controls.
+ */
+#define TEXT_LIMIT (5)
+
+/*!
+ * @brief Buffer that holds a number typed into one of the edit controls.
+ */
+static TCHAR text_buffer[TEXT_LIMIT+1];
+
+/*!
  * @brief Transfer from data to UI
  * @details Takes values from the settings object and presents them on the UI
  */
 static void data_to_controls(struct receiver_settings const * p_settings)
 {
-	char text_buf[8];
-	StringCchPrintf(text_buf, 8, "%d", p_settings->poll_sleep_time_);
-	SetWindowText(g_poll_sleep_time_edit, text_buf);
-	StringCchPrintf(text_buf, 8, "%d", p_settings->play_buffer_size_);
-	SetWindowText(g_play_buffer_size_edit, text_buf);
+	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->poll_sleep_time_);
+	SetWindowText(g_poll_sleep_time_edit, text_buffer);
+	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.play_buffer_size_);
+	SetWindowText(g_play_buffer_size_edit, text_buffer);
+	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.timer_delay_);
+	SetWindowText(g_mmtimer_edit_ctrl, text_buffer);
+    //debug_outputln("%s %d : %u", __FILE__, __LINE__, p_settings->play_settings_.timer_delay_);
+}
+
+/*!
+ * @brief Transfer data from UI to the object.
+ * @details Takes the values form the UI controls and saves them to the provided object.
+ * @param[in] p_settings object to be written with UI data.
+ * @return returns a non-zero value on success, 0 if failure has occured.
+ */
+static int controls_to_data(struct receiver_settings * p_settings)
+{
+    int result;
+    unsigned int poll_sleep_time, play_buffer_size, timer_delay;
+    memset(text_buffer, 0, sizeof(text_buffer));
+    *((WORD *)text_buffer) = TEXT_LIMIT;
+    SendMessage(g_poll_sleep_time_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
+    result = sscanf(text_buffer, "%u", &poll_sleep_time);
+    if (result<=0)
+        goto error;
+    if (poll_sleep_time > USHRT_MAX)
+        goto error;
+    memset(text_buffer, 0, sizeof(text_buffer));
+    *((WORD *)text_buffer) = TEXT_LIMIT;
+    SendMessage(g_play_buffer_size_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
+    result = sscanf(text_buffer, "%u", &play_buffer_size);
+    if (result<=0)
+        goto error;
+    if (play_buffer_size > USHRT_MAX)
+        goto error;
+    memset(text_buffer, 0, sizeof(text_buffer));
+    *((WORD *)text_buffer) = TEXT_LIMIT;
+    SendMessage(g_mmtimer_edit_ctrl, EM_GETLINE, 0, (LPARAM)text_buffer); 
+    result = sscanf(text_buffer, "%u", &timer_delay);
+    if (result<=0)
+        goto error;
+    if (timer_delay > USHRT_MAX)
+        goto error;
+    p_settings->play_settings_.timer_delay_ = timer_delay;
+    p_settings->play_settings_.play_buffer_size_ = play_buffer_size;
+    p_settings->poll_sleep_time_ = poll_sleep_time;
+    return 1;
+error:
+    return 0;
 }
 
 /*!
@@ -82,6 +151,7 @@ static void data_to_controls(struct receiver_settings const * p_settings)
  */
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
+    struct receiver_settings * p_settings = &g_settings;
 	g_poll_sleep_time_edit = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_EDIT);
 	assert(g_poll_sleep_time_edit);
 	g_poll_sleep_time_spin = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_SPIN);
@@ -90,9 +160,20 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 	assert(g_play_buffer_size_edit);
 	g_play_buffer_size_spin = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_SPIN);
 	assert(g_play_buffer_size_spin);
+    g_mmtimer_edit_ctrl = GetDlgItem(hwnd, IDC_MMTIMER_EDIT_CTRL);
+    assert(g_mmtimer_edit_ctrl);
+    g_mmtimer_spin_ctrl = GetDlgItem(hwnd, IDC_MMTIMER_SPIN);
+    assert(g_mmtimer_spin_ctrl);
+    g_btok = GetDlgItem(hwnd, IDOK);
+    assert(g_btok);
 
 	SendMessage(g_poll_sleep_time_spin, UDM_SETBUDDY, (WPARAM)g_poll_sleep_time_edit, (LPARAM)0);
 	SendMessage(g_play_buffer_size_spin, UDM_SETBUDDY, (WPARAM)g_play_buffer_size_edit, (LPARAM)0);
+	SendMessage(g_mmtimer_spin_ctrl, UDM_SETBUDDY, (WPARAM)g_mmtimer_edit_ctrl, (LPARAM)0);
+    SendMessage(g_mmtimer_edit_ctrl, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    SendMessage(g_poll_sleep_time_edit, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    SendMessage(g_play_buffer_size_edit, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+
 	data_to_controls(&g_settings);
 	return TRUE;
 } 
@@ -108,66 +189,89 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
  */
 static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
-	struct receiver_settings rcv_settings_copy;
-	NMHDR * p_notify_header;
-	NMUPDOWN * p_up_down;
-	switch (uMessage)
-	{
-		case WM_INITDIALOG:
-			return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
-		case WM_NOTIFY:
-			p_notify_header = (NMHDR*)lParam;
-			switch (p_notify_header->code)
+    static struct receiver_settings copy_for_spins;
+    static struct receiver_settings copy_for_edits;
+    NMHDR * p_notify_header;
+    NMUPDOWN * p_up_down;
+    switch (uMessage)
+    {
+        case WM_INITDIALOG:
+            return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
+        case WM_NOTIFY:
+            p_notify_header = (NMHDR*)lParam;
+            switch (p_notify_header->code)
             {
                 case UDN_DELTAPOS:
                     p_up_down = (NMUPDOWN *)p_notify_header;
-                    memcpy(&rcv_settings_copy, &g_settings, sizeof(struct receiver_settings));
-                    if (g_poll_sleep_time_spin == p_up_down->hdr.hwndFrom)
+                    receiver_settings_copy(&copy_for_spins, &g_settings);
+                    switch (p_up_down->hdr.idFrom)
                     {
-                        rcv_settings_copy.poll_sleep_time_ -= p_up_down->iDelta;
+                        case IDC_POLL_SLEEP_TIME_SPIN:
+                            copy_for_spins.poll_sleep_time_ -= p_up_down->iDelta;
+                            break;
+                        case IDC_PLAY_BUFFER_SIZE_SPIN:
+                            copy_for_spins.play_settings_.play_buffer_size_ -= p_up_down->iDelta;
+                            break;
+                        case IDC_MMTIMER_SPIN:
+                            copy_for_spins.play_settings_.timer_delay_ -= p_up_down->iDelta;
+                            break;
+                        default:
+                            break;
                     }
-                    else if (g_play_buffer_size_spin == p_up_down->hdr.hwndFrom)
-                    {
-                        rcv_settings_copy.play_buffer_size_ -= p_up_down->iDelta;
-                    }
-                    else 
-                    {
-                        break;
-                    }
-                    if (receiver_validate_settings(&rcv_settings_copy))
-                    {
-                        memcpy(&g_settings, &rcv_settings_copy, sizeof(struct receiver_settings));
-                        data_to_controls(&g_settings);
-                    }
-                    return TRUE;
+                    if (!receiver_settings_compare(&copy_for_spins, &g_settings) && receiver_settings_validate(&copy_for_spins))
+                        data_to_controls(&copy_for_spins);
+                    break;
                 default:
                     break;
             }
-			break;
-		case WM_COMMAND:
-			switch(wParam)
-			{
-				case IDC_MCAST_SETTINGS: 
-					get_settings_from_dialog(hDlg, &g_settings.mcast_settings_);
-					break;
-				case IDCANCEL:
-				case IDOK:
-					EndDialog(hDlg, wParam);
-					break;
-			}
-			return TRUE;
-	}
-	return FALSE;
+            break;
+        case WM_COMMAND:
+            switch(LOWORD(wParam))
+            {
+                case IDC_POLL_SLEEP_TIME_EDIT:
+                case IDC_PLAY_BUFFER_SIZE_EDIT:
+                case IDC_MMTIMER_EDIT_CTRL:
+                    if (EN_CHANGE == HIWORD(wParam))
+                    {
+                        /* Make a settings copy */
+                        receiver_settings_copy(&copy_for_edits, &g_settings);
+                        /* Alter the copy with what the user or our code has changed & validate it */
+                        if (controls_to_data(&copy_for_edits) && receiver_settings_validate(&copy_for_edits))
+                        {
+                            /* If settings correctly read and valid - make the copy our current settings */
+                            receiver_settings_copy(&g_settings, &copy_for_edits);
+                            EnableWindow(g_btok, TRUE);
+                        }
+                        else
+                        {
+                            /* Either could not read settings or they are not valid. Either way - disable OK button */
+                            EnableWindow(g_btok, FALSE);
+                        }
+                    }
+                    break;
+                case IDC_MCAST_SETTINGS: 
+                    get_settings_from_dialog(hDlg, &g_settings.mcast_settings_);
+                    break;
+                case IDCANCEL:
+                case IDOK:
+                    EndDialog(hDlg, wParam);
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+    return FALSE;
 }
 
 int receiver_settings_do_dialog(HWND hWndParent, struct receiver_settings * p_settings)
 {
-	memcpy(&g_settings, p_settings, sizeof(struct receiver_settings));
+	receiver_settings_copy(&g_settings, p_settings);
 	if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_RECEIVER_SETTINGS), hWndParent, McastSettingsProc))
 	{
-		memcpy(p_settings, &g_settings, sizeof(struct receiver_settings));
-		return 0;
+		receiver_settings_copy(p_settings, &g_settings);
+		return 1;
 	}
-	return 1;
+	return 0;
 }
 

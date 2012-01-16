@@ -31,6 +31,7 @@
 #include "wave_utils.h"
 #include "fifo-circular-buffer.h"
 #include "input-buffer.h"
+#include "play-settings.h"
 
 /*!
  * @brief
@@ -45,6 +46,7 @@ struct dsound_data {
     BOOL buf_2_filled_;                                     /*!< */
     size_t                  nHalfBufferSize_;               /*!< */
     struct fifo_circular_buffer * fifo_;
+    struct play_settings play_settings_;
 };
 
 /**
@@ -323,7 +325,7 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound
     if (FAILED(hr))
     {
         debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
-        goto error_0;
+        goto error;
     }
     if (NULL == hwnd)
     {
@@ -337,50 +339,44 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound
     if (FAILED(hr))
     {
         debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
-        goto error_0;
+        goto error;
     }
     CopyMemory(&p_ds_data->wfe_, p_WFE, sizeof(WAVEFORMATEX));
-    p_ds_data->nHalfBufferSize_ = p_ds_data->wfe_.nAvgBytesPerSec/8; /* One 20th of a second will be played at time. */
+    p_ds_data->nHalfBufferSize_ = p_ds_data->play_settings_.play_buffer_size_;
     dump_waveformatex(p_WFE);
     debug_outputln("%s %5.5d : %8.8u", __FILE__, __LINE__, p_ds_data->nHalfBufferSize_);
     hr = create_buffers(p_ds_data->p_direct_sound_8_, &p_ds_data->p_primary_sound_buffer_, &p_ds_data->p_secondary_sound_buffer_, &p_ds_data->wfe_, p_ds_data->nHalfBufferSize_);
     if (FAILED(hr))
     {
         debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
-        goto error_3;
+        goto error;
     }
     return hr;
-error_3:
-    p_ds_data->p_secondary_sound_buffer_->Release();    
-    p_ds_data->p_secondary_sound_buffer_ = NULL;    
-    p_ds_data->p_primary_sound_buffer_->Release();
-    p_ds_data->p_primary_sound_buffer_ = NULL;
-error_0:
-    p_ds_data->p_direct_sound_8_->Release();
-    p_ds_data->p_direct_sound_8_ = NULL;
+error:
+    if (NULL != p_ds_data->p_direct_sound_8_)
+    {
+        p_ds_data->p_direct_sound_8_->Release();
+        p_ds_data->p_direct_sound_8_ = NULL;
+    }
     return hr;
 }
 
-extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, WAVEFORMATEX const * p_WFE, struct fifo_circular_buffer * fifo)
+extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, WAVEFORMATEX const * p_WFE, struct fifo_circular_buffer * fifo, struct play_settings const * play_settings)
 {
-    HRESULT hr;
     struct dsound_data * p_retval = (struct dsound_data*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dsound_data));
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
     if (NULL != p_retval)
     {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
+        HRESULT hr;
+        p_retval->fifo_ = fifo;
+        play_settings_copy(&p_retval->play_settings_, play_settings);
         hr = init_ds_data(hWnd, p_WFE, p_retval);
-        debug_outputln("%s %5.5d : %8.8x", __FILE__, __LINE__, hr);
         if (SUCCEEDED(hr))
         {
-            debug_outputln("%s %5.5d", __FILE__, __LINE__);
-            /* Prefetch frist data and fill the buffer */
-            p_retval->fifo_ = fifo;
             return (DSOUNDPLAY)(p_retval);
         }
+        HeapFree(GetProcessHeap(), 0, p_retval);
+        p_retval = NULL;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    HeapFree(GetProcessHeap(), 0, p_retval);
     return NULL;
 }
 
@@ -393,56 +389,45 @@ extern "C" void dsoundplayer_destroy(DSOUNDPLAY handle)
     HeapFree(GetProcessHeap(), 0, p_ds_data);
 }
 
-extern "C" void dsoundplayer_play(DSOUNDPLAY handle) 
+extern "C" int dsoundplayer_play(DSOUNDPLAY handle) 
 {
-    HRESULT hr;
     struct dsound_data * p_ds_data = (struct dsound_data*)handle;
     LPDIRECTSOUNDBUFFER8 lpdsbStatic = p_ds_data->p_secondary_sound_buffer_;
-    p_ds_data->timer_ = timeSetEvent(1, 1, &sTimerCallback, (DWORD)p_ds_data, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
-    if (NULL == p_ds_data->timer_)
+    p_ds_data->timer_ = timeSetEvent(p_ds_data->play_settings_.timer_delay_, p_ds_data->play_settings_.timer_resolution_, &sTimerCallback, (DWORD)p_ds_data, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
+    if (NULL != p_ds_data->timer_)
     {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-        return;
-    }   
-    lpdsbStatic->SetCurrentPosition(0);
-    hr = lpdsbStatic->Play(
-            0,  // Unused.
-            0,  // Priority for voice management.
-            DSBPLAY_LOOPING); // Flags.
-    if (FAILED(hr))
-    {
+        HRESULT hr;
+        hr = lpdsbStatic->SetCurrentPosition(0);
+        if (SUCCEEDED(hr))
+        {
+            hr = lpdsbStatic->Play( 0, 0, DSBPLAY_LOOPING);
+            if (SUCCEEDED(hr))
+            {
+                return 1;
+            }
+            debug_outputln("%s %5.5d : %8.8x", __FILE__, __LINE__, hr);
+        }
         debug_outputln("%s %5.5d : %8.8x", __FILE__, __LINE__, hr);
     }
-    debug_outputln("%s %5.5d : %8.8x", __FILE__, __LINE__, hr);
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    return 0;
 }
 
 extern "C" void dsoundplayer_pause(DSOUNDPLAY handle) 
 {
 }
 
-extern "C" void dsoundplayer_stop(DSOUNDPLAY handle) 
+extern "C" int dsoundplayer_stop(DSOUNDPLAY handle) 
 {
+    int result = 0;
     struct dsound_data * p_ds_data = (struct dsound_data*)handle;
     LPDIRECTSOUNDBUFFER8 lpdsbStatic = p_ds_data->p_secondary_sound_buffer_;
     HRESULT hr = lpdsbStatic->Stop();
-    if (FAILED(hr))
-    {
-        debug_outputln("%s %5.5d : %8.8x", __FILE__, __LINE__, hr);
-    }
     MMRESULT res = timeKillEvent(p_ds_data->timer_);
     p_ds_data->buf_1_filled_ = FALSE;
     p_ds_data->buf_2_filled_ = FALSE;
-    switch (res)
-    {
-        case TIMERR_NOERROR:
-            break;
-        case MMSYSERR_INVALPARAM:
-            debug_outputln("%s %5.5d", __FILE__, __LINE__);
-            break;
-        default:
-            debug_outputln("%s %5.5d", __FILE__, __LINE__);
-            break;
-    }
-    debug_outputln("%s %5.5d : %8.8x %u", __FILE__, __LINE__, hr, res);
+    if (SUCCEEDED(hr) && TIMERR_NOERROR == res)
+        result = 1;
+    return result;
 }
 

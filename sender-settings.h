@@ -57,6 +57,10 @@ int get_default_settings(HINSTANCE hInst, struct sender_settings * p_settings);
  */
 int sender_settings_validate(struct sender_settings const * p_settings);
 
+int sender_settings_compare(struct sender_settings const * p_left, struct sender_settings const * p_right);
+
+void sender_settings_copy(struct sender_settings * p_dest, struct sender_settings const * p_source);
+
 #if defined __cplusplus
 }
 #endif

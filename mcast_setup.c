@@ -145,9 +145,9 @@ int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * inte
 			goto cleanup;
 		}
 	}
-	return 0;
+	return 1;
 cleanup:
-	return -1;
+	return 0;
 }
 
 int setup_multicast_addr(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * interfaceAddr, uint8_t nTTL, struct sockaddr_in const * p_in_addr, struct mcast_connection * p_mcast_conn)
@@ -174,14 +174,47 @@ int setup_multicast_indirect(struct mcast_settings const * p_settings, struct mc
             p_conn);
 }
 
+size_t mcast_sendto_flags(struct mcast_connection * p_conn, void const * p_data, size_t data_size, int flags)
+{
+    return sendto(p_conn->socket_, 
+            (const void *)p_data, 
+            data_size,
+            flags,
+            p_conn->multiAddr_->ai_addr,
+            (int) p_conn->multiAddr_->ai_addrlen
+            );
+}
+
+size_t mcast_sendto(struct mcast_connection * p_conn, void const * p_data, size_t data_size)
+{
+    return mcast_sendto_flags(p_conn, p_data, data_size, 0);
+}
+
+
+size_t mcast_recvfrom_flags(struct mcast_connection * p_conn, void * p_data, size_t data_size, int flags)
+{
+    return recvfrom(p_conn->socket_, 
+            p_data, 
+            data_size,
+            flags,
+            p_conn->multiAddr_->ai_addr,
+            &p_conn->multiAddr_->ai_addrlen
+            );
+}
+
+size_t mcast_recvfrom(struct mcast_connection * p_conn, void const * p_data, size_t data_size)
+{
+    return mcast_recvfrom_flags(p_conn, p_data, data_size, 0);
+}
+
 int close_multicast(struct mcast_connection * p_mcast_conn)
 {
 	if (NULL == p_mcast_conn)
-		return -E_INVALIDARG;
+		return 0;
 	freeaddrinfo(p_mcast_conn->bindAddr_);
 	freeaddrinfo(p_mcast_conn->resolveAddr_);
 	freeaddrinfo(p_mcast_conn->multiAddr_);
 	closesocket(p_mcast_conn->socket_);
-	return 0;
+	return 1;
 }
 

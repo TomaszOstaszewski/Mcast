@@ -75,13 +75,26 @@ static HWND g_packet_lenght_ms_edit;
  */
 static HWND g_btok;
 
+/*!
+ * @brief Maximum number of digits in the dialogs edit controls.
+ */
 #define TEXT_LIMIT (4)
 
-static TCHAR text_buf[TEXT_LIMIT+1];
+/*!
+ * @brief Buffer that holds a number typed into one of the edit controls.
+ */
+static TCHAR text_buffer[TEXT_LIMIT+1];
 
-#define SAMPLES_PER_SEC (8000)
-#define BYTES_PER_SAMPLE (2)
-#define MILLISECOND_IN_SEC (1000)
+#define SAMPLES_PER_SEC (8000.0)
+#define BYTES_PER_SAMPLE (2.0)
+#define MILLISECOND_IN_SEC (1000.0)
+
+static void update_calculated_controls(struct sender_settings const * p_settings)
+{
+    double length_in_ms = (MILLISECOND_IN_SEC * p_settings->chunk_size_/BYTES_PER_SAMPLE)/SAMPLES_PER_SEC;
+    StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%2.2f", length_in_ms);
+    SetWindowText(g_packet_lenght_ms_edit, text_buffer);
+}
 
 /*!
  * @brief Transfer from data to UI
@@ -90,13 +103,45 @@ static TCHAR text_buf[TEXT_LIMIT+1];
 static void data_to_controls(struct sender_settings const * p_settings)
 {
     /*! \todo Remove this nasty magic numbers with variables, whose values are taken form the WAV file being send */
-    unsigned int length_in_ms = (MILLISECOND_IN_SEC * p_settings->chunk_size_/BYTES_PER_SAMPLE)/SAMPLES_PER_SEC;
-    StringCchPrintf(text_buf, TEXT_LIMIT+1, "%u", p_settings->send_delay_);
-    SetWindowText(g_packet_delay_edit, text_buf);
-    StringCchPrintf(text_buf, TEXT_LIMIT+1, "%u", p_settings->chunk_size_);
-    SetWindowText(g_packet_length_edit, text_buf);
-    StringCchPrintf(text_buf, TEXT_LIMIT+1, "%u", length_in_ms);
-    SetWindowText(g_packet_lenght_ms_edit, text_buf);
+    update_calculated_controls(p_settings);
+    StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%u", p_settings->send_delay_);
+    SetWindowText(g_packet_delay_edit, text_buffer);
+    StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%u", p_settings->chunk_size_);
+    SetWindowText(g_packet_length_edit, text_buffer);
+}
+
+/*!
+ * @brief Transfer data from UI to the object.
+ * @details Takes the values form the UI controls and saves them to the provided object.
+ * @param[in] p_settings object to be written with UI data.
+ * @return returns a non-zero value on success, 0 if failure has occured. The failure is usually attributed to the fact
+ * that data from controls cannot fit into representation offered by the target object.
+ */
+static int controls_to_data(struct sender_settings * p_settings)
+{
+    int result;
+    unsigned int packet_delay, packet_length;
+    memset(text_buffer, 0, sizeof(text_buffer));
+    *((WORD *)text_buffer) = TEXT_LIMIT;
+    SendMessage(g_packet_delay_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
+    result = sscanf(text_buffer, "%u", &packet_delay);
+    if (!result)
+        goto error;
+    if (packet_delay > USHRT_MAX)
+        goto error;
+    memset(text_buffer, 0, sizeof(text_buffer));
+    *((WORD *)text_buffer) = TEXT_LIMIT;
+    SendMessage(g_packet_length_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
+    result = sscanf(text_buffer, "%u", &packet_length);
+    if (!result)
+        goto error;
+    if (packet_length > USHRT_MAX)
+        goto error;
+    p_settings->send_delay_ = packet_delay;
+    p_settings->chunk_size_ = packet_length;
+    return 1;
+error:
+    return 0;
 }
 
 /*!
@@ -142,73 +187,79 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 {
     NMHDR * p_notify_header;
     NMUPDOWN * p_up_down;
-    static struct sender_settings sender_settings_copy;
-    int change = 0;
+    static struct sender_settings copy_for_spins;
+    static struct sender_settings copy_for_edits;
     switch (uMessage)
     {
         case WM_INITDIALOG:
             return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
         case WM_NOTIFY:
             p_notify_header = (NMHDR*)lParam;
+            p_up_down = (NMUPDOWN *)p_notify_header;
+            switch (p_notify_header->code)
             {
-                p_up_down = (NMUPDOWN *)p_notify_header;
-                switch (p_notify_header->code)
-                {
-                    case UDN_DELTAPOS:
-                        memcpy(&sender_settings_copy, &g_settings, sizeof(struct sender_settings));
-                        if (g_packet_delay_spin == p_notify_header->hwndFrom)
-                        {
-                            sender_settings_copy.send_delay_ -= p_up_down->iDelta;
-                            change = 1;
-                        }
-                        else if (g_packet_length_spin == p_notify_header->hwndFrom)
-                        {
-                            sender_settings_copy.chunk_size_ -= p_up_down->iDelta;
-                            change = 1;
-                        }
-                        else
-                        {
-                        }
-                        break;
-                    default:
-                        break;
-                }
+                case UDN_DELTAPOS:
+                    sender_settings_copy(&copy_for_spins, &g_settings);
+                    switch (p_notify_header->idFrom)
+                    {
+                        case IDC_PACKET_LENGTH_SPIN:
+                            copy_for_spins.chunk_size_ -= p_up_down->iDelta;
+                            break;
+                        case IDC_PACKET_DELAY_SPIN:
+                            copy_for_spins.send_delay_ -= p_up_down->iDelta;
+                            break;
+                        default:
+                            break;
+                    }
+                    if (sender_settings_compare(&copy_for_spins, &g_settings) && sender_settings_validate(&copy_for_spins))
+                        data_to_controls(&copy_for_spins);
+                    break;
+                default:
+                    break;
             }
             break;
         case WM_COMMAND:
-            switch(wParam)
+            switch(LOWORD(wParam))
             {
                 case IDC_MCAST_SETTINGS:
                     get_settings_from_dialog(hDlg, &g_settings.mcast_settings_);
-                    return TRUE;
+                    break;
+                case IDC_PACKET_DELAY_EDIT:
+                case IDC_PACKET_LENGTH_EDIT:
+                    if (EN_CHANGE == HIWORD(wParam))
+                    {
+                        sender_settings_copy(&copy_for_edits, &g_settings);
+                        if (controls_to_data(&copy_for_edits) && sender_settings_validate(&copy_for_edits)) 
+                        {
+                            sender_settings_copy(&g_settings, &copy_for_edits);
+                            EnableWindow(g_btok, TRUE);
+                            update_calculated_controls(&copy_for_edits);
+                        }
+                        else
+                        {
+                            EnableWindow(g_btok, FALSE);
+                        }
+                    }
+                    break;
                 case IDCANCEL:
                 case IDOK:
                     EndDialog(hDlg, wParam);
                     return TRUE;
             }
-         default:
+        default:
             break;
-    }
-    if (change)
-    {   
-        if (sender_settings_validate(&sender_settings_copy))
-        {
-            memcpy(&g_settings, &sender_settings_copy, sizeof(struct sender_settings));
-            data_to_controls(&g_settings);
-        }
-        return TRUE;
     }
     return FALSE;
 }
 
-int do_dialog(HWND hWndParent, struct sender_settings * p_settings)
+int sender_settings_from_dialog(HWND hWndParent, struct sender_settings * p_settings)
 {
-    memcpy(&g_settings, p_settings, sizeof(struct sender_settings));
+    sender_settings_copy(&g_settings, p_settings);
     if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), hWndParent, McastSettingsProc))
     {
-        memcpy(p_settings, &g_settings, sizeof(struct sender_settings));
-        return 0;
+        sender_settings_copy(p_settings, &g_settings);
+        return 1;
     }
-    return 1;
+    return 0;
 }
 

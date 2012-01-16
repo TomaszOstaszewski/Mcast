@@ -48,7 +48,7 @@ static BOOL IsIdleMessage(MSG* pMsg)
     {
         if (0 == memcmp( &m_ptCursorLast, &pMsg->pt, sizeof(POINT)) && pMsg->message == m_nMsgLast)
             return FALSE;
-        memcpy(&m_ptCursorLast, &pMsg->pt, sizeof(POINT));// remember for next time
+        CopyMemory(&m_ptCursorLast, &pMsg->pt, sizeof(POINT));// remember for next time
         m_nMsgLast = pMsg->message;
         return TRUE;
     }

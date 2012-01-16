@@ -31,6 +31,13 @@
 
 struct mcast_settings;
 
+/*!
+ * @brief Displays a dialog from which multicast settings are obtained.
+ * @details Dialog controls allow for modification of the parameters.
+ * @param[in] hWndParent handle to the parent window.
+ * @param[in,out] p_settings points to the settings which will be altered by the dialog
+ * @return returns <>0 if the settings were changed by the dialog (UI), returns 0 otherwise.
+ */
 int get_settings_from_dialog(HWND hParent, struct mcast_settings * p_settings);
 
 #endif /*!defined MCAST_SETTINGS_DLG_7739F7BD_F961_404C_BDA9_66827C057F08 */
