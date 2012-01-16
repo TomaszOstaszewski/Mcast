@@ -1,7 +1,7 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
- * @file mcast-settings.c
- * @brief Functions for multicast group membership settings manipulation.
+ * @brief
+ * @file play-settings.h
  * @author T.Ostaszewski
  * @date Jan-2012
  * @par License
@@ -20,61 +20,56 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
- * The views and conclusions contained in the software and documentation are those of the 
+ *  The views and conclusions contained in the software and documentation are those of the 
  * authors and should not be interpreted as representing official policies, 
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
  */
-#include "pcc.h"
-#include "mcast-settings.h"
+#if !defined PLAY_SETTINGS_F482A975_7C28_43C6_88FA_8A60EE598052
+#define PLAY_SETTINGS_F482A975_7C28_43C6_88FA_8A60EE598052
+
+#if defined __cplusplus
+extern "C" {
+#endif
+#include <windows.h>
 
 /*!
- * @brief 
+ * @brief A structure that describes receiver parameters.
  */
-#define DEFAULT_MCASTADDRV4 "234.5.6.7"
-
-/*!
- * @brief 
- */
-#define DEFAULT_MCASTADDRV6 "ff12::1"
-
-/*!
- * @brief 
- */
-#define DEFAULT_MCASTPORT (25000)
+struct play_settings {
+	UINT 	timer_delay_;
+	UINT 	timer_resolution_;
+	UINT	play_buffer_size_;
+};
 
 /*!
  * @brief
  */
-#define DEFAULT_TTL (8)
+int play_settings_get_default(struct play_settings * p_settings);
 
-static struct mcast_settings g_default_settings;
+/*!
+ * @brief
+ */
+int play_settings_validate(struct play_settings const * p_settings);
 
-int mcast_settings_get_default(struct mcast_settings * p_target)
-{
-	unsigned long net_addr = inet_addr(DEFAULT_MCASTADDRV4);
-	p_target->bReuseAddr_ = TRUE;
-	memcpy(&p_target->mcast_addr_.sin_addr, &net_addr, sizeof(unsigned long));
-	p_target->mcast_addr_.sin_port = htons(DEFAULT_MCASTPORT);
-    return 1;
+/*!
+ * @brief Copies the receiver settings from one structure to another.
+ */
+void play_settings_copy(struct play_settings * p_dest, struct play_settings const * p_source);
+
+/*!
+ * @brief Copies the receiver settings from one structure to another.
+ */
+void play_settings_swap(struct play_settings * p_left, struct play_settings * p_right);
+
+/*!
+ * @brief Copies the receiver settings from one structure to another.
+ */
+int play_settings_compare(struct play_settings const * p_left, struct play_settings const * p_right);
+
+#if defined __cplusplus
 }
+#endif
 
-#define MIN_MCAST_ADDR (0xe0000000)
-#define MAX_MCAST_ADDR (0xefffffff)
-
-int mcast_settings_validate(struct mcast_settings const * p_settings)
-{
-    unsigned short port = ntohs(p_settings->mcast_addr_.sin_port);
-    unsigned long addr  = ntohl(p_settings->mcast_addr_.sin_addr.s_addr); 
-    if (port < 1024)
-        return 0;
-    if (addr < MIN_MCAST_ADDR || addr > MAX_MCAST_ADDR)
-        return 0;
-    return 1;
-}
-
-void mcast_settings_copy(struct mcast_settings * p_dest, struct mcast_settings const * p_source)
-{
-   memcpy(p_dest, p_source, sizeof(struct mcast_settings)); 
-}
+#endif /* !defined PLAY_SETTINGS_F482A975_7C28_43C6_88FA_8A60EE598052 */
 

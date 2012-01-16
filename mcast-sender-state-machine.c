@@ -40,6 +40,8 @@
 #include "mcast-sender-state-machine.h"
 #include "sender-settings.h"
 
+#define MAX_ETHER_PAYLOAD_SANS_UPD_IP (1500-20-8)
+
 /**
  * @brief Description of the multicast sender state machine.
  */
@@ -53,9 +55,9 @@ struct mcast_sender {
 	/** @brief Pointer to the structure that describes sender settings. */
     struct sender_settings * settings_; 
     /*!
-     * @brief Pointer to the next byte being send 
+     * @brief Current offset from the beginning of the WAV file to the next byte being send.
      */
-    uint8_t const * p_current_pos_;
+    uint32_t send_offset_;
     HANDLE hStopEvent_; /*!< Handle to the event used to stop the sending thread. */
     /*!
      * @brief Handle to the event used to stop the sending thread. 
@@ -79,54 +81,55 @@ struct mcast_sender {
  */
 static DWORD WINAPI SendThreadProc(LPVOID param)
 {
-    uint32_t max_offset;
-    struct mcast_sender * p_sender = (struct mcast_sender *)param;
-    struct master_riff_chunk * p_master_riff;
-    int8_t const * p_data_begin;
     DWORD dwResult;
+    struct mcast_sender * p_sender;
+    struct master_riff_chunk * p_master_riff;
+    uint32_t send_delay;
     p_sender = (struct mcast_sender *)param;
     assert(p_sender);
     assert(p_sender->settings_);
+    send_delay = p_sender->settings_->send_delay_;
     p_master_riff = p_sender->settings_->chunk_;
     assert(p_master_riff);
-    p_data_begin = &p_master_riff->format_chunk_.subchunk_.samples8_[0];
-    max_offset = p_master_riff->format_chunk_.subchunk_.subchunk_size_;
-    for (;;)
-    {
-        dwResult = WaitForSingleObject(p_sender->hStopEvent_thread_, p_sender->settings_->send_delay_);
-        if (WAIT_TIMEOUT == dwResult)
+    {   
+        uint32_t max_offset = p_master_riff->format_chunk_.subchunk_.subchunk_size_;
+        uint32_t max_chunk_size = p_sender->settings_->chunk_size_;
+        int8_t const * const p_data_begin = p_master_riff->format_chunk_.subchunk_.samples8_;
+        assert(max_chunk_size <= MAX_ETHER_PAYLOAD_SANS_UPD_IP);
+        for (;;)
         {
-            int result;
-            uint32_t offset = p_sender->p_current_pos_ - p_data_begin;
-            uint16_t chunk_size = p_sender->settings_->chunk_size_;
-            if (offset + chunk_size > max_offset)
+            dwResult = WaitForSingleObject(p_sender->hStopEvent_thread_, send_delay);
+            if (WAIT_TIMEOUT == dwResult)
             {
-                chunk_size = max_offset - offset;
+                int result;
+                uint32_t chunk_size = max_chunk_size;
+                if (p_sender->send_offset_ + chunk_size > max_offset)
+                {
+                    chunk_size = max_offset - p_sender->send_offset_;
+                }
+                assert(p_sender->send_offset_ + chunk_size <= max_offset);
+                result = mcast_sendto(p_sender->conn_, p_data_begin + p_sender->send_offset_, chunk_size);
+                if (SOCKET_ERROR != result)
+                {
+                    p_sender->send_offset_ += result;
+                    assert (p_sender->send_offset_ <= max_offset);
+                    if (p_sender->send_offset_ >= max_offset)
+                    {
+                        p_sender->send_offset_ = 0;
+                    }
+                }
             }
-            result = sendto(p_sender->conn_->socket_, 
-                    (const char *)p_sender->p_current_pos_, 
-                    chunk_size,
-                    0,
-                    p_sender->conn_->multiAddr_->ai_addr,
-                    (int) p_sender->conn_->multiAddr_->ai_addrlen
-                    );
-            p_sender->p_current_pos_+= chunk_size;
-            if ((uint32_t)(p_sender->p_current_pos_ - p_data_begin) + chunk_size >= max_offset)
+            else if (WAIT_OBJECT_0 == dwResult)
             {
-                p_sender->p_current_pos_ = p_data_begin;
+                dwResult = 0;
+                break;
             }
-        }
-        else if (WAIT_OBJECT_0 == dwResult)
-        {
-            dwResult = 0;
-            debug_outputln("%s %d", __FILE__, __LINE__);
-            break;
-        }
-        else 
-        {
-            dwResult = -1;
-            debug_outputln("%s %d : %d", __FILE__, __LINE__, dwResult);
-            break;
+            else 
+            {
+                dwResult = -1;
+                debug_outputln("%s %d : %d", __FILE__, __LINE__, dwResult);
+                break;
+            }
         }
     }
     CloseHandle(p_sender->hStopEvent_thread_);
@@ -207,12 +210,18 @@ static int sender_handle_startsending_internal(struct mcast_sender * p_sender)
  */
 static int sender_handle_stopsending_internal(struct mcast_sender * p_sender)
 {
+    DWORD dwWaitResult;
     SetEvent(p_sender->hStopEvent_);   
     CloseHandle(p_sender->hStopEvent_);
-    CloseHandle(p_sender->hSenderThread_);
-    p_sender->hStopEvent_ = NULL;
-    p_sender->hSenderThread_ = NULL;
-    return 0;
+    dwWaitResult = WaitForSingleObject(p_sender->hSenderThread_, INFINITE); 
+    if (WAIT_OBJECT_0 == dwWaitResult)
+    {
+        CloseHandle(p_sender->hSenderThread_);
+        p_sender->hStopEvent_ = NULL;
+        p_sender->hSenderThread_ = NULL;
+        return 0;
+    }
+    return -1;
 }
 
 struct mcast_sender * sender_create(struct sender_settings * p_settings)

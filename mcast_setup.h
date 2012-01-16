@@ -30,6 +30,7 @@
 #if !defined MCAST_SETUP_H_870702C0_B65B_4828_949C_490704388A28
 #define MCAST_SETUP_H_870702C0_B65B_4828_949C_490704388A28
 
+#include <stddef.h>
 #include <Windows.h>
 #include <Winsock2.h>
 #include <ws2tcpip.h>
@@ -98,6 +99,16 @@ int setup_multicast_default(char * p_multicast_addr, char * p_port, struct mcast
  * @return returns 0 on success, <>0 otherwise.
  */
 int setup_multicast_indirect(struct mcast_settings const * p_settings, struct mcast_connection * p_conn);
+
+/*!
+ * 
+ */
+size_t mcast_sendto_flags(struct mcast_connection * p_conn, void const * p_data, size_t data_size, int flags);
+
+/*!
+ * 
+ */
+size_t mcast_sendto(struct mcast_connection * p_conn, void const * p_data, size_t data_size);
 
 /*!
  * @brief Leaves the multicast group, closes socket.

@@ -1,7 +1,11 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
- * @file mcast-settings.c
- * @brief Functions for multicast group membership settings manipulation.
+ * @brief
+ * @file play-settings.c
+ * @brief Implementation of the sender's settings representation.
+ * @details Contains functions for:
+ * \li returning a default settings.
+ * \li validating settings for correctness.
  * @author T.Ostaszewski
  * @date Jan-2012
  * @par License
@@ -26,55 +30,49 @@
  * @endcode
  */
 #include "pcc.h"
-#include "mcast-settings.h"
+#include "play-settings.h"
 
 /*!
  * @brief 
  */
-#define DEFAULT_MCASTADDRV4 "234.5.6.7"
+#define DEFAULT_PLAY_BUFFER_SIZE (4096)
 
-/*!
- * @brief 
- */
-#define DEFAULT_MCASTADDRV6 "ff12::1"
+#define DEFAULT_TIMER_DELAY (5)
 
-/*!
- * @brief 
- */
-#define DEFAULT_MCASTPORT (25000)
+#define DEFAULT_TIMER_RESOLUTION (1)
 
-/*!
- * @brief
- */
-#define DEFAULT_TTL (8)
-
-static struct mcast_settings g_default_settings;
-
-int mcast_settings_get_default(struct mcast_settings * p_target)
+int play_settings_get_default(struct play_settings * p_settings)
 {
-	unsigned long net_addr = inet_addr(DEFAULT_MCASTADDRV4);
-	p_target->bReuseAddr_ = TRUE;
-	memcpy(&p_target->mcast_addr_.sin_addr, &net_addr, sizeof(unsigned long));
-	p_target->mcast_addr_.sin_port = htons(DEFAULT_MCASTPORT);
-    return 1;
+    p_settings->timer_delay_ = DEFAULT_TIMER_DELAY;
+    p_settings->timer_resolution_ = DEFAULT_TIMER_RESOLUTION;
+    p_settings->play_buffer_size_ = DEFAULT_PLAY_BUFFER_SIZE;
+	return 1;
 }
 
-#define MIN_MCAST_ADDR (0xe0000000)
-#define MAX_MCAST_ADDR (0xefffffff)
-
-int mcast_settings_validate(struct mcast_settings const * p_settings)
+int play_settings_validate(struct play_settings const * p_settings)
 {
-    unsigned short port = ntohs(p_settings->mcast_addr_.sin_port);
-    unsigned long addr  = ntohl(p_settings->mcast_addr_.sin_addr.s_addr); 
-    if (port < 1024)
-        return 0;
-    if (addr < MIN_MCAST_ADDR || addr > MAX_MCAST_ADDR)
-        return 0;
-    return 1;
+	if (p_settings->timer_delay_ < 1 || p_settings->timer_delay_ > 1000)
+		return 0;	
+	if (p_settings->play_buffer_size_ < 1024 || p_settings->play_buffer_size_ > 16384)
+		return 0;	
+	return 1;
 }
 
-void mcast_settings_copy(struct mcast_settings * p_dest, struct mcast_settings const * p_source)
+void play_settings_copy(struct play_settings * p_dest, struct play_settings const * p_source)
 {
-   memcpy(p_dest, p_source, sizeof(struct mcast_settings)); 
+    memcpy(p_dest, p_source, sizeof(struct play_settings));
+}
+
+void play_settings_swap(struct play_settings * p_left, struct play_settings * p_right)
+{
+    struct play_settings tmp;
+    memcpy(&tmp, p_left, sizeof(struct play_settings));
+    memcpy(p_left, p_right, sizeof(struct play_settings));
+    memcpy(p_right, &tmp, sizeof(struct play_settings));
+}
+
+int play_settings_compare(struct play_settings const * p_left, struct play_settings const * p_right)
+{
+    return !memcmp(p_left, p_right, sizeof(struct play_settings));
 }
 
