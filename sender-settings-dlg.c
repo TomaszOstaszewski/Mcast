@@ -125,7 +125,7 @@ static int controls_to_data(struct sender_settings * p_settings)
     *((WORD *)text_buffer) = TEXT_LIMIT;
     SendMessage(g_packet_delay_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
     result = sscanf(text_buffer, "%u", &packet_delay);
-    if (!result)
+    if (result<=0)
         goto error;
     if (packet_delay > USHRT_MAX)
         goto error;
@@ -133,7 +133,7 @@ static int controls_to_data(struct sender_settings * p_settings)
     *((WORD *)text_buffer) = TEXT_LIMIT;
     SendMessage(g_packet_length_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
     result = sscanf(text_buffer, "%u", &packet_length);
-    if (!result)
+    if (result<=0)
         goto error;
     if (packet_length > USHRT_MAX)
         goto error;
@@ -207,11 +207,13 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                             break;
                         case IDC_PACKET_DELAY_SPIN:
                             copy_for_spins.send_delay_ -= p_up_down->iDelta;
+                            debug_outputln("%5.5u : %u", __LINE__, copy_for_spins.send_delay_);
                             break;
                         default:
                             break;
                     }
-                    if (sender_settings_compare(&copy_for_spins, &g_settings) && sender_settings_validate(&copy_for_spins))
+                    /* If copy and master settings are different, and a copy fits the bounds, update the controls with copy contents */
+                    if (!sender_settings_compare(&copy_for_spins, &g_settings) &&  sender_settings_validate(&copy_for_spins))
                         data_to_controls(&copy_for_spins);
                     break;
                 default:
