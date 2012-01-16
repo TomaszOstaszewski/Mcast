@@ -218,6 +218,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                         default:
                             break;
                     }
+                    /* If copy and master settings are different, and a copy fits the bounds, update the controls with copy contents */
                     if (!receiver_settings_compare(&copy_for_spins, &g_settings) && receiver_settings_validate(&copy_for_spins))
                         data_to_controls(&copy_for_spins);
                     break;
