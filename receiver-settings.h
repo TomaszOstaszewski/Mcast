@@ -70,6 +70,11 @@ void receiver_settings_copy(struct receiver_settings * p_dest, struct receiver_s
  */
 void receiver_settings_swap(struct receiver_settings * p_left, struct receiver_settings * p_right);
 
+/*!
+ * @brief Copies the receiver settings from one structure to another.
+ */
+int receiver_settings_compare(struct receiver_settings const * p_left, struct receiver_settings const * p_right);
+
 #if defined __cplusplus
 }
 #endif

@@ -180,7 +180,6 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
     static struct mcast_settings settings_copy;
-    int change = 0;
     NMHDR * p_nmhdr;
     switch (uMessage)
     {
@@ -191,7 +190,6 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
             switch (p_nmhdr->code)
             {
                 case IPN_FIELDCHANGED:
-                    change = 1;
                     break;
             }
             break;
@@ -200,7 +198,16 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
             switch (LOWORD(wParam))
             {
                 case IDC_EDIT1:
-                    change = 1;
+                    mcast_settings_copy(&settings_copy, &g_settings);
+                    if (controls_to_data(&settings_copy) && mcast_settings_validate(&settings_copy))
+                    {
+                        mcast_settings_copy(&g_settings, &settings_copy);
+                        EnableWindow(g_btok, TRUE);  
+                    }
+                    else
+                    {
+                        EnableWindow(g_btok, FALSE);  
+                    }
                     break;
                 case IDCANCEL:
                 case IDOK:
@@ -212,28 +219,15 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
         default:
             break;
     }
-    if (change)
-    {   
-        CopyMemory(&settings_copy, &g_settings, sizeof(struct mcast_settings));
-        if (controls_to_data(&settings_copy) && mcast_settings_validate(&settings_copy))
-        {
-            CopyMemory(&g_settings, &settings_copy, sizeof(struct mcast_settings));
-            EnableWindow(g_btok, TRUE);  
-        }
-        else
-        {
-            EnableWindow(g_btok, FALSE);  
-        }
-    }
     return FALSE;
 }
 
 int get_settings_from_dialog(HWND hParent, struct mcast_settings * p_settings)
 {
-    CopyMemory(&g_settings, p_settings, sizeof(struct mcast_settings));
+    mcast_settings_copy(&g_settings, p_settings);
     if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc))
     {
-        CopyMemory(p_settings, &g_settings, sizeof(struct mcast_settings));
+        mcast_settings_copy(p_settings, &g_settings);
         return 1;
     }
     return 0;

@@ -88,3 +88,8 @@ void receiver_settings_swap(struct receiver_settings * p_left, struct receiver_s
     memcpy(p_right, &tmp, sizeof(struct receiver_settings));
 }
 
+int receiver_settings_compare(struct receiver_settings const * p_left, struct receiver_settings const * p_right)
+{
+    return !memcmp(p_left, p_right, sizeof(struct receiver_settings));
+}
+

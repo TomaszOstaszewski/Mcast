@@ -73,3 +73,8 @@ int mcast_settings_validate(struct mcast_settings const * p_settings)
     return 1;
 }
 
+void mcast_settings_copy(struct mcast_settings * p_dest, struct mcast_settings const * p_source)
+{
+   memcpy(p_dest, p_source, sizeof(struct mcast_settings)); 
+}
+

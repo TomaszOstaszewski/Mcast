@@ -202,27 +202,23 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
             {
                 case UDN_DELTAPOS:
                     p_up_down = (NMUPDOWN *)p_notify_header;
-                    CopyMemory(&copy_for_spins, &g_settings, sizeof(struct receiver_settings));
+                    receiver_settings_copy(&copy_for_spins, &g_settings);
                     switch (p_up_down->hdr.idFrom)
                     {
                         case IDC_POLL_SLEEP_TIME_SPIN:
                             copy_for_spins.poll_sleep_time_ -= p_up_down->iDelta;
-                            if (receiver_validate_settings(&copy_for_spins))
-                                data_to_controls(&copy_for_spins);
                             break;
                         case IDC_PLAY_BUFFER_SIZE_SPIN:
                             copy_for_spins.play_buffer_size_ -= p_up_down->iDelta;
-                            if (receiver_validate_settings(&copy_for_spins))
-                                data_to_controls(&copy_for_spins);
                             break;
                         case IDC_MMTIMER_SPIN:
                             copy_for_spins.timer_delay_ -= p_up_down->iDelta;
-                            if (receiver_validate_settings(&copy_for_spins))
-                                data_to_controls(&copy_for_spins);
                             break;
                         default:
                             break;
                     }
+                    if (!receiver_settings_compare(&copy_for_spins, &g_settings) && receiver_validate_settings(&copy_for_spins))
+                        data_to_controls(&copy_for_spins);
                     break;
                 default:
                     break;
@@ -236,14 +232,18 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                 case IDC_MMTIMER_EDIT_CTRL:
                     if (EN_CHANGE == HIWORD(wParam))
                     {
-                        CopyMemory(&copy_for_edits, &g_settings, sizeof(struct receiver_settings));
+                        /* Make a settings copy */
+                        receiver_settings_copy(&copy_for_edits, &g_settings);
+                        /* Alter the copy with what the user or our code has changed & validate it */
                         if (controls_to_data(&copy_for_edits) && receiver_validate_settings(&copy_for_edits))
                         {
-                            CopyMemory(&g_settings, &copy_for_edits, sizeof(struct receiver_settings));
+                            /* If settings correctly read and valid - make the copy our current settings */
+                            receiver_settings_copy(&g_settings, &copy_for_edits);
                             EnableWindow(g_btok, TRUE);
                         }
                         else
                         {
+                            /* Either could not read settings or they are not valid. Either way - disable OK button */
                             EnableWindow(g_btok, FALSE);
                         }
                     }
@@ -265,10 +265,10 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 
 int receiver_settings_do_dialog(HWND hWndParent, struct receiver_settings * p_settings)
 {
-	CopyMemory(&g_settings, p_settings, sizeof(struct receiver_settings));
+	receiver_settings_copy(&g_settings, p_settings);
 	if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_RECEIVER_SETTINGS), hWndParent, McastSettingsProc))
 	{
-		CopyMemory(p_settings, &g_settings, sizeof(struct receiver_settings));
+		receiver_settings_copy(p_settings, &g_settings);
 		return 1;
 	}
 	return 0;

@@ -199,22 +199,20 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
             switch (p_notify_header->code)
             {
                 case UDN_DELTAPOS:
-                    CopyMemory(&copy_for_spins, &g_settings, sizeof(struct sender_settings));
+                    sender_settings_copy(&copy_for_spins, &g_settings);
                     switch (p_notify_header->idFrom)
                     {
                         case IDC_PACKET_LENGTH_SPIN:
                             copy_for_spins.chunk_size_ -= p_up_down->iDelta;
-                            if (sender_settings_validate(&copy_for_spins))
-                                data_to_controls(&copy_for_spins);
                             break;
                         case IDC_PACKET_DELAY_SPIN:
                             copy_for_spins.send_delay_ -= p_up_down->iDelta;
-                            if (sender_settings_validate(&copy_for_spins))
-                                data_to_controls(&copy_for_spins);
                             break;
                         default:
                             break;
                     }
+                    if (sender_settings_compare(&copy_for_spins, &g_settings) && sender_settings_validate(&copy_for_spins))
+                        data_to_controls(&copy_for_spins);
                     break;
                 default:
                     break;
@@ -230,10 +228,10 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                 case IDC_PACKET_LENGTH_EDIT:
                     if (EN_CHANGE == HIWORD(wParam))
                     {
-                        CopyMemory(&copy_for_edits, &g_settings, sizeof(struct sender_settings));
+                        sender_settings_copy(&copy_for_edits, &g_settings);
                         if (controls_to_data(&copy_for_edits) && sender_settings_validate(&copy_for_edits)) 
                         {
-                            CopyMemory(&g_settings, &copy_for_edits, sizeof(struct sender_settings));
+                            sender_settings_copy(&g_settings, &copy_for_edits);
                             EnableWindow(g_btok, TRUE);
                             update_calculated_controls(&copy_for_edits);
                         }
@@ -256,10 +254,10 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 
 int sender_settings_from_dialog(HWND hWndParent, struct sender_settings * p_settings)
 {
-    CopyMemory(&g_settings, p_settings, sizeof(struct sender_settings));
+    sender_settings_copy(&g_settings, p_settings);
     if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), hWndParent, McastSettingsProc))
     {
-        CopyMemory(p_settings, &g_settings, sizeof(struct sender_settings));
+        sender_settings_copy(p_settings, &g_settings);
         return 1;
     }
     return 0;

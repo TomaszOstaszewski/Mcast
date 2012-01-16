@@ -89,3 +89,14 @@ int sender_settings_validate(struct sender_settings const * p_settings)
 	return 1;
 }
 
+int sender_settings_compare(struct sender_settings const * p_left, struct sender_settings const * p_right)
+{
+	return !memcmp(p_left, p_right, sizeof(struct sender_settings));
+}
+
+void sender_settings_copy(struct sender_settings * p_dest, struct sender_settings const * p_source)
+{
+	memcpy(p_dest, p_source, sizeof(struct sender_settings));
+}
+
+
