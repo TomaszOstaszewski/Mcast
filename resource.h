@@ -32,6 +32,8 @@
 #define IDS_APPTITLE_RECEIVER                   40001
 #define ID_RECEIVER_STOPRCV                     40001
 #define ID_SENDER_SETTINGS                      40001
+#define IDM__ABOUT_RECIEVER1                    40002
+#define IDM__ABOUT_SENDER1                      40002
 #define IDT_TIMER_1                             40002
 #define IDS_APPTITLE                            40003
 #define ID_SENDER_JOINMCAST                     40008

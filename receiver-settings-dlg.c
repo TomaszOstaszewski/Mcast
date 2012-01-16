@@ -79,7 +79,7 @@ static HWND g_btok;
 /*!
  * @brief Maximum number of digits in the dialogs edit controls.
  */
-#define TEXT_LIMIT (4)
+#define TEXT_LIMIT (5)
 
 /*!
  * @brief Buffer that holds a number typed into one of the edit controls.
@@ -94,11 +94,11 @@ static void data_to_controls(struct receiver_settings const * p_settings)
 {
 	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->poll_sleep_time_);
 	SetWindowText(g_poll_sleep_time_edit, text_buffer);
-	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_buffer_size_);
+	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.play_buffer_size_);
 	SetWindowText(g_play_buffer_size_edit, text_buffer);
-	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->timer_delay_);
+	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.timer_delay_);
 	SetWindowText(g_mmtimer_edit_ctrl, text_buffer);
-    //debug_outputln("%s %d : %u", __FILE__, __LINE__, p_settings->timer_delay_);
+    //debug_outputln("%s %d : %u", __FILE__, __LINE__, p_settings->play_settings_.timer_delay_);
 }
 
 /*!
@@ -115,7 +115,7 @@ static int controls_to_data(struct receiver_settings * p_settings)
     *((WORD *)text_buffer) = TEXT_LIMIT;
     SendMessage(g_poll_sleep_time_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
     result = sscanf(text_buffer, "%u", &poll_sleep_time);
-    if (!result)
+    if (result<=0)
         goto error;
     if (poll_sleep_time > USHRT_MAX)
         goto error;
@@ -123,7 +123,7 @@ static int controls_to_data(struct receiver_settings * p_settings)
     *((WORD *)text_buffer) = TEXT_LIMIT;
     SendMessage(g_play_buffer_size_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
     result = sscanf(text_buffer, "%u", &play_buffer_size);
-    if (!result)
+    if (result<=0)
         goto error;
     if (play_buffer_size > USHRT_MAX)
         goto error;
@@ -131,14 +131,13 @@ static int controls_to_data(struct receiver_settings * p_settings)
     *((WORD *)text_buffer) = TEXT_LIMIT;
     SendMessage(g_mmtimer_edit_ctrl, EM_GETLINE, 0, (LPARAM)text_buffer); 
     result = sscanf(text_buffer, "%u", &timer_delay);
-    if (!result)
+    if (result<=0)
         goto error;
     if (timer_delay > USHRT_MAX)
         goto error;
-    p_settings->timer_delay_ = timer_delay;
-    p_settings->play_buffer_size_ = play_buffer_size;
+    p_settings->play_settings_.timer_delay_ = timer_delay;
+    p_settings->play_settings_.play_buffer_size_ = play_buffer_size;
     p_settings->poll_sleep_time_ = poll_sleep_time;
-    //debug_outputln("%u : %hu ", __LINE__, p_settings->timer_delay_); 
     return 1;
 error:
     return 0;
@@ -152,6 +151,7 @@ error:
  */
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
+    struct receiver_settings * p_settings = &g_settings;
 	g_poll_sleep_time_edit = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_EDIT);
 	assert(g_poll_sleep_time_edit);
 	g_poll_sleep_time_spin = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_SPIN);
@@ -173,6 +173,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     SendMessage(g_mmtimer_edit_ctrl, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     SendMessage(g_poll_sleep_time_edit, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     SendMessage(g_play_buffer_size_edit, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+
 	data_to_controls(&g_settings);
 	return TRUE;
 } 
@@ -209,15 +210,15 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                             copy_for_spins.poll_sleep_time_ -= p_up_down->iDelta;
                             break;
                         case IDC_PLAY_BUFFER_SIZE_SPIN:
-                            copy_for_spins.play_buffer_size_ -= p_up_down->iDelta;
+                            copy_for_spins.play_settings_.play_buffer_size_ -= p_up_down->iDelta;
                             break;
                         case IDC_MMTIMER_SPIN:
-                            copy_for_spins.timer_delay_ -= p_up_down->iDelta;
+                            copy_for_spins.play_settings_.timer_delay_ -= p_up_down->iDelta;
                             break;
                         default:
                             break;
                     }
-                    if (!receiver_settings_compare(&copy_for_spins, &g_settings) && receiver_validate_settings(&copy_for_spins))
+                    if (!receiver_settings_compare(&copy_for_spins, &g_settings) && receiver_settings_validate(&copy_for_spins))
                         data_to_controls(&copy_for_spins);
                     break;
                 default:
@@ -235,7 +236,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                         /* Make a settings copy */
                         receiver_settings_copy(&copy_for_edits, &g_settings);
                         /* Alter the copy with what the user or our code has changed & validate it */
-                        if (controls_to_data(&copy_for_edits) && receiver_validate_settings(&copy_for_edits))
+                        if (controls_to_data(&copy_for_edits) && receiver_settings_validate(&copy_for_edits))
                         {
                             /* If settings correctly read and valid - make the copy our current settings */
                             receiver_settings_copy(&g_settings, &copy_for_edits);

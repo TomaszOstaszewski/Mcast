@@ -71,11 +71,10 @@ int get_default_settings(HINSTANCE hInst, struct sender_settings * p_settings)
 	assert(result);
 	if (result) 
 	{
-		struct mcast_settings const * p_default_mcast_settings;
 		p_settings->send_delay_ = DEFAULT_CHUNK_SEND_TIMEOUT;
 		p_settings->chunk_size_ = DEFAULT_WAV_CHUNK_SIZE;
-		p_default_mcast_settings = get_default_mcast_settings();
-		memcpy(&p_settings->mcast_settings_, p_default_mcast_settings, sizeof(struct mcast_settings));
+		result = mcast_settings_get_default(&p_settings->mcast_settings_);
+        assert(result);
 	}
 	return result;
 }

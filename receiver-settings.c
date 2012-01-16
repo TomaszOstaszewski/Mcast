@@ -33,18 +33,14 @@
 #include "resource.h"
 #include "receiver-settings.h"
 #include "wave_utils.h"
+#include "debug_helpers.h"
 
 /*!
  * @brief 
  */
-#define DEFAULT_CHUNK_SEND_TIMEOUT (85)
+#define DEFAULT_NETPOLL_SLEEP_TIME (15)
 
-/*!
- * @brief 
- */
-#define DEFAULT_WAV_CHUNK_SIZE    (1024+256+128)
-
-int receiver_get_default_settings(HINSTANCE hInst, struct receiver_settings * p_settings)
+int receiver_settings_get_default(HINSTANCE hInst, struct receiver_settings * p_settings)
 {
 	int result;
     master_riff_chunk_t * p_riff_chunk;
@@ -53,25 +49,23 @@ int receiver_get_default_settings(HINSTANCE hInst, struct receiver_settings * p_
 	assert(result);
     if (result) 
 	{
-		struct mcast_settings const * p_default_mcast_settings;
-		p_settings->play_buffer_size_ = 1024;
-		p_settings->poll_sleep_time_ = 50;
-		p_settings->timer_delay_ = 10 ;
-		p_default_mcast_settings = get_default_mcast_settings();
-		memcpy(&p_settings->mcast_settings_, p_default_mcast_settings, sizeof(struct mcast_settings));
+		p_settings->poll_sleep_time_ = DEFAULT_NETPOLL_SLEEP_TIME;
         copy_waveformatex_2_WAVEFORMATEX(&p_settings->wfex_, &p_riff_chunk->format_chunk_.format_);
+        play_settings_get_default(&p_settings->play_settings_);
+		mcast_settings_get_default(&p_settings->mcast_settings_);
 	}
+    debug_outputln("%s %4.4u : %5.5u %5.5u %5.5u", __FILE__, __LINE__, p_settings->play_settings_.timer_delay_, p_settings->play_settings_.timer_resolution_, p_settings->play_settings_.play_buffer_size_);
 	return result;
 }
 
-int receiver_validate_settings(struct receiver_settings const * p_settings)
+int receiver_settings_validate(struct receiver_settings const * p_settings)
 {
-	if (p_settings->timer_delay_ < 1 || p_settings->timer_delay_ > 1000)
+	if (p_settings->poll_sleep_time_ > 1000)
 		return 0;	
-	if (p_settings->poll_sleep_time_ < 1 || p_settings->poll_sleep_time_ > 1000)
-		return 0;	
-	if (p_settings->play_buffer_size_ < 128 || p_settings->play_buffer_size_ > 8192)
-		return 0;	
+    if (!mcast_settings_validate(&p_settings->mcast_settings_))
+        return 0;
+    if (!play_settings_validate(&p_settings->play_settings_))
+        return 0;
 	return 1;
 }
 

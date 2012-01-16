@@ -32,13 +32,13 @@
 
 #include <windows.h>
 #include <dsound.h>
-#include <stddef.h>
 
 #if defined __cplusplus
 extern "C" {
 #endif 
 
 struct fifo_circular_buffer;
+struct play_settings;
 
 /*!
  *
@@ -48,7 +48,7 @@ typedef struct tagDSOUNDPLAY * DSOUNDPLAY;
 /*!
  *
  */
-DSOUNDPLAY dsoundplayer_create(HWND hWnd, WAVEFORMATEX const * p_WFE, struct fifo_circular_buffer * g_fifo);
+DSOUNDPLAY dsoundplayer_create(HWND hWnd, WAVEFORMATEX const * p_WFE, struct fifo_circular_buffer * g_fifo, struct play_settings const * play_settings);
 
 /*!
  *
@@ -58,7 +58,7 @@ void dsoundplayer_destroy(DSOUNDPLAY handle);
 /*!
  *
  */
-void dsoundplayer_play(DSOUNDPLAY handle);
+int dsoundplayer_play(DSOUNDPLAY handle);
 
 /*!
  *
@@ -68,7 +68,7 @@ void dsoundplayer_pause(DSOUNDPLAY handle);
 /*!
  *
  */
-void dsoundplayer_stop(DSOUNDPLAY handle);
+int dsoundplayer_stop(DSOUNDPLAY handle);
 
 #if defined __cplusplus
 }

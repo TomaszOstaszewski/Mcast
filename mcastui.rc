@@ -34,6 +34,10 @@ IDR_MENU1 MENU
         MENUITEM "St&op sending", ID_SENDER_STOPSENDING
         MENUITEM "&Quit", IDCANCEL
     }
+    POPUP "&Help"
+    {
+        MENUITEM "&About Sender", IDM__ABOUT_SENDER1
+    }
 }
 
 
@@ -51,6 +55,11 @@ IDR_MENU2 MENU
         MENUITEM "&Play", ID_RECEIVER_PLAY
         MENUITEM "&Stop", ID_RECEIVER_STOP
         MENUITEM "&Quit", IDCANCEL
+    }
+    POPUP "&Help"
+    {
+        MENUITEM SEPARATOR
+        MENUITEM "&About Reciever", IDM__ABOUT_RECIEVER1
     }
 }
 
@@ -193,8 +202,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 1 VERSIONINFO
     FILEVERSION     0,0,0,0
     PRODUCTVERSION  0,0,0,0
-    FILEOS          VOS_UNKNOWN
-    FILETYPE        VFT_UNKNOWN
+    FILEOS          VOS_NT
+    FILETYPE        VFT_APP
     FILESUBTYPE     VFT2_UNKNOWN
     FILEFLAGSMASK   0x00000000
     FILEFLAGS       0x00000000

@@ -193,11 +193,11 @@ size_t mcast_sendto(struct mcast_connection * p_conn, void const * p_data, size_
 int close_multicast(struct mcast_connection * p_mcast_conn)
 {
 	if (NULL == p_mcast_conn)
-		return -E_INVALIDARG;
+		return 0;
 	freeaddrinfo(p_mcast_conn->bindAddr_);
 	freeaddrinfo(p_mcast_conn->resolveAddr_);
 	freeaddrinfo(p_mcast_conn->multiAddr_);
 	closesocket(p_mcast_conn->socket_);
-	return 0;
+	return 1;
 }
 

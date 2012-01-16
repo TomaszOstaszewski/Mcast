@@ -46,7 +46,7 @@ struct mcast_settings {
 	struct sockaddr_in mcast_addr_; /*!< IPv4 address and port of the multicast group */
 };
 
-struct mcast_settings const * get_default_mcast_settings(void);
+int mcast_settings_get_default(struct mcast_settings * p_target);
 
 int mcast_settings_validate(struct mcast_settings const * p_settings);
 
