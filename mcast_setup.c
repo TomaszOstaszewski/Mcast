@@ -202,7 +202,7 @@ size_t mcast_recvfrom_flags(struct mcast_connection * p_conn, void * p_data, siz
             );
 }
 
-size_t mcast_recvfrom(struct mcast_connection * p_conn, void const * p_data, size_t data_size)
+size_t mcast_recvfrom(struct mcast_connection * p_conn, void * p_data, size_t data_size)
 {
     return mcast_recvfrom_flags(p_conn, p_data, data_size, 0);
 }
