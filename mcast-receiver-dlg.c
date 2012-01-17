@@ -126,21 +126,21 @@ static void UpdateUIwithCurrentState(HWND hDlg, receiver_state_t curr_state)
             SetFocus(hStartRcv);
             break;
         case RECEIVER_PLAYING:
-            EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_DISABLED);
             EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
             EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
             EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
             EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_GRAYED);
             EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_GRAYED);
             EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_ENABLED);
-            EnableWindow(hSettingsBtn, TRUE);
+            EnableWindow(hSettingsBtn, FALSE);
             EnableWindow(hJoinMcastBtn, TRUE);
             EnableWindow(hLeaveMcast, FALSE);
             EnableWindow(hPlay, FALSE);
             EnableWindow(hStop, TRUE);
             EnableWindow(hStartRcv, FALSE);
             EnableWindow(hStopRcv, FALSE);
-            SetFocus(hStopRcv);
+            SetFocus(hStop);
             break;
         case RECEIVER_MCASTJOINED_PLAYING:
             EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
