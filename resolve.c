@@ -64,6 +64,11 @@ int PrintAddress(SOCKADDR const*sa, int salen)
 /**
  * @brief Common routines for resolving addresses and hostnames
  * @details This is similar to the PrintAddress function except that instead of printing the string address to the console, it is formatted into the supplied string buffer.
+ * @param[in] sa the SOCKADDR structure to be printed.
+ * @param[in] salen length of the SOCKADDR structure.
+ * @param[in] addrbuf buffer to which formatted address will be written.
+ * @param[in] addrbuflen length of the buffer given as addrbuf parameter.
+ * @return returns 0 on success, <>0 on failure
  */
 int FormatAddress(SOCKADDR *sa, int salen, char *addrbuf, int addrbuflen)
 {
@@ -121,6 +126,12 @@ int FormatAddress(SOCKADDR *sa, int salen, char *addrbuf, int addrbuflen)
  * structure containing SOCKADDR structures representing the resolved addresses.
  * Note that if 'addr' is non-NULL, then getaddrinfo will resolve it whether
  * it is a string listeral address or a hostname.
+ * @param[in] addr
+ * @param[in] port
+ * @param[in] af
+ * @param[in] type
+ * @param[in] proto
+ * @return
  */
 struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int proto)
 {
@@ -186,6 +197,7 @@ int ReverseLookup(SOCKADDR *sa, int salen, char *buf, int buflen)
         debug_outputln("%s %u : %d", __FILE__, __LINE__, rc);
         return rc;
     }
+	StringCchPrintf(buf, buflen, "%s", host);
     //strncpy_s(buf,buflen,host,buflen-1);
     return NO_ERROR;
 }
