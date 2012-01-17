@@ -9,32 +9,7 @@
 
 #include "pcc.h"
 #include "resolve.h"
-
-/**
- * @brief Length of the output buffer.
- */
-#define OUTPUT_BUFFER_LEN (256)
-
-/**
- * @brief Buffer for debug output to be send via OutputDebugString.
- * @details This buffer will be formatted via format string prior sending via OutputDebugString
- */
-static __declspec(thread) TCHAR outputBuffer[OUTPUT_BUFFER_LEN];
-
-/**
- * @brief Common routines for resolving addresses and hostnames
- * @details This routine takes a SOCKADDR structure and its lenght and prints converts it to a string representation. 
- * @date 04-Jan-2012
- */
-static void debug_output(LPCTSTR formatString, ...)
-{
-    va_list args;
-    HRESULT hr;
-    va_start(args, formatString);
-    hr = StringCchVPrintf(outputBuffer, OUTPUT_BUFFER_LEN, formatString, args);
-    if (SUCCEEDED(hr))
-        OutputDebugString(outputBuffer);
-}
+#include "debug_helpers.h"
 
 /**
  * @brief Common routines for resolving addresses and hostnames
@@ -73,15 +48,15 @@ int PrintAddress(SOCKADDR const*sa, int salen)
     {
         if (sa->sa_family == AF_INET6)
 		{
-            debug_output("[%s]:%s", host, serv);
+            debug_outputln("[%s]:%s", host, serv);
 		}
         else
 		{
-            debug_output("%s:%s", host, serv);
+            debug_outputln("%s:%s", host, serv);
 		}
     }
     else
-        debug_output("%s", host);
+        debug_outputln("%s", host);
 
     return NO_ERROR;
 }
