@@ -113,12 +113,12 @@ size_t mcast_sendto(struct mcast_connection * p_conn, void const * p_data, size_
 /*!
  * 
  */
-size_t mcast_recvfrom(struct mcast_connection * p_conn, void const * p_data, size_t data_size);
+size_t mcast_recvfrom(struct mcast_connection * p_conn, void * p_data, size_t data_size);
 
 /*!
  * 
  */
-size_t mcast_recvfrom_flags(struct mcast_connection * p_conn, void const * p_data, size_t data_size, int flags);
+size_t mcast_recvfrom_flags(struct mcast_connection * p_conn, void * p_data, size_t data_size, int flags);
 
 
 /*!
