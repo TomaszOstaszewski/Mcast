@@ -32,7 +32,7 @@
 /*!
  * @brief Output buffer size for debug_output and debug_outpuln.
  */
-#define OUTPUT_BUFFER_LEN (16)
+#define OUTPUT_BUFFER_LEN (256)
 
 /*!
  * @brief Output buffer size for ErrorHandlerEx.
