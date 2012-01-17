@@ -39,7 +39,9 @@ static void debug_output(LPCTSTR formatString, ...)
 /**
  * @brief Common routines for resolving addresses and hostnames
  * @details This routine takes a SOCKADDR structure and its lenght and prints converts it to a string representation. 
- * @date 04-Jan-2012
+ * @param[in] sa the SOCKADDR structure to be printed.
+ * @param[in] salen length of the SOCKADDR structure.
+ * @return returns 0 on success, <>0 on failure
  */
 int PrintAddress(SOCKADDR const*sa, int salen)
 {
@@ -62,7 +64,7 @@ int PrintAddress(SOCKADDR const*sa, int salen)
             );
     if (rc != 0)
     {
-        //fprintf(stderr, "%s: getnameinfo failed: %d\n", __FILE__, rc);
+        debug_outputln("%s %u : %d", __FILE__, __LINE__, rc);
         return rc;
     }
 
@@ -112,7 +114,7 @@ int FormatAddress(SOCKADDR *sa, int salen, char *addrbuf, int addrbuflen)
             );
     if (rc != 0)
     {
-        //fprintf(stderr, "%s: getnameinfo failed: %d\n", __FILE__, rc);
+        debug_outputln("%s %u : %d", __FILE__, __LINE__, rc);
         return rc;
     }
     if ( (strlen(host) + strlen(serv) + 1) > (unsigned)addrbuflen)
@@ -181,6 +183,10 @@ struct addrinfo *ResolveAddress_2(struct sockaddr_in const * p_in_addr, int af, 
  * @brief Common routines for resolving addresses and hostnames
  * @details This routine takes a SOCKADDR and does a reverse 
  * lookup for the name corresponding to that address.
+ * @param[in] sa address of the SOCKADDR for which the lookup is to be made.
+ * @param[salen] salen length of the structure given as sa parameter
+ * @param buf buffer to which address found will be written.
+ * @param buflen lenght of the buffer given as buf parameter
  */
 int ReverseLookup(SOCKADDR *sa, int salen, char *buf, int buflen)
 {
@@ -202,10 +208,9 @@ int ReverseLookup(SOCKADDR *sa, int salen, char *buf, int buflen)
             );
     if (rc != 0)
     {
-        //fprintf(stderr, "getnameinfo failed: %d\n", rc);
+        debug_outputln("%s %u : %d", __FILE__, __LINE__, rc);
         return rc;
     }
-
     //strncpy_s(buf,buflen,host,buflen-1);
     return NO_ERROR;
 }
