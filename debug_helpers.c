@@ -40,44 +40,85 @@
 #define BUFFER_SIZE (256)
 
 /*!
+ * @brief Size of the output string buffer.
+ * @attention A buffer of that size will be copied with each thread created. Therefore, it's a matter of balance 
+ * between number memory usage and thread safety.
+ */
+#define BUFFER_MAX_TCHARS (4096)
+
+/*!
  * @brief Output buffer for debug_output and debug_outputln
  * @details This is a thread specific global, so each thread has its own copy of the buffer.
+ * @attention This buffer is a thread local variable. Thus, each thread created, whether you want it or not,
+ * will have a copy of that buffer.  
  */
 static __declspec(thread) TCHAR outputBuffer[OUTPUT_BUFFER_LEN];
 
 /*!
- * @brief Helper function, actual implementation of both debug_output and debug_outputln
- * @param[in] formatString string for printf
- * @param[in] args arguments list for printf
+ * @brief Maximum number of characters that fit the buffer.
+ * @details If writting a string using debug_outputln() will result with buffer overrun, the entire buffer
+ * is flushed. Flushing the buffer is time consuming operation, just because it involves crossing process boundaries.
+ * Therefore, if one wants to monitor some close-to-realtime process, she or he shall better use the buffered approach, 
+ * whose amortized cost is a lot lower than constant calling debug_outputln(), which will flush the string each time it's 
+ * being called.
  */
-static HRESULT debug_output_args(LPCTSTR formatString, va_list args)
-{
-	HRESULT hr;
-	hr = StringCchVPrintf(outputBuffer, OUTPUT_BUFFER_LEN, formatString, args);
-	if (SUCCEEDED(hr))
-		OutputDebugString(outputBuffer);
-	return hr;
-}
+static __declspec(thread) TCHAR g_lines[BUFFER_MAX_TCHARS];
 
-HRESULT debug_output(LPCTSTR formatString, ...)
-{
-	HRESULT hr;
-	va_list args;
-	va_start(args, formatString);
-	hr = debug_output_args(formatString, args);
-	return hr;
-}
+/*!
+ * @brief Number of characters already placed in the buffer.
+ * @attention This is a thread specific variable. Each thread gets a copy of it.
+ */
+static __declspec(thread) UINT  g_write_offset;
 
 HRESULT debug_outputln(LPCTSTR formatString, ...)
 {
 	HRESULT hr;
 	va_list args;
 	va_start(args, formatString);
-	hr = debug_output_args(formatString, args);
-	if (SUCCEEDED(hr))
-	{
-	//	OutputDebugString("\n");
-	}
+	hr = StringCchVPrintf(outputBuffer, OUTPUT_BUFFER_LEN, formatString, args);
+	if (SUCCEEDED(hr) || hr == STRSAFE_E_INSUFFICIENT_BUFFER)
+    {
+		OutputDebugString(outputBuffer);
+    }
+    va_end(args);
 	return hr;
+}
+
+void debug_output_flush(void)
+{
+    /* Write all the lines and zero-out the write offset */
+    g_lines[g_write_offset] = '\0';
+    OutputDebugString(&g_lines[0]);
+    g_write_offset = 0;
+}
+
+HRESULT debug_outputln_buffered(LPCTSTR formatString, ...)
+{
+	HRESULT hr;
+    LPTSTR pszDestEnd;
+	va_list args;
+	va_start(args, formatString);
+    /* Write a formatted string into the temporary buffer */
+	hr = StringCchVPrintfEx(outputBuffer, OUTPUT_BUFFER_LEN, &pszDestEnd, NULL, 0, formatString, args);
+	if (SUCCEEDED(hr) || hr == STRSAFE_E_INSUFFICIENT_BUFFER)
+    {
+        /* Check sum of write_offset + string length,
+         * if more than output buffer size, then flush output buffer;
+         * copy from temporary buffer @ write offset
+         * replace last character with '\n'
+         */
+        UINT new_string_length = pszDestEnd - outputBuffer + 1; /* We count the terminating null - it will be replaced by the '\n' character. */
+        UINT new_write_offset = g_write_offset + new_string_length;
+        *pszDestEnd = '\n';
+        if (new_write_offset>BUFFER_MAX_TCHARS)
+        {
+            debug_output_flush();
+        }
+        /* CopyMemory - as we know the length and we know the source string may not be NULL terminated */
+        CopyMemory(&g_lines[g_write_offset], outputBuffer, new_string_length*sizeof(TCHAR)); 
+        g_write_offset += new_string_length;
+    }
+    va_end(args);
+    return hr;
 }
 
