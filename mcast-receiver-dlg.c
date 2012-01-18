@@ -314,7 +314,6 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
             switch (wParam)
             {
                 case IDT_TIMER_1:
-                    debug_outputln("%s %d : %u", __FILE__, __LINE__, fifo_circular_buffer_get_items_count(receiver_get_fifo(g_receiver)));
                     SendMessage(g_controls.hProgressBar, PBM_SETPOS, fifo_circular_buffer_get_items_count(receiver_get_fifo(g_receiver)), 0);
                     break;
                 default:
