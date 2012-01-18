@@ -40,23 +40,33 @@
 #define BUFFER_SIZE (256)
 
 /*!
- * 
+ * @brief Size of the output string buffer.
+ * @attention A buffer of that size will be copied with each thread created. Therefore, it's a matter of balance 
+ * between number memory usage and thread safety.
  */
-#define BUFFER_MAX_TCHARS (16*OUTPUT_BUFFER_LEN)
+#define BUFFER_MAX_TCHARS (4096)
 
 /*!
  * @brief Output buffer for debug_output and debug_outputln
  * @details This is a thread specific global, so each thread has its own copy of the buffer.
+ * @attention This buffer is a thread local variable. Thus, each thread created, whether you want it or not,
+ * will have a copy of that buffer.  
  */
 static __declspec(thread) TCHAR outputBuffer[OUTPUT_BUFFER_LEN];
 
 /*!
- * 
+ * @brief Maximum number of characters that fit the buffer.
+ * @details If writting a string using debug_outputln() will result with buffer overrun, the entire buffer
+ * is flushed. Flushing the buffer is time consuming operation, just because it involves crossing process boundaries.
+ * Therefore, if one wants to monitor some close-to-realtime process, she or he shall better use the buffered approach, 
+ * whose amortized cost is a lot lower than constant calling debug_outputln(), which will flush the string each time it's 
+ * being called.
  */
 static __declspec(thread) TCHAR g_lines[BUFFER_MAX_TCHARS];
 
 /*!
- * 
+ * @brief Number of characters already placed in the buffer.
+ * @attention This is a thread specific variable. Each thread gets a copy of it.
  */
 static __declspec(thread) UINT  g_write_offset;
 
