@@ -29,7 +29,7 @@
  */
 #include "pcc.h"
 #include "mcast_setup.h"
-#include "resource.h"
+#include "resource.h" 
 #include "debug_helpers.h"
 #include "dsoundplay.h"
 #include "fifo-circular-buffer.h"
@@ -56,6 +56,18 @@ static struct receiver_settings g_settings;
  */
 HINSTANCE   g_hInst;
 
+struct ui_controls {
+    HWND hSettingsBtn;
+    HWND hJoinMcastBtn;
+    HWND hLeaveMcast;
+    HWND hPlay;
+    HWND hStop;
+    HWND hStartRcv;
+    HWND hStopRcv;
+    HWND hProgressBar;
+    HMENU hMainMenu;
+} g_controls;
+
 /**
  * @brief Helper UI update function.
  * @details Updates the UI widgets state so they reflect the internal state of the program.
@@ -63,135 +75,111 @@ HINSTANCE   g_hInst;
  * @param[in] hDlg a handle to the window to be updated
  * @param[in] curr_state current receiver state. Control on the dialog passed with hDlg will be updated accordingly.
  */
-static void UpdateUIwithCurrentState(HWND hDlg, receiver_state_t curr_state)
+static void UpdateUIwithCurrentState(struct ui_controls * p_controls, receiver_state_t curr_state)
 {
-    static HWND hSettingsBtn = NULL, 
-                hJoinMcastBtn = NULL, 
-                hLeaveMcast = NULL, 
-                hPlay = NULL, 
-                hStop = NULL,
-                hStartRcv = NULL,
-                hStopRcv = NULL;
-    static HMENU hMainMenu = NULL;
-    if (NULL == hSettingsBtn)
-        hSettingsBtn = GetDlgItem(hDlg, ID_RECEIVER_SETTINGS);    
-    if (NULL == hJoinMcastBtn)
-        hJoinMcastBtn = GetDlgItem(hDlg, ID_RECEIVER_JOINMCAST);  
-    if (NULL == hPlay)
-        hPlay = GetDlgItem(hDlg, ID_RECEIVER_PLAY);    
-    if (NULL == hStop)
-        hStop = GetDlgItem(hDlg, ID_RECEIVER_STOP);  
-    if (NULL == hLeaveMcast)
-        hLeaveMcast = GetDlgItem(hDlg, ID_RECEIVER_LEAVEMCAST);
-    if (NULL == hStopRcv)
-        hStopRcv = GetDlgItem(hDlg, ID_RECEIVER_STOPRCV);
-    if (NULL == hStartRcv)
-        hStartRcv = GetDlgItem(hDlg, ID_RECEIVER_STARTRCV);
-    if (NULL == hMainMenu)
-        hMainMenu = GetMenu(hDlg);
     switch (curr_state)
     {
         case RECEIVER_INITIAL:
-            EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
-            EnableWindow(hSettingsBtn, TRUE);
-            EnableWindow(hJoinMcastBtn, TRUE);
-            EnableWindow(hLeaveMcast, FALSE);
-            EnableWindow(hPlay, TRUE);
-            EnableWindow(hStop, FALSE);
-            EnableWindow(hStartRcv, FALSE);
-            EnableWindow(hStopRcv, FALSE);
-            SetFocus(hJoinMcastBtn);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
+            EnableWindow(p_controls->hSettingsBtn, TRUE);
+            EnableWindow(p_controls->hJoinMcastBtn, TRUE);
+            EnableWindow(p_controls->hLeaveMcast, FALSE);
+            EnableWindow(p_controls->hPlay, TRUE);
+            EnableWindow(p_controls->hStop, FALSE);
+            EnableWindow(p_controls->hStartRcv, FALSE);
+            EnableWindow(p_controls->hStopRcv, FALSE);
+            SetFocus(p_controls->hJoinMcastBtn);
             break;
         case RECEIVER_MCASTJOINED:
-            EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
-            EnableWindow(hSettingsBtn, FALSE);
-            EnableWindow(hJoinMcastBtn, FALSE);
-            EnableWindow(hLeaveMcast, TRUE);
-            EnableWindow(hPlay, TRUE);
-            EnableWindow(hStop, FALSE);
-            EnableWindow(hStartRcv, TRUE);
-            EnableWindow(hStopRcv, FALSE);
-            SetFocus(hStartRcv);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
+            EnableWindow(p_controls->hSettingsBtn, FALSE);
+            EnableWindow(p_controls->hJoinMcastBtn, FALSE);
+            EnableWindow(p_controls->hLeaveMcast, TRUE);
+            EnableWindow(p_controls->hPlay, TRUE);
+            EnableWindow(p_controls->hStop, FALSE);
+            EnableWindow(p_controls->hStartRcv, TRUE);
+            EnableWindow(p_controls->hStopRcv, FALSE);
+            SetFocus(p_controls->hStartRcv);
             break;
         case RECEIVER_PLAYING:
-            EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_DISABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_ENABLED);
-            EnableWindow(hSettingsBtn, FALSE);
-            EnableWindow(hJoinMcastBtn, TRUE);
-            EnableWindow(hLeaveMcast, FALSE);
-            EnableWindow(hPlay, FALSE);
-            EnableWindow(hStop, TRUE);
-            EnableWindow(hStartRcv, FALSE);
-            EnableWindow(hStopRcv, FALSE);
-            SetFocus(hStop);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_DISABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_ENABLED);
+            EnableWindow(p_controls->hSettingsBtn, FALSE);
+            EnableWindow(p_controls->hJoinMcastBtn, TRUE);
+            EnableWindow(p_controls->hLeaveMcast, FALSE);
+            EnableWindow(p_controls->hPlay, FALSE);
+            EnableWindow(p_controls->hStop, TRUE);
+            EnableWindow(p_controls->hStartRcv, FALSE);
+            EnableWindow(p_controls->hStopRcv, FALSE);
+            SetFocus(p_controls->hStop);
             break;
         case RECEIVER_MCASTJOINED_PLAYING:
-            EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
-            EnableWindow(hSettingsBtn, FALSE);
-            EnableWindow(hJoinMcastBtn, FALSE);
-            EnableWindow(hLeaveMcast, TRUE);
-            EnableWindow(hPlay, FALSE);
-            EnableWindow(hStop, TRUE);
-            EnableWindow(hStartRcv, TRUE);
-            EnableWindow(hStopRcv, FALSE);
-            SetFocus(hStartRcv);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
+            EnableWindow(p_controls->hSettingsBtn, FALSE);
+            EnableWindow(p_controls->hJoinMcastBtn, FALSE);
+            EnableWindow(p_controls->hLeaveMcast, TRUE);
+            EnableWindow(p_controls->hPlay, FALSE);
+            EnableWindow(p_controls->hStop, TRUE);
+            EnableWindow(p_controls->hStartRcv, TRUE);
+            EnableWindow(p_controls->hStopRcv, FALSE);
+            SetFocus(p_controls->hStartRcv);
             break;
         case RECEIVER_RECEIVING:
-            EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
-            EnableWindow(hSettingsBtn, FALSE);
-            EnableWindow(hJoinMcastBtn, FALSE);
-            EnableWindow(hLeaveMcast, FALSE);
-            EnableWindow(hPlay, TRUE);
-            EnableWindow(hStop, FALSE);
-            EnableWindow(hStartRcv, FALSE);
-            EnableWindow(hStopRcv, TRUE);
-            SetFocus(hPlay);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_GRAYED);
+            EnableWindow(p_controls->hSettingsBtn, FALSE);
+            EnableWindow(p_controls->hJoinMcastBtn, FALSE);
+            EnableWindow(p_controls->hLeaveMcast, FALSE);
+            EnableWindow(p_controls->hPlay, TRUE);
+            EnableWindow(p_controls->hStop, FALSE);
+            EnableWindow(p_controls->hStartRcv, FALSE);
+            EnableWindow(p_controls->hStopRcv, TRUE);
+            SetFocus(p_controls->hPlay);
             break;
         case RECEIVER_RECEIVING_PLAYING:
-            EnableMenuItem(hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_ENABLED);
-            EnableWindow(hSettingsBtn, FALSE);
-            EnableWindow(hJoinMcastBtn, FALSE);
-            EnableWindow(hLeaveMcast, FALSE);
-            EnableWindow(hPlay, FALSE);
-            EnableWindow(hStop, TRUE);
-            EnableWindow(hStartRcv, FALSE);
-            EnableWindow(hStopRcv, TRUE);
-            SetFocus(hStop);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STARTRCV, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STOPRCV, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_PLAY, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_controls->hMainMenu, ID_RECEIVER_STOP, MF_BYCOMMAND | MF_ENABLED);
+            EnableWindow(p_controls->hSettingsBtn, FALSE);
+            EnableWindow(p_controls->hJoinMcastBtn, FALSE);
+            EnableWindow(p_controls->hLeaveMcast, FALSE);
+            EnableWindow(p_controls->hPlay, FALSE);
+            EnableWindow(p_controls->hStop, TRUE);
+            EnableWindow(p_controls->hStartRcv, FALSE);
+            EnableWindow(p_controls->hStopRcv, TRUE);
+            SetFocus(p_controls->hStop);
             break;
         default:
             break;
@@ -203,13 +191,13 @@ static void UpdateUIwithCurrentState(HWND hDlg, receiver_state_t curr_state)
  * @param[in] hDlg a handle to the dialog window to be updated
  * @attention This is usually called by the application's idle handler.
  */
-static void UpdateUI(HWND hDlg)
+static void UpdateUI(struct ui_controls * p_controls)
 {
     static receiver_state_t prev_state = RECEIVER_INITIAL;
     receiver_state_t new_state = receiver_get_state(g_receiver);
     if (prev_state != new_state)
     {
-        UpdateUIwithCurrentState(hDlg, new_state);
+        UpdateUIwithCurrentState(p_controls, new_state);
         prev_state = new_state;
     }
 }
@@ -232,9 +220,30 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(result);
     if (result)
     {
+        struct ui_controls * p_controls = &g_controls;
         g_receiver = receiver_create(&g_settings);
         assert(g_receiver);
-        UpdateUIwithCurrentState(hwnd, receiver_get_state(g_receiver));
+        p_controls->hSettingsBtn = GetDlgItem(hwnd, ID_RECEIVER_SETTINGS);    
+        p_controls->hJoinMcastBtn = GetDlgItem(hwnd, ID_RECEIVER_JOINMCAST);  
+        p_controls->hPlay = GetDlgItem(hwnd, ID_RECEIVER_PLAY);    
+        p_controls->hStop = GetDlgItem(hwnd, ID_RECEIVER_STOP);  
+        p_controls->hLeaveMcast = GetDlgItem(hwnd, ID_RECEIVER_LEAVEMCAST);
+        p_controls->hStopRcv = GetDlgItem(hwnd, ID_RECEIVER_STOPRCV);
+        p_controls->hStartRcv = GetDlgItem(hwnd, ID_RECEIVER_STARTRCV);
+        p_controls->hProgressBar = GetDlgItem(hwnd, IDC_RECEIVER_BUFFER_FILL);
+        p_controls->hMainMenu = GetMenu(hwnd);
+        assert(p_controls->hSettingsBtn);
+        assert(p_controls->hJoinMcastBtn);
+        assert(p_controls->hPlay);
+        assert(p_controls->hStop);
+        assert(p_controls->hLeaveMcast);
+        assert(p_controls->hStopRcv);
+        assert(p_controls->hStartRcv);
+        assert(p_controls->hMainMenu);
+        assert(p_controls->hProgressBar);
+        SendMessage(p_controls->hProgressBar, PBM_SETRANGE, 0, MAKEWPARAM(0, 65535));
+        SetTimer(hwnd, IDT_TIMER_1, 250, NULL);
+        UpdateUIwithCurrentState(p_controls, receiver_get_state(g_receiver));
     }
     else 
     {
@@ -258,7 +267,7 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
         case WM_INITDIALOG:
             return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
         case WM_COMMAND:
-            switch(wParam)
+            switch (wParam)
             {
                 case ID_RECEIVER_SETTINGS:
                     if (RECEIVER_INITIAL == receiver_get_state(g_receiver) && receiver_settings_do_dialog(hDlg, &g_settings))
@@ -301,6 +310,17 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                     break;
             }
             return TRUE;
+        case WM_TIMER:
+            switch (wParam)
+            {
+                case IDT_TIMER_1:
+                    debug_outputln("%s %d : %u", __FILE__, __LINE__, fifo_circular_buffer_get_items_count(receiver_get_fifo(g_receiver)));
+                    SendMessage(g_controls.hProgressBar, PBM_SETPOS, fifo_circular_buffer_get_items_count(receiver_get_fifo(g_receiver)), 0);
+                    break;
+                default:
+                    break;
+            }
+            break;
         case WM_DESTROY:
             PostQuitMessage(0);
             break;
@@ -325,7 +345,7 @@ static long int on_idle(HWND hWnd, long int count)
     switch (count)
     {
         case 0:
-            UpdateUI(hWnd);
+            UpdateUI(&g_controls);
             return 1;
         default:
             return 0;

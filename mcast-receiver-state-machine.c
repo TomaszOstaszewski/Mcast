@@ -429,3 +429,10 @@ receiver_state_t receiver_get_state(struct mcast_receiver * p_receiver)
     return p_receiver->state_;
 }
 
+struct fifo_circular_buffer * receiver_get_fifo(struct mcast_receiver * p_receiver)
+{
+    assert(p_receiver);
+    assert(p_receiver->fifo_);
+    return p_receiver->fifo_;
+}
+
