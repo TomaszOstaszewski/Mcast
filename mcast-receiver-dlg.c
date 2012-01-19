@@ -208,7 +208,7 @@ static void UpdateUI(struct ui_controls * p_controls)
         case RECEIVER_PLAYING:
         case RECEIVER_RECEIVING_PLAYING:
             fifo = receiver_get_fifo(g_receiver);
-            capacity = (USHRT_MAX*fifo_circular_buffer_get_items_count(fifo))/fifo_circular_buffer_get_capacity(fifo);
+            capacity = fifo_circular_buffer_get_items_count(fifo);
             SendMessage(g_controls.hProgressBar, PBM_SETPOS, capacity, 0);
             break;
         default:
