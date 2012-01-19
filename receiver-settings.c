@@ -38,7 +38,7 @@
 /*!
  * @brief 
  */
-#define DEFAULT_NETPOLL_SLEEP_TIME (15)
+#define DEFAULT_NETPOLL_SLEEP_TIME (1)
 
 int receiver_settings_get_default(HINSTANCE hInst, struct receiver_settings * p_settings)
 {
