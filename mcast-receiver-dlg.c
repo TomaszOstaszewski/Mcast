@@ -195,10 +195,24 @@ static void UpdateUI(struct ui_controls * p_controls)
 {
     static receiver_state_t prev_state = RECEIVER_INITIAL;
     receiver_state_t new_state = receiver_get_state(g_receiver);
+    struct fifo_circular_buffer * fifo;
+    uint32_t capacity;
     if (prev_state != new_state)
     {
         UpdateUIwithCurrentState(p_controls, new_state);
         prev_state = new_state;
+    }
+    switch (new_state)
+    {
+        case RECEIVER_RECEIVING:
+        case RECEIVER_PLAYING:
+        case RECEIVER_RECEIVING_PLAYING:
+            fifo = receiver_get_fifo(g_receiver);
+            capacity = (USHRT_MAX*fifo_circular_buffer_get_items_count(fifo))/fifo_circular_buffer_get_capacity(fifo);
+            SendMessage(g_controls.hProgressBar, PBM_SETPOS, capacity, 0);
+            break;
+        default:
+            break;
     }
 }
 
@@ -241,8 +255,8 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
         assert(p_controls->hStartRcv);
         assert(p_controls->hMainMenu);
         assert(p_controls->hProgressBar);
-        SendMessage(p_controls->hProgressBar, PBM_SETRANGE, 0, MAKEWPARAM(0, 65535));
-        SetTimer(hwnd, IDT_TIMER_1, 250, NULL);
+        SendMessage(p_controls->hProgressBar, PBM_SETRANGE32, 0, fifo_circular_buffer_get_capacity(receiver_get_fifo(g_receiver)));
+        SetTimer(hwnd, IDT_TIMER_1, 500, NULL);
         UpdateUIwithCurrentState(p_controls, receiver_get_state(g_receiver));
     }
     else 
@@ -311,14 +325,6 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
             }
             return TRUE;
         case WM_TIMER:
-            switch (wParam)
-            {
-                case IDT_TIMER_1:
-                    SendMessage(g_controls.hProgressBar, PBM_SETPOS, fifo_circular_buffer_get_items_count(receiver_get_fifo(g_receiver)), 0);
-                    break;
-                default:
-                    break;
-            }
             break;
         case WM_DESTROY:
             PostQuitMessage(0);
