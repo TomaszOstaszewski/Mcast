@@ -67,6 +67,17 @@ int sender_settings_validate(struct sender_settings const * p_settings);
 
 /*!
  * @brief Compares if two settings are equal.
+ * @details The compare and swap methods are so commonly used that they have been abstracted with this
+ * @code
+ * if (sender_settings_compare(p_left, p_righ))
+ * {
+ *      printf("Objects %p and %p are equal.\n", p_left, p_right);
+ * }
+ * else
+ * {
+ *      printf("Objects %p and %p are different.\n", p_left, p_right);
+ * }
+ * @endcode
  * @param[in,out] p_left left hand element of the comparison.
  * @param[in,out] p_right right hand element of the comparison.
  * @return Returns non zero if settings are equal, returns 0 otherwise.
@@ -79,6 +90,16 @@ int sender_settings_compare(struct sender_settings const * p_left, struct sender
  * @param[in,out] p_source copy source. From this sturcture settings will be read.
  */
 void sender_settings_copy(struct sender_settings * p_dest, struct sender_settings const * p_source);
+
+/*!
+ * @brief Exchanges the settings between each other.
+ * @details After the exchange, the p_left' will have settings of p_right, wherease p_right' will have settings of p_left.
+ * Can safely be called on the same object pointed by both parameters.
+ * @param[in,out] p_left first object to swap data with.
+ * @param[in,out] p_right second object to swap data with.
+ * @return returns non-zero on success, 0 otherwise.
+ */
+void sender_settings_swap(struct sender_settings * p_left, struct sender_settings * p_right);
 
 #if defined __cplusplus
 }

@@ -1,6 +1,9 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /**
  * @file mcast-sender-dlg.c
+ * @brief Sender dialog application main file.
+ * @details 
+ * @date 03-Jan-2011
  * @author T.Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
@@ -22,9 +25,6 @@
  * authors and should not be interpreted as representing official policies, 
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
- * @date 03-Jan-2011
- * @brief Sender dialog application main file.
- * @details 
  */
 #include "pcc.h"
 #include "debug_helpers.h"

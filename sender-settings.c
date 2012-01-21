@@ -95,7 +95,16 @@ int sender_settings_compare(struct sender_settings const * p_left, struct sender
 
 void sender_settings_copy(struct sender_settings * p_dest, struct sender_settings const * p_source)
 {
-	memcpy(p_dest, p_source, sizeof(struct sender_settings));
+    struct sender_settings tmp;
+    CopyMemory(&tmp, p_source, sizeof(struct sender_settings));
+	CopyMemory(p_dest, &tmp, sizeof(struct sender_settings));
 }
 
+void sender_settings_swap(struct sender_settings * p_left, struct sender_settings * p_right)
+{
+    struct sender_settings tmp;
+	CopyMemory(&tmp, p_left, sizeof(struct sender_settings));
+	CopyMemory(p_left, p_right, sizeof(struct sender_settings));
+	CopyMemory(p_right, &tmp, sizeof(struct sender_settings));
+}
 
