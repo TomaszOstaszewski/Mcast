@@ -38,13 +38,12 @@
 /*!
  * @brief 
  */
-#define DEFAULT_NETPOLL_SLEEP_TIME (15)
+#define DEFAULT_NETPOLL_SLEEP_TIME (1)
 
 int receiver_settings_get_default(HINSTANCE hInst, struct receiver_settings * p_settings)
 {
 	int result;
     master_riff_chunk_t * p_riff_chunk;
-    /*! \todo Add function to unload WAV resource */
 	result = init_master_riff(&p_riff_chunk, hInst, MAKEINTRESOURCE(IDR_0_1));
 	assert(result);
     if (result) 
@@ -54,7 +53,6 @@ int receiver_settings_get_default(HINSTANCE hInst, struct receiver_settings * p_
         play_settings_get_default(&p_settings->play_settings_);
 		mcast_settings_get_default(&p_settings->mcast_settings_);
 	}
-    debug_outputln("%s %4.4u : %5.5u %5.5u %5.5u", __FILE__, __LINE__, p_settings->play_settings_.timer_delay_, p_settings->play_settings_.timer_resolution_, p_settings->play_settings_.play_buffer_size_);
 	return result;
 }
 

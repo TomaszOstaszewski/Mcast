@@ -1,10 +1,9 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
-
-/**
- * @file debug_helpers.h
- * @brief DebugView interface header.
- * @details Contains declarations of functions that print output to the Debug Console. This is more fancy wrapper for OutputDebugString API. 
+/*!
+ * @brief
+ * @file about-dialog.h
  * @author T.Ostaszewski
+ * @date Jan-2012
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -25,40 +24,25 @@
  * authors and should not be interpreted as representing official policies, 
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
- * @date 04-Jan-2012
  */
-#if !defined DEBUG_HELPERS_H_4D66D49A_52F1_4AFE_BB0D_F82EBFD5439A
-#define DEBUG_HELPERS_H_4D66D49A_52F1_4AFE_BB0D_F82EBFD5439A
+#if !defined ABOUT_DIALOG_B84B8FFA_05E6_40CC_A458_D12F04911918
+#define ABOUT_DIALOG_B84B8FFA_05E6_40CC_A458_D12F04911918
 
 #if defined __cplusplus
 extern "C" {
-#endif 
-
-#include <Windows.h>
-
-/*!
- * @brief Outputs a formated text into the debug window, appends a newline.
- * @details The debug window is the one to which we write using OutputDebugString. 
- * Usually, it is attached to a debugger, but can also be seen using DebugView application
- * from Sysinternal.
- * @param[in] formatString
- * @return
- */
-HRESULT debug_outputln(LPCTSTR formatString, ...);
+#endif
+#include <windows.h>
 
 /*!
- * 
+ * @brief Displays an "About ..." dialog.
+ * @details 
+ * @param[in] hWndParent handle to the parent window.
  */
-void debug_output_flush(void);
-
-/*!
- * 
- */
-HRESULT debug_outputln_buffered(LPCTSTR formatString, ...);
+void display_about_dialog(HWND hWndParent);
 
 #if defined __cplusplus
 }
-#endif 
+#endif
 
-#endif /* DEBUG_HELPERS_H_4D66D49A_52F1_4AFE_BB0D_F82EBFD5439A */
+#endif /* ABOUT_DIALOG_B84B8FFA_05E6_40CC_A458_D12F04911918 */
 
