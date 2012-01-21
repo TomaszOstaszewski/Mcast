@@ -120,6 +120,7 @@ size_t mcast_recvfrom(struct mcast_connection * p_conn, void * p_data, size_t da
  */
 size_t mcast_recvfrom_flags(struct mcast_connection * p_conn, void * p_data, size_t data_size, int flags);
 
+int mcast_is_new_data(struct mcast_connection * p_conn, DWORD dwTimeoutMs);
 
 /*!
  * @brief Leaves the multicast group, closes socket.
