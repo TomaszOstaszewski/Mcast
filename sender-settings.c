@@ -33,7 +33,7 @@
 /*!
  * @brief Default timespan between moments the subsequent audio packets are being send.
  */
-#define DEFAULT_CHUNK_SEND_TIMEOUT (85)
+#define DEFAULT_CHUNK_SEND_TIMEOUT (90)
 
 /*!
  * @brief Default number of bytes in the audio packet.

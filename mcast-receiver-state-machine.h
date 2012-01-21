@@ -124,4 +124,12 @@ void handle_rcvstart(struct mcast_receiver * p_receiver);
  */
 void handle_rcvstop(struct mcast_receiver * p_receiver);
 
+/*!
+ * @brief Retrieves a FIFO queue that is used to pass the data between multicast
+ * receiver and player.
+ * @param[in] p_receiver handle to the receiver object. 
+ * @return Returns a pointer to the FIFO queue.
+ */
+struct fifo_circular_buffer * receiver_get_fifo(struct mcast_receiver * p_receiver);
+
 #endif /*if !defined MCAST_RECEIVER_STATE_093A307A_2B03_4C05_8350_E3ED8C52A126*/

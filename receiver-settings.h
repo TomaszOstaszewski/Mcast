@@ -69,6 +69,22 @@ void receiver_settings_swap(struct receiver_settings * p_left, struct receiver_s
 
 /*!
  * @brief Copies the receiver settings from one structure to another.
+ * @details The compare and swap methods are so commonly used that they have been abstracted with this
+ * function, rather to restoring to call memcmp(). Usage:
+ * @code
+ * if (receiver_settings_compare(p_left, p_righ))
+ * {
+ *      printf("Objects %p and %p are equal.\n", p_left, p_right);
+ * }
+ * else
+ * {
+ *      printf("Objects %p and %p are different.\n", p_left, p_right);
+ * }
+ * @endcode
+ * @param[in] p_left first element of the comparison
+ * @param[in] p_right second element of the comparison
+ * @return returns a non-zero value if both elements are equal, returns 0 otherwise, i.e. returns 0 in case they <b>are not</b> equal.
+ * @attention The return value is negation of this you would get from calling memcpy().
  */
 int receiver_settings_compare(struct receiver_settings const * p_left, struct receiver_settings const * p_right);
 
