@@ -27,13 +27,13 @@
  * @details 
  */
 #include "pcc.h"
-#include "resource.h"
 #include "debug_helpers.h"
 #include "message-loop.h"
 #include "mcast-sender-state-machine.h"
 #include "sender-settings-dlg.h"
 #include "sender-settings.h"
 #include "about-dialog.h"
+#include "sender-res.h"
 
 /**
  * @brief Global Application instance.

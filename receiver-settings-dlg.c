@@ -27,10 +27,10 @@
  */
 #include "pcc.h"
 #include "debug_helpers.h"
-#include "resource.h"
 #include "receiver-settings.h"
 #include "receiver-settings-dlg.h"
 #include "mcast-settings-dlg.h"
+#include "receiver-res.h"
 
 extern HINSTANCE g_hInst;
 

@@ -28,11 +28,11 @@
  */
 #include "pcc.h"
 #include "debug_helpers.h"
-#include "resource.h"
 #include "sender-settings-dlg.h"
 #include "mcast-settings-dlg.h"
 #include "sender-settings.h"
 #include "mcast-settings.h"
+#include "sender-res.h"
 
 extern HINSTANCE g_hInst;
 

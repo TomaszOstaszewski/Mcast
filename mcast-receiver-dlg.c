@@ -29,7 +29,6 @@
  */
 #include "pcc.h"
 #include "mcast_setup.h"
-#include "resource.h" 
 #include "debug_helpers.h"
 #include "dsoundplay.h"
 #include "fifo-circular-buffer.h"
@@ -40,6 +39,8 @@
 #include "receiver-settings-dlg.h"
 #include "receiver-settings.h"
 #include "about-dialog.h"
+#include "common-dialogs-res.h"
+#include "receiver-res.h"
 
 /**
  * 
