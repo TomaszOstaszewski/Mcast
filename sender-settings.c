@@ -26,9 +26,9 @@
  * @date Jan-2012
  */
 #include "pcc.h"
-#include "resource.h"
 #include "sender-settings.h"
 #include "wave_utils.h"
+#include "sender-res.h"
 
 /*!
  * @brief Default timespan between moments the subsequent audio packets are being send.

@@ -29,7 +29,7 @@
 #include "mcast-settings.h"
 #include "mcast-settings-dlg.h"
 #include "debug_helpers.h"
-#include "resource.h"
+#include "common-dialogs-res.h"
 
 /*!
  * @brief Copy of the mcast_settings object passed by the caller.  * @details On this copy all the dialog operation is performed.
