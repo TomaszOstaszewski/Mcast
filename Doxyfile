@@ -118,7 +118,6 @@ receiver-settings.c \
 receiver-settings.h \
 resolve.c \
 resolve.h \
-resource.h \
 sender-settings-dlg.c \
 sender-settings-dlg.h \
 sender-settings.c \
