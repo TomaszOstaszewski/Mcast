@@ -106,7 +106,6 @@ mcast_utils.c \
 mcast_utils.h \
 message-loop.c \
 message-loop.h \
-pcc.c \
 pcc.h \
 perf-counter-itf.c \
 perf-counter-itf.h \
@@ -125,12 +124,10 @@ sender-settings.h \
 std-int.h \
 timeofday.c \
 timeofday.h \
-ut-buffer-tests.c \
-ut-fifo-circular-buffer.c \
-ut-input-buffer.c \
-vc2003stdint.h \
 wave_utils.c \
 wave_utils.h \
+
+#vc2003stdint.h \
 
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          =

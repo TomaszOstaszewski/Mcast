@@ -40,7 +40,7 @@
  */
 #define DEFAULT_NETPOLL_SLEEP_TIME (1)
 
-int receiver_settings_get_default(HINSTANCE hInst, struct receiver_settings * p_settings)
+int receiver_settings_get_default(struct receiver_settings * p_settings)
 {
     p_settings->poll_sleep_time_ = DEFAULT_NETPOLL_SLEEP_TIME;
     p_settings->wfex_.wFormatTag = WAVE_FORMAT_PCM;

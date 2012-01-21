@@ -29,22 +29,22 @@
 #include "mcast-settings.h"
 
 /*!
- * @brief 
+ * @brief Default multicast group IPv4 address.
  */
 #define DEFAULT_MCASTADDRV4 "234.5.6.7"
 
 /*!
- * @brief 
+ * @brief Default multicast group IPv6 address.
  */
 #define DEFAULT_MCASTADDRV6 "ff12::1"
 
 /*!
- * @brief 
+ * @brief Default multicast port
  */
 #define DEFAULT_MCASTPORT (25000)
 
 /*!
- * @brief
+ * @brief Default TTL value.
  */
 #define DEFAULT_TTL (8)
 
@@ -59,7 +59,14 @@ int mcast_settings_get_default(struct mcast_settings * p_target)
     return 1;
 }
 
+/*! 
+ * @brief Minimum IPv4 multicast group address.
+ */
 #define MIN_MCAST_ADDR (0xe0000000)
+
+/*! 
+ * @brief Maximum IPv4 multicast group address.
+ */
 #define MAX_MCAST_ADDR (0xefffffff)
 
 int mcast_settings_validate(struct mcast_settings const * p_settings)
@@ -75,6 +82,16 @@ int mcast_settings_validate(struct mcast_settings const * p_settings)
 
 void mcast_settings_copy(struct mcast_settings * p_dest, struct mcast_settings const * p_source)
 {
-   memcpy(p_dest, p_source, sizeof(struct mcast_settings)); 
+	struct mcast_settings tmp;	
+	CopyMemory(&tmp, p_source, sizeof(struct mcast_settings));
+	CopyMemory(p_dest, &tmp, sizeof(struct mcast_settings));
+}
+
+void mcast_settings_swap(struct mcast_settings * p_left, struct mcast_settings * p_right)
+{
+	struct mcast_settings tmp;
+	CopyMemory(&tmp, p_left, sizeof(struct mcast_settings));
+	CopyMemory(p_left, p_right, sizeof(struct mcast_settings));
+	CopyMemory(p_right, &tmp, sizeof(struct mcast_settings));
 }
 

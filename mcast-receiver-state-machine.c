@@ -54,7 +54,10 @@ struct mcast_receiver {
     struct receiver_settings settings_; /*!< Receiver settings for multicast connection. */
 };
 
-#define MAX_UDP_PACKET_LENGHT (2048)
+/*!
+ * @brief Default (expected) size of single UDP audio packet.
+ */
+#define DEFAULT_UDP_PACKET_CHUNK (2048)
 
 /**
  * @brief Entry point of the Multicast receiver thread 
@@ -77,8 +80,8 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
     assert(p_receiver->conn_);
     assert(p_receiver->fifo_);
     sock_addr_size  = sizeof(struct sockaddr_in);
-    item.data_      = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, MAX_UDP_PACKET_LENGHT);
-    item.count_     = MAX_UDP_PACKET_LENGHT;
+    item.data_      = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, DEFAULT_UDP_PACKET_CHUNK);
+    item.count_     = DEFAULT_UDP_PACKET_CHUNK;
     dwWaitTimeout   = p_receiver->settings_.poll_sleep_time_;
     for (count = 0; !stop; ++count)
     {
@@ -96,8 +99,8 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
                     fifo_circular_buffer_push_item(p_receiver->fifo_, &item);
                     break;
                 }
-                item.data_ = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, item.data_, item.count_ + MAX_UDP_PACKET_LENGHT);
-                item.count_ += DATA_ITEM_SIZE;
+                item.data_ = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, item.data_, item.count_ + DEFAULT_UDP_PACKET_CHUNK);
+                item.count_ += DEFAULT_UDP_PACKET_CHUNK;
             } while (WSAGetLastError() == WSAEMSGSIZE);
         }
         dwWaitResult = WaitForSingleObject(p_receiver->hStopEventThread_, 0);

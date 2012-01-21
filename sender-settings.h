@@ -35,30 +35,49 @@ extern "C" {
 #include "std-int.h"
 #include "mcast-settings.h"
 
+/*!
+ * @brief Forward declaration.
+ */
 struct master_riff_chunk;
 
 /*!
- * @brief
+ * @brief Describes the sender settings.
  */
 struct sender_settings {
-	uint16_t chunk_size_;
-	uint16_t send_delay_;
-	struct master_riff_chunk * chunk_;
-	struct mcast_settings mcast_settings_;
+	struct mcast_settings mcast_settings_; /*!< Describes the multicast connection settings. */
+	uint16_t chunk_size_; /*!< Describes how many bytes to send in one chunk. */
+	uint16_t send_delay_; /*!< Describes how many milliseconds to wait between sending one chunk and another. */
+	struct master_riff_chunk * chunk_; /*!< Describes which WAV file to send. */
 };
 
 /*!
- * @brief
+ * @brief Returns the default settings.
+ * @param[in] hInst describes the resource file from which settings will be read.
+ * @param[in] p_settings structure referenced by this pointer will be written with default settings.
+ * @return returns 0 on success, <>0 otherwise.
  */
 int get_default_settings(HINSTANCE hInst, struct sender_settings * p_settings);
 
 /*!
- * @brief
+ * @brief Validates if the sender settings are correct.
+ * @param[in] p_settings describes settings to be validated against their logical correctness.
+ * @return returns non zero if settings are valid, returns 0 otherwise.
  */
 int sender_settings_validate(struct sender_settings const * p_settings);
 
+/*!
+ * @brief Compares if two settings are equal.
+ * @param[in,out] p_left left hand element of the comparison.
+ * @param[in,out] p_right right hand element of the comparison.
+ * @return Returns non zero if settings are equal, returns 0 otherwise.
+ */
 int sender_settings_compare(struct sender_settings const * p_left, struct sender_settings const * p_right);
 
+/*!
+ * @brief Validates if the sender settings are correct.
+ * @param[in,out] p_dest target of the copy. to this sturcture settings will be written.
+ * @param[in,out] p_source copy source. From this sturcture settings will be read.
+ */
 void sender_settings_copy(struct sender_settings * p_dest, struct sender_settings const * p_source);
 
 #if defined __cplusplus
