@@ -31,29 +31,28 @@
  */
 #include "pcc.h"
 #include "receiver-settings.h"
-#include "wave_utils.h"
 #include "debug_helpers.h"
 #include "receiver-res.h"
 
 /*!
- * @brief 
+ * @brief Default timeout for network data retrieval. 
+ * @details The application will wait that time long for audio data to appear on the socket.
  */
 #define DEFAULT_NETPOLL_SLEEP_TIME (1)
 
 int receiver_settings_get_default(HINSTANCE hInst, struct receiver_settings * p_settings)
 {
-	int result;
-    master_riff_chunk_t * p_riff_chunk;
-	result = init_master_riff(&p_riff_chunk, hInst, MAKEINTRESOURCE(IDR_0_1));
-	assert(result);
-    if (result) 
-	{
-		p_settings->poll_sleep_time_ = DEFAULT_NETPOLL_SLEEP_TIME;
-        copy_waveformatex_2_WAVEFORMATEX(&p_settings->wfex_, &p_riff_chunk->format_chunk_.format_);
-        play_settings_get_default(&p_settings->play_settings_);
-		mcast_settings_get_default(&p_settings->mcast_settings_);
-	}
-	return result;
+    p_settings->poll_sleep_time_ = DEFAULT_NETPOLL_SLEEP_TIME;
+    p_settings->wfex_.wFormatTag = WAVE_FORMAT_PCM;
+    p_settings->wfex_.nChannels = 1;
+    p_settings->wfex_.nSamplesPerSec = 8000;
+    p_settings->wfex_.nAvgBytesPerSec = 16000;
+    p_settings->wfex_.nBlockAlign 	= 2;
+    p_settings->wfex_.wBitsPerSample	= 16;
+    p_settings->wfex_.cbSize 			= sizeof(WAVEFORMATEX);
+    play_settings_get_default(&p_settings->play_settings_);
+    mcast_settings_get_default(&p_settings->mcast_settings_);
+	return 1;
 }
 
 int receiver_settings_validate(struct receiver_settings const * p_settings)
