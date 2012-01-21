@@ -28,15 +28,7 @@ int PrintAddress(SOCKADDR const*sa, int salen)
     // Validate argument
     if (sa == NULL)
         return WSAEFAULT;
-    rc = getnameinfo(
-            sa,
-            salen,
-            host,
-            hostlen,
-            serv,
-            servlen,
-            NI_NUMERICHOST | NI_NUMERICSERV
-            );
+    rc = getnameinfo(sa, salen, host, hostlen, serv, servlen, NI_NUMERICHOST | NI_NUMERICSERV);
     if (rc != 0)
     {
         debug_outputln("%s %u : %d", __FILE__, __LINE__, rc);

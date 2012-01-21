@@ -2,7 +2,10 @@
 
 /**
  * @file perf-counter-itf.h
+ * @brief Performance counter utilities interface.
+ * @details
  * @author T.Ostaszewski
+ * @date 04-Jan-2012
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -23,9 +26,6 @@
  * authors and should not be interpreted as representing official policies, 
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
- * @date 04-Jan-2012
- * @brief
- * @details
  */
 #if !defined PERF_COUNTER_ITF_225F550A_0FE3_45A1_B7C6_EE2E2B97ECD8
 #define PERF_COUNTER_ITF_225F550A_0FE3_45A1_B7C6_EE2E2B97ECD8
@@ -33,13 +33,39 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+#include <stddef.h>
+
 struct perf_counter;
 
-struct perf_counter * pref_counter_create(unsigned short entries_count);
+/*!
+ * @brief Creates a performance measurement object.
+ * @return On success, returns a handle to the performance measurement object. On failure, returns NULL.
+ * @sa pref_counter_destroy
+ */
+struct perf_counter * pref_counter_create(void);
+
+/*!
+ * @brief Destroys a performance measurement object.
+ * @param[in] p_perf_data a handle to the performance measurement object, obtained via call to perf_counter_create.
+ * @sa pref_counter_create
+ */
 void pref_counter_destroy(struct perf_counter * p_perf_data);
 
-size_t pref_counter_mark_before(struct perf_counter * pref_data);
-size_t pref_counter_mark_after(struct perf_counter * pref_data, size_t index);
+/*!
+ * @brief 
+ */
+void pref_counter_mark_before(struct perf_counter * pref_data);
+
+/*!
+ * @brief
+ */
+void pref_counter_mark_after(struct perf_counter * pref_data);
+
+/*!
+ * @brief
+ */
+int pref_counter_get_average_duration(struct perf_counter * pref_data, _int64 * p_out);
 
 #if defined __cplusplus
 }

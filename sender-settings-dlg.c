@@ -1,7 +1,7 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
- * @brief
  * @file sender-settings-dlg.c
+ * @brief Defines the interface needed to obtain sender settings from UI, via means of the modal dialog box.
  * @author T.Ostaszewski
  * @date Jan-2012
  * @par License
@@ -108,6 +108,7 @@ static void update_calculated_controls(struct sender_settings const * p_settings
 /*!
  * @brief Transfer from data to UI
  * @details Takes values from the settings object and presents them on the UI
+ * @param[in] p_settings points to data to be transferred to the controls.
  */
 static void data_to_controls(struct sender_settings const * p_settings)
 {
@@ -121,7 +122,10 @@ static void data_to_controls(struct sender_settings const * p_settings)
 
 /*!
  * @brief Transfer data from UI to the object.
- * @details Takes the values form the UI controls and saves them to the provided object.
+ * @details Takes the values form the UI controls and saves them to the provided object. For numeric controls, 
+ * it is just calling sscanf() a couple number of times, each time validating if the entry we fetched can fit into destination.
+ * For instance, 5 digit decimal unsigned variable may range from 0 to 99999 - this won't fit 2 byte hex variable. We need to 
+ * check for that specifically. 
  * @param[in] p_settings object to be written with UI data.
  * @return returns a non-zero value on success, 0 if failure has occured. The failure is usually attributed to the fact
  * that data from controls cannot fit into representation offered by the target object.

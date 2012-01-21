@@ -1,7 +1,7 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
- * @brief
  * @file receiver-settings.h
+ * @brief Declares data structure that define the multicast receiver settings. Also declares operations on those.
  * @author T.Ostaszewski
  * @date Jan-2012
  * @par License
