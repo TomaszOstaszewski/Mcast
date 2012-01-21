@@ -100,7 +100,6 @@ static void data_to_controls(struct receiver_settings const * p_settings, struct
     SetWindowText(p_controls->play_buffer_size_edit_, p_controls->text_buffer);
     StringCchPrintf(p_controls->text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.timer_delay_);
     SetWindowText(p_controls->mmtimer_edit_, p_controls->text_buffer);
-    //debug_outputln("%s %d : %u", __FILE__, __LINE__, p_settings->play_settings_.timer_delay_);
 }
 
 /*!
@@ -117,25 +116,19 @@ static int controls_to_data(struct receiver_settings * p_settings, struct receiv
     *((WORD *)p_controls->text_buffer) = TEXT_LIMIT;
     SendMessage(p_controls->poll_sleep_time_edit_, EM_GETLINE, 0, (LPARAM)p_controls->text_buffer); 
     result = sscanf(p_controls->text_buffer, "%u", &poll_sleep_time);
-    if (result<=0)
-        goto error;
-    if (poll_sleep_time > USHRT_MAX)
+    if (result<=0 || poll_sleep_time > USHRT_MAX)
         goto error;
     memset(p_controls->text_buffer, 0, sizeof(p_controls->text_buffer));
     *((WORD *)p_controls->text_buffer) = TEXT_LIMIT;
     SendMessage(p_controls->play_buffer_size_edit_, EM_GETLINE, 0, (LPARAM)p_controls->text_buffer); 
     result = sscanf(p_controls->text_buffer, "%u", &play_buffer_size);
-    if (result<=0)
-        goto error;
-    if (play_buffer_size > USHRT_MAX)
+    if (result<=0 || play_buffer_size > USHRT_MAX)
         goto error;
     memset(p_controls->text_buffer, 0, sizeof(p_controls->text_buffer));
     *((WORD *)p_controls->text_buffer) = TEXT_LIMIT;
     SendMessage(p_controls->mmtimer_edit_, EM_GETLINE, 0, (LPARAM)p_controls->text_buffer); 
     result = sscanf(p_controls->text_buffer, "%u", &timer_delay);
-    if (result<=0)
-        goto error;
-    if (timer_delay > USHRT_MAX)
+    if (result<=0 || timer_delay > USHRT_MAX)
         goto error;
     p_settings->play_settings_.timer_delay_ = timer_delay;
     p_settings->play_settings_.play_buffer_size_ = play_buffer_size;
@@ -232,6 +225,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
         case WM_COMMAND:
             switch(LOWORD(wParam))
             {
+                /* Process notificatoins from edit controls */
                 case IDC_POLL_SLEEP_TIME_EDIT:
                 case IDC_PLAY_BUFFER_SIZE_EDIT:
                 case IDC_MMTIMER_EDIT_CTRL:
