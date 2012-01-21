@@ -33,13 +33,6 @@
 #include "receiver-res.h"
 
 /*!
- * @brief A copy of the receiver settings object that this dialog operates on.
- * @details If the user blesses the dialog with an OK button, and all the data
- * validates OK, then this copy becomes the settings object returned to the caller.
- */
-static struct receiver_settings g_settings;
-
-/*!
  * @brief Maximum number of digits in the dialogs edit controls.
  */
 #define TEXT_LIMIT (5)
@@ -87,6 +80,13 @@ struct receiver_settings_dlg_controls
  * @brief The object that has all the controls.
  */
 static struct receiver_settings_dlg_controls g_controls;
+
+/*!
+ * @brief A copy of the receiver settings object that this dialog operates on.
+ * @details If the user blesses the dialog with an OK button, and all the data
+ * validates OK, then this copy becomes the settings object returned to the caller.
+ */
+static struct receiver_settings g_settings;
 
 /*!
  * @brief Transfer from data to UI
