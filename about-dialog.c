@@ -33,7 +33,11 @@
 static HWND hVersionInfo = NULL;
 static HWND hModuleName = NULL;
 static TCHAR module_file_name[MAX_PATH+1];
+/*!
+ * @brief Maximum number of characters that are to appear on the version control.
+ */
 #define MODULE_VERSION_STRING_LENGTH (16)
+
 static TCHAR module_version_string[MODULE_VERSION_STRING_LENGTH];
 
 static INT_PTR CALLBACK VersionDialogProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
