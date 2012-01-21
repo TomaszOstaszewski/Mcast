@@ -67,13 +67,7 @@ int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo *iface)
     if (rc != SOCKET_ERROR)
     {
         // Join the group
-        rc = setsockopt(
-                s, 
-                optlevel, 
-                option,
-                optval,
-                optlen
-                );
+        rc = setsockopt(s, optlevel, option, optval, optlen);
         if (rc == SOCKET_ERROR)
         {
             debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
@@ -125,13 +119,7 @@ int SetSendInterface(SOCKET s, struct addrinfo *iface)
     if (rc != SOCKET_ERROR)
     {
         // Set the send interface
-        rc = setsockopt(
-                s, 
-                optlevel, 
-                option,
-                optval,
-                optlen
-                       );
+        rc = setsockopt(s, optlevel, option, optval, optlen);
         if (rc == SOCKET_ERROR)
         {
             debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
@@ -180,13 +168,7 @@ int SetMulticastTtl(SOCKET s, int af, int ttl)
     if (rc != SOCKET_ERROR)
     {
         // Set the TTL value
-        rc = setsockopt(
-                s, 
-                optlevel, 
-                option,
-                optval, 
-                optlen
-                );
+        rc = setsockopt(s, optlevel, option, optval, optlen);
         if (rc == SOCKET_ERROR)
         {
             debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
@@ -236,13 +218,7 @@ int SetMulticastLoopBack(SOCKET s, int af, int loopval)
     if (rc != SOCKET_ERROR)
     {
         // Set the multpoint loopback
-        rc = setsockopt(
-                s, 
-                optlevel, 
-                option,
-                optval, 
-                optlen
-                );
+        rc = setsockopt(s, optlevel, option, optval, optlen);
         if (rc == SOCKET_ERROR)
         {
             debug_outputln("%s %4.4u : %d\n", WSAGetLastError());

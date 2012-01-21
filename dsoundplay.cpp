@@ -343,7 +343,6 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound
     }
     CopyMemory(&p_ds_data->wfe_, p_WFE, sizeof(WAVEFORMATEX));
     p_ds_data->nHalfBufferSize_ = p_ds_data->play_settings_.play_buffer_size_;
-    dump_waveformatex(p_WFE);
     debug_outputln("%s %5.5d : %8.8u", __FILE__, __LINE__, p_ds_data->nHalfBufferSize_);
     hr = create_buffers(p_ds_data->p_direct_sound_8_, &p_ds_data->p_primary_sound_buffer_, &p_ds_data->p_secondary_sound_buffer_, &p_ds_data->wfe_, p_ds_data->nHalfBufferSize_);
     if (FAILED(hr))
