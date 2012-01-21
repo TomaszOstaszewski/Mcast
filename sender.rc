@@ -89,7 +89,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 STRINGTABLE
 {
     IDS_APPTITLE_SENDER           "Sender"
-    IDS_APPTITLE_RECEIVER         "Receiver"
     IDT_TIMER_1                   ""
     IDS_APPTITLE                  "."
 }

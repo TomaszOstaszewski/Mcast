@@ -29,7 +29,7 @@
 #include "mcast-settings.h"
 #include "mcast-settings-dlg.h"
 #include "debug_helpers.h"
-#include "resource.h"
+#include "common-dialogs-res.h"
 
 extern HINSTANCE g_hInst;
 

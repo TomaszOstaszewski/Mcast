@@ -14,7 +14,6 @@
 #define IDC_PACKET_DELAY_SPIN                   1006
 #define IDS_APPTITLE_SENDER                     40000
 #define ID_SENDER_LEAVEMCAST                    40000
-#define IDS_APPTITLE_RECEIVER                   40001
 #define ID_SENDER_SETTINGS                      40001
 #define IDM_SENDER_ABOUT                        40002
 #define IDT_TIMER_1                             40002

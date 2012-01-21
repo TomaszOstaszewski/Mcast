@@ -17,7 +17,6 @@
 #define IDC_PLAY_BUFFER_SIZE_EDIT               1007
 #define ID_RECEIVER_SETTINGS                    1007
 #define IDC_PLAY_BUFFER_SIZE_SPIN               1008
-#define IDS_APPTITLE_SENDER                     40000
 #define ID_RECEIVER_STARTRCV                    40000
 #define IDS_APPTITLE_RECEIVER                   40001
 #define ID_RECEIVER_STOPRCV                     40001

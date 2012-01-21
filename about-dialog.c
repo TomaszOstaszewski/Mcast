@@ -28,7 +28,7 @@
 #include "pcc.h"
 #include "about-dialog.h"
 #include "debug_helpers.h"
-#include "resource.h"
+#include "common-dialogs-res.h"
 
 static HWND hVersionInfo = NULL;
 static HWND hModuleName = NULL;
