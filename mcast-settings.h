@@ -46,11 +46,38 @@ struct mcast_settings {
 	struct sockaddr_in mcast_addr_; /*!< IPv4 address and port of the multicast group */
 };
 
+/*!
+ * @brief Returns default multicast settings. 
+ * @param[in,out] p_target pointer to the settings structure. This structure will be written with the default settings.
+ * @return returns non-zero on success, 0 otherwise.
+ */
 int mcast_settings_get_default(struct mcast_settings * p_target);
 
+/*!
+ * @brief Validates, if settings are correct.
+ * @details Invalid multicast settings are for example those, which has a non multicast IPv4 address.
+ * @param[in] p_settings settings to be check for validity. 
+ * @return returns non-zero on success, 0 otherwise.
+ */
 int mcast_settings_validate(struct mcast_settings const * p_settings);
 
+/*!
+ * @brief Copies the settings from one into another.
+ * @details After the copy, the p_dest will have settings of p_source. The p_source remains unaltered.
+ * @param[in,out] p_dest target of the copy. to this sturcture settings will be written.
+ * @param[in,out] p_source copy source. From this sturcture settings will be read.
+ * @return returns non-zero on success, 0 otherwise.
+ */
 void mcast_settings_copy(struct mcast_settings * p_dest, struct mcast_settings const * p_source);
+
+/*!
+ * @brief Exchanges the settings between each other.
+ * @details After the exchange, the p_left' will have settings of p_right, wherease p_right' will have settings of p_left.
+ * @param[in,out] p_left first object to swap data with.
+ * @param[in,out] p_right second object to swap data with.
+ * @return returns non-zero on success, 0 otherwise.
+ */
+void mcast_settings_swap(struct mcast_settings * p_left, struct mcast_settings * p_right);
 
 #if defined __cplusplus
 }

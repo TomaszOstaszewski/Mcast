@@ -97,7 +97,7 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
                     break;
                 }
                 item.data_ = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, item.data_, item.count_ + MAX_UDP_PACKET_LENGHT);
-                item.count_ += DATA_ITEM_SIZE;
+                item.count_ += MAX_UDP_PACKET_LENGHT;
             } while (WSAGetLastError() == WSAEMSGSIZE);
         }
         dwWaitResult = WaitForSingleObject(p_receiver->hStopEventThread_, 0);

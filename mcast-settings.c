@@ -29,22 +29,22 @@
 #include "mcast-settings.h"
 
 /*!
- * @brief 
+ * @brief Default multicast group IPv4 address.
  */
 #define DEFAULT_MCASTADDRV4 "234.5.6.7"
 
 /*!
- * @brief 
+ * @brief Default multicast group IPv6 address.
  */
 #define DEFAULT_MCASTADDRV6 "ff12::1"
 
 /*!
- * @brief 
+ * @brief Default multicast port
  */
 #define DEFAULT_MCASTPORT (25000)
 
 /*!
- * @brief
+ * @brief Default TTL value.
  */
 #define DEFAULT_TTL (8)
 
@@ -75,6 +75,16 @@ int mcast_settings_validate(struct mcast_settings const * p_settings)
 
 void mcast_settings_copy(struct mcast_settings * p_dest, struct mcast_settings const * p_source)
 {
-   memcpy(p_dest, p_source, sizeof(struct mcast_settings)); 
+	struct mcast_settings tmp;	
+	CopyMemory(&tmp, p_source);
+	CopyMemory(p_dest, &tmp);
+}
+
+void mcast_settings_swap(struct mcast_settings * p_left, struct mcast_settings * p_right)
+{
+	struct mcast_settings tmp;
+	CopyMemory(&tmp, p_left);
+	CopyMemory(p_left, p_right);
+	CopyMemory(p_right, &tmp);
 }
 

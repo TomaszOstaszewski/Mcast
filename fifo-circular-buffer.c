@@ -29,16 +29,20 @@
 #include "pcc.h"
 #include "fifo-circular-buffer.h"
 
+/*!
+ * @brief Maximum number of bytes to be placed into queue.
+ * @details If more bytes will be placed into queue, they will overwrite the beginning of the queue.
+ */
 #define MAX_ITEMS (0x10000)
 
 /*!
- * @brief
+ * @brief The circular buffer data structure
  */
 struct fifo_circular_buffer
 {
-    uint32_t    read_idx_;                  /*!< */
-    uint32_t    write_idx_;                 /*!< */
-    uint8_t     data_buffer_[MAX_ITEMS];    /*!< */
+    uint32_t    read_idx_;                  /*!< Current read index. */
+    uint32_t    write_idx_;                 /*!< Current read index.*/
+    uint8_t     data_buffer_[MAX_ITEMS];    /*!< Data buffer from which bytes are read/to which will be written. */
 };
 
 struct fifo_circular_buffer *  fifo_circular_buffer_create(void)
