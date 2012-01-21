@@ -14,7 +14,9 @@
 /**
  * @brief Common routines for resolving addresses and hostnames
  * @details This routine takes a SOCKADDR structure and its lenght and prints converts it to a string representation. 
- * @date 04-Jan-2012
+ * @param[in] sa the SOCKADDR structure to be printed.
+ * @param[in] salen length of the SOCKADDR structure.
+ * @return returns 0 on success, <>0 on failure
  */
 int PrintAddress(SOCKADDR const*sa, int salen)
 {
@@ -37,7 +39,7 @@ int PrintAddress(SOCKADDR const*sa, int salen)
             );
     if (rc != 0)
     {
-        //fprintf(stderr, "%s: getnameinfo failed: %d\n", __FILE__, rc);
+        debug_outputln("%s %u : %d", __FILE__, __LINE__, rc);
         return rc;
     }
 
@@ -62,6 +64,11 @@ int PrintAddress(SOCKADDR const*sa, int salen)
 /**
  * @brief Common routines for resolving addresses and hostnames
  * @details This is similar to the PrintAddress function except that instead of printing the string address to the console, it is formatted into the supplied string buffer.
+ * @param[in] sa the SOCKADDR structure to be printed.
+ * @param[in] salen length of the SOCKADDR structure.
+ * @param[in] addrbuf buffer to which formatted address will be written.
+ * @param[in] addrbuflen length of the buffer given as addrbuf parameter.
+ * @return returns 0 on success, <>0 on failure
  */
 int FormatAddress(SOCKADDR *sa, int salen, char *addrbuf, int addrbuflen)
 {
@@ -87,7 +94,7 @@ int FormatAddress(SOCKADDR *sa, int salen, char *addrbuf, int addrbuflen)
             );
     if (rc != 0)
     {
-        //fprintf(stderr, "%s: getnameinfo failed: %d\n", __FILE__, rc);
+        debug_outputln("%s %u : %d", __FILE__, __LINE__, rc);
         return rc;
     }
     if ( (strlen(host) + strlen(serv) + 1) > (unsigned)addrbuflen)
@@ -119,6 +126,12 @@ int FormatAddress(SOCKADDR *sa, int salen, char *addrbuf, int addrbuflen)
  * structure containing SOCKADDR structures representing the resolved addresses.
  * Note that if 'addr' is non-NULL, then getaddrinfo will resolve it whether
  * it is a string listeral address or a hostname.
+ * @param[in] addr
+ * @param[in] port
+ * @param[in] af
+ * @param[in] type
+ * @param[in] proto
+ * @return
  */
 struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int proto)
 {
@@ -156,6 +169,10 @@ struct addrinfo *ResolveAddress_2(struct sockaddr_in const * p_in_addr, int af, 
  * @brief Common routines for resolving addresses and hostnames
  * @details This routine takes a SOCKADDR and does a reverse 
  * lookup for the name corresponding to that address.
+ * @param[in] sa address of the SOCKADDR for which the lookup is to be made.
+ * @param[salen] salen length of the structure given as sa parameter
+ * @param buf buffer to which address found will be written.
+ * @param buflen lenght of the buffer given as buf parameter
  */
 int ReverseLookup(SOCKADDR *sa, int salen, char *buf, int buflen)
 {
@@ -177,10 +194,10 @@ int ReverseLookup(SOCKADDR *sa, int salen, char *buf, int buflen)
             );
     if (rc != 0)
     {
-        //fprintf(stderr, "getnameinfo failed: %d\n", rc);
+        debug_outputln("%s %u : %d", __FILE__, __LINE__, rc);
         return rc;
     }
-
+	StringCchPrintf(buf, buflen, "%s", host);
     //strncpy_s(buf,buflen,host,buflen-1);
     return NO_ERROR;
 }

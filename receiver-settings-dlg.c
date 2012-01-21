@@ -27,12 +27,10 @@
  */
 #include "pcc.h"
 #include "debug_helpers.h"
-#include "resource.h"
 #include "receiver-settings.h"
 #include "receiver-settings-dlg.h"
 #include "mcast-settings-dlg.h"
-
-extern HINSTANCE g_hInst;
+#include "receiver-res.h"
 
 /*!
  * @brief A copy of the receiver settings object that this dialog operates on.
@@ -268,7 +266,8 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 int receiver_settings_do_dialog(HWND hWndParent, struct receiver_settings * p_settings)
 {
 	receiver_settings_copy(&g_settings, p_settings);
-	if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_RECEIVER_SETTINGS), hWndParent, McastSettingsProc))
+    /* NULL hInst means = read dialog template from this application's resource file */
+	if (IDOK == DialogBox(NULL, MAKEINTRESOURCE(IDD_RECEIVER_SETTINGS), hWndParent, McastSettingsProc))
 	{
 		receiver_settings_copy(p_settings, &g_settings);
 		return 1;

@@ -34,7 +34,6 @@
 #include "mcast-sender-state-machine.h"
 
 #include "mcast_setup.h"
-#include "resource.h"
 #include "debug_helpers.h"
 #include "wave_utils.h"
 #include "mcast-sender-state-machine.h"

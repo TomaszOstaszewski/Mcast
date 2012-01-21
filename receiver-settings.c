@@ -30,10 +30,10 @@
  * @endcode
  */
 #include "pcc.h"
-#include "resource.h"
 #include "receiver-settings.h"
 #include "wave_utils.h"
 #include "debug_helpers.h"
+#include "receiver-res.h"
 
 /*!
  * @brief 

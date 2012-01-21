@@ -28,13 +28,11 @@
  */
 #include "pcc.h"
 #include "debug_helpers.h"
-#include "resource.h"
 #include "sender-settings-dlg.h"
 #include "mcast-settings-dlg.h"
 #include "sender-settings.h"
 #include "mcast-settings.h"
-
-extern HINSTANCE g_hInst;
+#include "sender-res.h"
 
 /*!
  * @brief A copy of the sender settings object that this dialog operates on.
@@ -257,7 +255,8 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 int sender_settings_from_dialog(HWND hWndParent, struct sender_settings * p_settings)
 {
     sender_settings_copy(&g_settings, p_settings);
-    if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), hWndParent, McastSettingsProc))
+    /* NULL hInst means = read dialog template from this application's resource file */
+    if (IDOK == DialogBox(NULL, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), hWndParent, McastSettingsProc))
     {
         sender_settings_copy(p_settings, &g_settings);
         return 1;
