@@ -46,6 +46,8 @@
 #include <MMSystem.h>
 #include <dsound.h>
 #include <Objbase.h>
+#include <tchar.h>
+#undef _ftcscat
 #include <Strsafe.h>
 #include <Winsock2.h>
 #include <ws2tcpip.h>
