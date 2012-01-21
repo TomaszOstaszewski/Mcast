@@ -43,12 +43,12 @@
 #include "receiver-res.h"
 
 /**
- * 
+ * @brief The receiver object.
  */
 static struct mcast_receiver * g_receiver;
 
 /**
- * 
+ * @brief Receiver's settings.
  */
 static struct receiver_settings g_settings;
 
@@ -60,13 +60,14 @@ HINSTANCE   g_hInst;
 
 /*!
  * @brief Maximum number of characters to be placed into the 'buffer bytes' edit control.
+ * @details Enugh space for 5 digits + 1 terminating NULL.
  */
-#define BUFFER_BYTES_EDIT_TEXT_LIMIT (8)
+#define BUFFER_BYTES_EDIT_TEXT_LIMIT (5+1)
 
 /*!
  * @brief Describes all the 'interesting' UI controls on the main dialog.
  */
-struct ui_controls {
+static struct ui_controls {
     HWND hSettingsBtn; /*!< Handle to the 'Settings' button. */
     HWND hJoinMcastBtn; /*!< Handle to the 'Join Multicast' button. */
     HWND hLeaveMcast; /*!< Handle to the 'Join Multicast' button. */
@@ -218,27 +219,21 @@ static void update_fifo_receiver_bytes_edit_control(struct ui_controls * p_contr
  */
 static void UpdateUI(struct ui_controls * p_controls)
 {
-    static receiver_state_t prev_state = RECEIVER_INITIAL;
-    receiver_state_t new_state = receiver_get_state(g_receiver);
+    static receiver_state_t prev_state = -1;
+    receiver_state_t new_state;
     struct fifo_circular_buffer * fifo;
-    uint32_t capacity;
+    uint32_t items_count;
+
+    new_state = receiver_get_state(g_receiver);
+    /* Enable/disable controls only if state changes. */
     if (prev_state != new_state)
     {
         UpdateUIwithCurrentState(p_controls, new_state);
         prev_state = new_state;
     }
-    switch (new_state)
-    {
-        case RECEIVER_RECEIVING:
-        case RECEIVER_PLAYING:
-        case RECEIVER_RECEIVING_PLAYING:
-            fifo = receiver_get_fifo(g_receiver);
-            capacity = fifo_circular_buffer_get_items_count(fifo);
-            SendMessage(g_controls.hProgressBar, PBM_SETPOS, capacity, 0);
-            break;
-        default:
-            break;
-    }
+    fifo = receiver_get_fifo(g_receiver);
+    items_count = fifo_circular_buffer_get_items_count(fifo);
+    SendMessage(g_controls.hProgressBar, PBM_SETPOS, items_count, 0);
     update_fifo_receiver_bytes_edit_control(p_controls);
 }
 
@@ -286,8 +281,6 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
         SendMessage(p_controls->hProgressBar, PBM_SETRANGE32, 0, fifo_circular_buffer_get_capacity(receiver_get_fifo(g_receiver)));
         SendMessage(p_controls->hBufferBytesEdit, EM_SETLIMITTEXT, (WPARAM)BUFFER_BYTES_EDIT_TEXT_LIMIT, (LPARAM)0);
         SetTimer(hwnd, IDT_TIMER_1, UI_UPDATE_TIMER_MS , NULL);
-        UpdateUIwithCurrentState(p_controls, receiver_get_state(g_receiver));
-        UpdateUI(p_controls);
     }
     else 
     {
