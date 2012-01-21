@@ -56,7 +56,6 @@ receiver_state_t receiver_get_state(struct mcast_receiver * p_receiver);
 
 /*!
  * @brief Initializes the state machine.
- * @param[in] p_wfex parameters of the WAV file to be played.
  * @param[in] p_settings pointer to the structure describing receiver settings (mcast connection params, timings and so on).
  * @return Returns a handle to the object that represents multicast PCM receiver. This handle can be then passed to functions handle_play() and so on.
  * @sa handle_mcastjoin
@@ -70,7 +69,7 @@ struct mcast_receiver * receiver_create(struct receiver_settings const * p_setti
 
 /*!
  * @brief Destroys the state machine.
- * @param[in] p_wfex parameters of the WAV file to be played.
+ * @param[in] p_receiver pointer to the state machine structure, obtained via call to receiver_create()
  * @return Returns non-zero on sucess, 0 otherwise. Most likely cause of failure is that receiver is not in the RECEIVER_INITIAL state.
  * @sa receiver_init
  */

@@ -39,6 +39,11 @@
 #include "mcast-sender-state-machine.h"
 #include "sender-settings.h"
 
+/*!
+ * @brief Maximum number of payload bytes that will fit a single 100BaseT Ethernet packet.
+ * @details The macro assumes that the payload also contains the IP and UDP header. What is 
+ * left is the user data and that amount of user data this macro represents.
+ */
 #define MAX_ETHER_PAYLOAD_SANS_UPD_IP (1500-20-8)
 
 /**

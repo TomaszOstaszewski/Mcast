@@ -83,8 +83,19 @@ static HWND g_btok;
  */
 static TCHAR text_buffer[TEXT_LIMIT+1];
 
+/*!
+ * @brief Default number of samples per second.
+ */
 #define SAMPLES_PER_SEC (8000.0)
+
+/*!
+ * @brief Default number of bytes per sample.
+ */
 #define BYTES_PER_SAMPLE (2.0)
+
+/*!
+ * @brief Number of milliseconds in 1 second.
+ */
 #define MILLISECOND_IN_SEC (1000.0)
 
 static void update_calculated_controls(struct sender_settings const * p_settings)

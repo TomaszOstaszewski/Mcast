@@ -63,18 +63,21 @@ HINSTANCE   g_hInst;
  */
 #define BUFFER_BYTES_EDIT_TEXT_LIMIT (8)
 
+/*!
+ * @brief Describes all the 'interesting' UI controls on the main dialog.
+ */
 struct ui_controls {
-    HWND hSettingsBtn;
-    HWND hJoinMcastBtn;
-    HWND hLeaveMcast;
-    HWND hPlay;
-    HWND hStop;
-    HWND hStartRcv;
-    HWND hStopRcv;
-    HWND hProgressBar;
-    HWND hBufferBytesEdit;
-    HMENU hMainMenu;
-    TCHAR buffer_bytes_edit[BUFFER_BYTES_EDIT_TEXT_LIMIT];
+    HWND hSettingsBtn; /*!< Handle to the 'Settings' button. */
+    HWND hJoinMcastBtn; /*!< Handle to the 'Join Multicast' button. */
+    HWND hLeaveMcast; /*!< Handle to the 'Join Multicast' button. */
+    HWND hPlay; /*!< Handle to the 'Play' button. */
+    HWND hStop; /*!< Handle to the 'Stop' button. */
+    HWND hStartRcv; /*!< Handle to the 'Start receiver' button. */
+    HWND hStopRcv; /*!< Handle to the 'Stop receiver' button. */
+    HWND hProgressBar; /*!< Handle to the progress bar control. */
+    HWND hBufferBytesEdit; /*!< Handle to the edit control that displays bytes in the buffer. */
+    HMENU hMainMenu; /*!< Handle to the main menu. */
+    TCHAR buffer_bytes_edit[BUFFER_BYTES_EDIT_TEXT_LIMIT]; /*!< Buffer that holds string to be displayed in the 'buffer bytes' control. */
 } g_controls;
 
 /*!
@@ -253,7 +256,7 @@ static void UpdateUI(struct ui_controls * p_controls)
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
     int result;
-    result = receiver_settings_get_default(g_hInst, &g_settings);
+    result = receiver_settings_get_default(&g_settings);
     assert(result);
     if (result)
     {

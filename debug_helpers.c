@@ -2,8 +2,9 @@
 /**
  * @file debug_helpers.c
  * @author T. Ostaszewski
- * @brief 
- * @details 
+ * @brief DebugView interface implementation.
+ * @details More friendly wrappers for OutputDebugString. This 'friendlines' manifests itself with
+ * support for buffered write and variable parameters, i.e. printf-like interface.
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
