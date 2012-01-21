@@ -58,14 +58,14 @@ struct dsound_data {
 static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER8 lpdsb)
 {
     DSBCAPS caps;
+    HRESULT hr;
     ZeroMemory(&caps, sizeof(DSBCAPS));
     caps.dwSize = sizeof(DSBCAPS);
-    HRESULT hr = lpdsb->GetCaps(&caps);
+    hr = lpdsb->GetCaps(&caps);
     if (SUCCEEDED(hr))
     {
-        debug_outputln("%s %5.5d : %8.8u %8.8x %8.8u %8.8u %8.8u"
+        debug_outputln("%s %5.5d : %8.8x %8.8u %8.8u %8.8u"
                 ,__FILE__, __LINE__
-                ,caps.dwSize
                 ,caps.dwFlags
                 ,caps.dwBufferBytes
                 ,caps.dwUnlockTransferRate

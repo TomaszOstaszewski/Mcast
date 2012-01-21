@@ -55,12 +55,12 @@ void fifo_circular_buffer_delete(struct fifo_circular_buffer * p_circular_buffer
     free(p_circular_buffer);
 }
 
-uint32_t fifo_circular_buffer_get_capacity(struct fifo_circular_buffer * p_circular_buffer)
+uint32_t fifo_circular_buffer_get_capacity(struct fifo_circular_buffer const * p_circular_buffer)
 {
     return MAX_ITEMS;
 }
 
-uint32_t fifo_circular_buffer_get_items_count(struct fifo_circular_buffer * p_circular_buffer)
+uint32_t fifo_circular_buffer_get_items_count(struct fifo_circular_buffer const * p_circular_buffer)
 {
     return p_circular_buffer->write_idx_ - p_circular_buffer->read_idx_;
 }

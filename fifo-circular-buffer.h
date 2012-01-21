@@ -70,7 +70,7 @@ void fifo_circular_buffer_delete(struct fifo_circular_buffer * p_fifo);
  * @param[in] p_fifo a handle to the circular buffer obtained via call to fifo_circular_buffer_create
  * @return number of items that can be stored
  */
-uint32_t fifo_circular_buffer_get_capacity(struct fifo_circular_buffer * p_fifo);
+uint32_t fifo_circular_buffer_get_capacity(struct fifo_circular_buffer const * p_fifo);
 
 /**
  * @brief Returns actual number of items that can be stored in the buffer.
@@ -78,7 +78,7 @@ uint32_t fifo_circular_buffer_get_capacity(struct fifo_circular_buffer * p_fifo)
  * @param[in] p_fifo a handle to the circular buffer obtained via call to fifo_circular_buffer_create
  * @return actual number of items that can be stored in the buffer
  */
-uint32_t fifo_circular_buffer_get_items_count(struct fifo_circular_buffer * p_fifo);
+uint32_t fifo_circular_buffer_get_items_count(struct fifo_circular_buffer const * p_fifo);
 
 /**
  * @brief

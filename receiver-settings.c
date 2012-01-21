@@ -38,13 +38,12 @@
 /*!
  * @brief 
  */
-#define DEFAULT_NETPOLL_SLEEP_TIME (15)
+#define DEFAULT_NETPOLL_SLEEP_TIME (1)
 
 int receiver_settings_get_default(HINSTANCE hInst, struct receiver_settings * p_settings)
 {
 	int result;
     master_riff_chunk_t * p_riff_chunk;
-    /*! \todo Add function to unload WAV resource */
 	result = init_master_riff(&p_riff_chunk, hInst, MAKEINTRESOURCE(IDR_0_1));
 	assert(result);
     if (result) 
