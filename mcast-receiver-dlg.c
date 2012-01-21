@@ -39,6 +39,7 @@
 #include "mcast-settings.h"
 #include "receiver-settings-dlg.h"
 #include "receiver-settings.h"
+#include "about-dialog.h"
 
 /**
  * 
@@ -342,6 +343,9 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                     break;
                 case ID_RECEIVER_STOPRCV:
                     handle_rcvstop(g_receiver);
+                    break;
+                case IDM_ABOUT_RECEIVER:
+                    display_about_dialog(hDlg);
                     break;
                 case IDOK:
                 case IDCANCEL:
