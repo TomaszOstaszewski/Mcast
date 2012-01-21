@@ -36,15 +36,15 @@
 #include "receiver-res.h"
 
 /*!
- * @brief 
+ * @brief Default timeout for socket data retrieval.
  */
 #define DEFAULT_NETPOLL_SLEEP_TIME (1)
 
-int receiver_settings_get_default(HINSTANCE hInst, struct receiver_settings * p_settings)
+int receiver_settings_get_default( struct receiver_settings * p_settings)
 {
 	int result;
     master_riff_chunk_t * p_riff_chunk;
-	result = init_master_riff(&p_riff_chunk, hInst, MAKEINTRESOURCE(IDR_0_1));
+	result = init_master_riff(&p_riff_chunk, NULL, MAKEINTRESOURCE(IDR_0_1));
 	assert(result);
     if (result) 
 	{

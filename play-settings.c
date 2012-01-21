@@ -33,12 +33,19 @@
 #include "play-settings.h"
 
 /*!
- * @brief 
+ * @brief Default size, in bytes, of the play buffer to be used in DirectSound. 
  */
 #define DEFAULT_PLAY_BUFFER_SIZE (4096)
 
+/*!
+ * @brief Default timeout, in milliseconds, for multimedia play timer.
+ * @details Each time the timeout expires, the DirectSound fill-buffer-and-play function will be invoked.
+ */
 #define DEFAULT_TIMER_DELAY (5)
 
+/*!
+ * @brief Timer resolution for multimedia play timer.
+ */
 #define DEFAULT_TIMER_RESOLUTION (1)
 
 int play_settings_get_default(struct play_settings * p_settings)

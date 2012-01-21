@@ -158,6 +158,11 @@ struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int pr
     return res;
 }
 
+/*!
+ * @brief Another wrapper for ResolveAddress
+ * @return
+ * @sa ResolveAddress
+ */
 struct addrinfo *ResolveAddress_2(struct sockaddr_in const * p_in_addr, int af, int type, int proto)
 {
     char port[8];
@@ -170,9 +175,10 @@ struct addrinfo *ResolveAddress_2(struct sockaddr_in const * p_in_addr, int af, 
  * @details This routine takes a SOCKADDR and does a reverse 
  * lookup for the name corresponding to that address.
  * @param[in] sa address of the SOCKADDR for which the lookup is to be made.
- * @param[salen] salen length of the structure given as sa parameter
- * @param buf buffer to which address found will be written.
- * @param buflen lenght of the buffer given as buf parameter
+ * @param[in] salen length of the structure given as sa parameter
+ * @param[in] buf buffer to which address found will be written.
+ * @param[in] buflen lenght of the buffer given as buf parameter
+ * @return returns 0 on success, <>0 otherwise.
  */
 int ReverseLookup(SOCKADDR *sa, int salen, char *buf, int buflen)
 {

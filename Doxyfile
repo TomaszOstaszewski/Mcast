@@ -106,7 +106,6 @@ mcast_utils.c \
 mcast_utils.h \
 message-loop.c \
 message-loop.h \
-pcc.c \
 pcc.h \
 perf-counter-itf.c \
 perf-counter-itf.h \

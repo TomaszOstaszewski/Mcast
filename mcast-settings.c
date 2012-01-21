@@ -59,7 +59,14 @@ int mcast_settings_get_default(struct mcast_settings * p_target)
     return 1;
 }
 
+/*! 
+ * @brief Minimum IPv4 multicast group address.
+ */
 #define MIN_MCAST_ADDR (0xe0000000)
+
+/*! 
+ * @brief Maximum IPv4 multicast group address.
+ */
 #define MAX_MCAST_ADDR (0xefffffff)
 
 int mcast_settings_validate(struct mcast_settings const * p_settings)

@@ -66,7 +66,6 @@ int mcast_settings_validate(struct mcast_settings const * p_settings);
  * @details After the copy, the p_dest will have settings of p_source. The p_source remains unaltered.
  * @param[in,out] p_dest target of the copy. to this sturcture settings will be written.
  * @param[in,out] p_source copy source. From this sturcture settings will be read.
- * @return returns non-zero on success, 0 otherwise.
  */
 void mcast_settings_copy(struct mcast_settings * p_dest, struct mcast_settings const * p_source);
 
