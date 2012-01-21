@@ -202,6 +202,30 @@ size_t mcast_recvfrom_flags(struct mcast_connection * p_conn, void * p_data, siz
             );
 }
 
+int mcast_is_new_data(struct mcast_connection * p_conn, DWORD dwTimeoutMs)
+{
+    fd_set read_sel; 
+    int result;
+    struct timeval timeout, *p_timeout;
+    ZeroMemory(&timeout, sizeof(struct timeval));
+    FD_ZERO(&read_sel);
+    FD_SET(p_conn->socket_, &read_sel);
+    if (0xffffffff == dwTimeoutMs)
+        p_timeout = NULL;
+    else
+    {
+        timeout.tv_sec = dwTimeoutMs / 1000;
+        timeout.tv_usec = (dwTimeoutMs - 1000*(dwTimeoutMs/1000))*1000;
+        p_timeout = &timeout; 
+    }
+    result = select(0 /* This parameter is ignored in WINSOCK */, &read_sel, NULL, NULL, p_timeout);
+    if (SOCKET_ERROR == result)
+    {
+        debug_outputln("%s %u : %u", __FILE__, __LINE__, WSAGetLastError());
+    }
+    return result;
+}
+
 size_t mcast_recvfrom(struct mcast_connection * p_conn, void * p_data, size_t data_size)
 {
     return mcast_recvfrom_flags(p_conn, p_data, data_size, 0);

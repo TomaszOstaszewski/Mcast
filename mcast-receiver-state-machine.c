@@ -66,8 +66,8 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
 {
     uint32_t count;
     struct mcast_receiver * p_receiver;
+    fd_set read_selectors;
     struct data_item item;
-    struct sockaddr_in sock_addr;
     DWORD dwWaitTimeout;
     int bytes_recevied;
     DWORD dwWaitResult;
@@ -82,30 +82,27 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
     dwWaitTimeout   = p_receiver->settings_.poll_sleep_time_;
     for (count = 0; ; ++count)
     {
-        dwWaitResult = WaitForSingleObject(p_receiver->hStopEventThread_, dwWaitTimeout);
+        FD_ZERO(&read_selectors);
+        dwWaitResult = WaitForSingleObject(p_receiver->hStopEventThread_, 0);
         if (WAIT_TIMEOUT == dwWaitResult) /* Timedout - hence, nobody wants us to finish yet */
         {
-            /* Receive data from the socket until you receiving this WSAMSGSIZE error
-             * It is a non-blocking socket, so this call may well yield WSAEWOULDBLOCK - indicating that there
-             * is nothing to receive. We ignore those errors.
-             */
             do { 
-                bytes_recevied = recvfrom(
-                        p_receiver->conn_->socket_,
-                        item.data_, 
-                        item.count_, 
-                        0,
-                        (struct sockaddr*)&sock_addr,
-                        &sock_addr_size
-                        );
-                if (SOCKET_ERROR != bytes_recevied)
+                if (mcast_is_new_data(p_receiver->conn_, dwWaitTimeout))
                 {
-                    item.count_ = bytes_recevied;
-                    fifo_circular_buffer_push_item(p_receiver->fifo_, &item);
-                    break;
+                    /* Receive data from the socket until you receiving this WSAMSGSIZE error
+                     * It is a non-blocking socket, so this call may well yield WSAEWOULDBLOCK - indicating that there
+                     * is nothing to receive. We ignore those errors.
+                     */
+                    bytes_recevied = mcast_recvfrom(p_receiver->conn_, item.data_, item.count_);
+                    if (SOCKET_ERROR != bytes_recevied)
+                    {
+                        item.count_ = bytes_recevied;
+                        fifo_circular_buffer_push_item(p_receiver->fifo_, &item);
+                        break;
+                    }
+                    item.data_ = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, item.data_, item.count_ + MAX_UDP_PACKET_LENGHT);
+                    item.count_ += DATA_ITEM_SIZE;
                 }
-                item.data_ = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, item.data_, item.count_ + MAX_UDP_PACKET_LENGHT);
-                item.count_ += DATA_ITEM_SIZE;
             } while (WSAGetLastError() == WSAEMSGSIZE);
         }
         else if (WAIT_OBJECT_0 == dwWaitResult) /* Signaled - hence, the external environment has just requested termination */
