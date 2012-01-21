@@ -31,8 +31,6 @@
 #include "debug_helpers.h"
 #include "common-dialogs-res.h"
 
-extern HINSTANCE g_hInst;
-
 /*!
  * @brief Copy of the mcast_settings object passed by the caller.  * @details On this copy all the dialog operation is performed.
  */
@@ -225,7 +223,8 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 int get_settings_from_dialog(HWND hParent, struct mcast_settings * p_settings)
 {
     mcast_settings_copy(&g_settings, p_settings);
-    if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc))
+    /* NULL hInst means = read template from this application's resource file. */
+    if (IDOK == DialogBox(NULL, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc))
     {
         mcast_settings_copy(p_settings, &g_settings);
         return 1;
