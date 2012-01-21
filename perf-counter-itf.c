@@ -30,8 +30,14 @@
 #include "pcc.h"
 #include "perf-counter-itf.h"
 
+/*!
+ * @brief The exponent of the maximum number of items to be stored in the counter.
+ */
 #define MAX_PERF_ITEMS_LOG (5)
 
+/*!
+ * @brief The maximum number of items of items to be stored in the counter. This needs to be a power of 2.
+ */
 #define MAX_PERF_ITEMS (2<<MAX_PERF_ITEMS_LOG)
 
 typedef struct performance_data {
@@ -41,7 +47,7 @@ typedef struct performance_data {
 
 struct perf_counter {
     performance_data_t perf_table_[MAX_PERF_ITEMS]; 
-    performance_data_t overhead_;
+    _int64 overhead_;
     size_t items_count_;
 };
 
@@ -50,8 +56,10 @@ struct perf_counter * pref_counter_create(void)
     struct perf_counter * p_counter = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct performance_data));
     if (NULL != p_counter)
     {
-        QueryPerformanceCounter((LARGE_INTEGER*)&p_counter->overhead_.before_);
-        QueryPerformanceCounter((LARGE_INTEGER*)&p_counter->overhead_.after_);
+        _int64 before, after;
+        QueryPerformanceCounter((LARGE_INTEGER*)&before);
+        QueryPerformanceCounter((LARGE_INTEGER*)&after);
+        p_counter->overhead_ = after - before;
     }
     return p_counter;
 }
@@ -83,7 +91,7 @@ int pref_counter_get_average_duration(struct perf_counter * p_counter, _int64 * 
     if (p_counter->items_count_ > MAX_PERF_ITEMS) 
         items_count = MAX_PERF_ITEMS;        
     for (idx = 0; idx < items_count; ++items_count)
-        *p_out = p_counter->perf_table_[idx].after_ - p_counter->perf_table_[idx].before_; 
+        *p_out = p_counter->perf_table_[idx].after_ - p_counter->perf_table_[idx].before_ - p_counter->overhead_; 
     *p_out /= items_count;
     return 0;
 } 
