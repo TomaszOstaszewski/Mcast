@@ -1,7 +1,7 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
- * @brief
  * @file sender-settings-dlg.c
+ * @brief Defines the interface needed to obtain sender settings from UI, via means of the modal dialog box.
  * @author T.Ostaszewski
  * @date Jan-2012
  * @par License

@@ -156,7 +156,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
         case WM_INITDIALOG:
             {
                 int result;
-                result = get_default_settings(g_hInst, &g_settings);
+                result = get_default_settings(&g_settings);
                 assert(result);
                 g_sender = sender_create(&g_settings);
                 assert(g_sender);

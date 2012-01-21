@@ -1,7 +1,7 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
- * @brief
  * @file play-settings.h
+ * @brief Interface file for data structure and operations on DirectSound play settings.
  * @author T.Ostaszewski
  * @date Jan-2012
  * @par License

@@ -1,6 +1,6 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
- * @brief
+ * @brief Declares data structure that define the multicast sender settings. Also declares operations on those.
  * @file sender-settings.h
  * @author T.Ostaszewski
  * @par License
@@ -52,11 +52,10 @@ struct sender_settings {
 
 /*!
  * @brief Returns the default settings.
- * @param[in] hInst describes the resource file from which settings will be read.
  * @param[in] p_settings structure referenced by this pointer will be written with default settings.
  * @return returns 0 on success, <>0 otherwise.
  */
-int get_default_settings(HINSTANCE hInst, struct sender_settings * p_settings);
+int get_default_settings(struct sender_settings * p_settings);
 
 /*!
  * @brief Validates if the sender settings are correct.
