@@ -7,9 +7,9 @@
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
- * 	1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
- *	2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
- * 	and/or other materials provided with the distribution.
+ *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
+ *  and/or other materials provided with the distribution.
  * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
@@ -40,62 +40,66 @@
 static struct receiver_settings g_settings;
 
 /*!
- * @brief Handle to the poll sleep time delay edit control.
- */
-static HWND g_poll_sleep_time_edit;
-
-/*!
- * @brief Handle to the poll sleep time delay spin control.
- */
-static HWND g_poll_sleep_time_spin;
-
-/*!
- * @brief Handle to the play buffer size edit control.
- */
-static HWND g_play_buffer_size_edit;
-
-/*!
- * @brief Handle to the play buffer size spin control.
- */
-static HWND g_play_buffer_size_spin;
-
-/*!
- * @brief Handle to the Multimedit timer timeout edit control.
- */
-static HWND g_mmtimer_edit_ctrl;
-
-/*!
- * @brief Handle to the Multimedit timer timeout spin control.
- */
-static HWND g_mmtimer_spin_ctrl;
-
-/*!
- * @brief Handle to the Multimedit timer timeout spin control.
- */
-static HWND g_btok;
-
-/*!
  * @brief Maximum number of digits in the dialogs edit controls.
  */
 #define TEXT_LIMIT (5)
 
 /*!
- * @brief Buffer that holds a number typed into one of the edit controls.
+ * @brief A structure that gathers all the control handles in one place.
  */
-static TCHAR text_buffer[TEXT_LIMIT+1];
+struct receiver_settings_dlg_controls  
+{
+    /*!
+     * @brief Handle to the poll sleep time delay edit control.
+     */
+    HWND poll_sleep_time_edit_;
+    /*!
+     * @brief Handle to the poll sleep time delay spin control.
+     */
+    HWND poll_sleep_time_spin_;
+    /*!
+     * @brief Handle to the play buffer size edit control.
+     */
+    HWND play_buffer_size_edit_;
+    /*!
+     * @brief Handle to the play buffer size spin control.
+     */
+    HWND play_buffer_size_spin_;
+    /*!
+     * @brief Handle to the Multimedit timer timeout edit control.
+     */
+    HWND mmtimer_edit_;
+    /*!
+     * @brief Handle to the Multimedit timer timeout spin control.
+     */
+    HWND mmtimer_spin_;
+    /*!
+     * @brief Handle to the Multimedit timer timeout spin control.
+     */
+    HWND btok_;
+    /*!
+     * @brief Buffer that holds a number typed into one of the edit controls.
+     */
+    TCHAR text_buffer[TEXT_LIMIT+1];
+};
+
+/*!
+ * @brief The object that has all the controls.
+ */
+static struct receiver_settings_dlg_controls g_controls;
 
 /*!
  * @brief Transfer from data to UI
  * @details Takes values from the settings object and presents them on the UI
  */
-static void data_to_controls(struct receiver_settings const * p_settings)
+static void data_to_controls(struct receiver_settings const * p_settings, struct receiver_settings_dlg_controls * p_controls)
 {
-	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->poll_sleep_time_);
-	SetWindowText(g_poll_sleep_time_edit, text_buffer);
-	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.play_buffer_size_);
-	SetWindowText(g_play_buffer_size_edit, text_buffer);
-	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.timer_delay_);
-	SetWindowText(g_mmtimer_edit_ctrl, text_buffer);
+    StringCchPrintf(p_controls->text_buffer, TEXT_LIMIT+1, "%hu", p_settings->poll_sleep_time_);
+    SetWindowText(p_controls->poll_sleep_time_edit_, p_controls->text_buffer);
+    StringCchPrintf(p_controls->text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.play_buffer_size_);
+    SetWindowText(p_controls->play_buffer_size_edit_, p_controls->text_buffer);
+    StringCchPrintf(p_controls->text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.timer_delay_);
+    SetWindowText(p_controls->mmtimer_edit_, p_controls->text_buffer);
     //debug_outputln("%s %d : %u", __FILE__, __LINE__, p_settings->play_settings_.timer_delay_);
 }
 
@@ -105,30 +109,30 @@ static void data_to_controls(struct receiver_settings const * p_settings)
  * @param[in] p_settings object to be written with UI data.
  * @return returns a non-zero value on success, 0 if failure has occured.
  */
-static int controls_to_data(struct receiver_settings * p_settings)
+static int controls_to_data(struct receiver_settings * p_settings, struct receiver_settings_dlg_controls * p_controls)
 {
     int result;
     unsigned int poll_sleep_time, play_buffer_size, timer_delay;
-    memset(text_buffer, 0, sizeof(text_buffer));
-    *((WORD *)text_buffer) = TEXT_LIMIT;
-    SendMessage(g_poll_sleep_time_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
-    result = sscanf(text_buffer, "%u", &poll_sleep_time);
+    memset(p_controls->text_buffer, 0, sizeof(p_controls->text_buffer));
+    *((WORD *)p_controls->text_buffer) = TEXT_LIMIT;
+    SendMessage(p_controls->poll_sleep_time_edit_, EM_GETLINE, 0, (LPARAM)p_controls->text_buffer); 
+    result = sscanf(p_controls->text_buffer, "%u", &poll_sleep_time);
     if (result<=0)
         goto error;
     if (poll_sleep_time > USHRT_MAX)
         goto error;
-    memset(text_buffer, 0, sizeof(text_buffer));
-    *((WORD *)text_buffer) = TEXT_LIMIT;
-    SendMessage(g_play_buffer_size_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
-    result = sscanf(text_buffer, "%u", &play_buffer_size);
+    memset(p_controls->text_buffer, 0, sizeof(p_controls->text_buffer));
+    *((WORD *)p_controls->text_buffer) = TEXT_LIMIT;
+    SendMessage(p_controls->play_buffer_size_edit_, EM_GETLINE, 0, (LPARAM)p_controls->text_buffer); 
+    result = sscanf(p_controls->text_buffer, "%u", &play_buffer_size);
     if (result<=0)
         goto error;
     if (play_buffer_size > USHRT_MAX)
         goto error;
-    memset(text_buffer, 0, sizeof(text_buffer));
-    *((WORD *)text_buffer) = TEXT_LIMIT;
-    SendMessage(g_mmtimer_edit_ctrl, EM_GETLINE, 0, (LPARAM)text_buffer); 
-    result = sscanf(text_buffer, "%u", &timer_delay);
+    memset(p_controls->text_buffer, 0, sizeof(p_controls->text_buffer));
+    *((WORD *)p_controls->text_buffer) = TEXT_LIMIT;
+    SendMessage(p_controls->mmtimer_edit_, EM_GETLINE, 0, (LPARAM)p_controls->text_buffer); 
+    result = sscanf(p_controls->text_buffer, "%u", &timer_delay);
     if (result<=0)
         goto error;
     if (timer_delay > USHRT_MAX)
@@ -150,30 +154,30 @@ error:
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
     struct receiver_settings * p_settings = &g_settings;
-	g_poll_sleep_time_edit = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_EDIT);
-	assert(g_poll_sleep_time_edit);
-	g_poll_sleep_time_spin = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_SPIN);
-	assert(g_poll_sleep_time_spin);
-	g_play_buffer_size_edit = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_EDIT); 
-	assert(g_play_buffer_size_edit);
-	g_play_buffer_size_spin = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_SPIN);
-	assert(g_play_buffer_size_spin);
-    g_mmtimer_edit_ctrl = GetDlgItem(hwnd, IDC_MMTIMER_EDIT_CTRL);
-    assert(g_mmtimer_edit_ctrl);
-    g_mmtimer_spin_ctrl = GetDlgItem(hwnd, IDC_MMTIMER_SPIN);
-    assert(g_mmtimer_spin_ctrl);
-    g_btok = GetDlgItem(hwnd, IDOK);
-    assert(g_btok);
+    g_controls.poll_sleep_time_edit_ = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_EDIT);
+    assert(g_controls.poll_sleep_time_edit_);
+    g_controls.poll_sleep_time_spin_ = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_SPIN);
+    assert(g_controls.poll_sleep_time_spin_);
+    g_controls.play_buffer_size_edit_ = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_EDIT); 
+    assert(g_controls.play_buffer_size_edit_);
+    g_controls.play_buffer_size_spin_ = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_SPIN);
+    assert(g_controls.play_buffer_size_spin_);
+    g_controls.mmtimer_edit_ = GetDlgItem(hwnd, IDC_MMTIMER_EDIT_CTRL);
+    assert(g_controls.mmtimer_edit_);
+    g_controls.mmtimer_spin_ = GetDlgItem(hwnd, IDC_MMTIMER_SPIN);
+    assert(g_controls.mmtimer_spin_);
+    g_controls.btok_ = GetDlgItem(hwnd, IDOK);
+    assert(g_controls.btok_);
 
-	SendMessage(g_poll_sleep_time_spin, UDM_SETBUDDY, (WPARAM)g_poll_sleep_time_edit, (LPARAM)0);
-	SendMessage(g_play_buffer_size_spin, UDM_SETBUDDY, (WPARAM)g_play_buffer_size_edit, (LPARAM)0);
-	SendMessage(g_mmtimer_spin_ctrl, UDM_SETBUDDY, (WPARAM)g_mmtimer_edit_ctrl, (LPARAM)0);
-    SendMessage(g_mmtimer_edit_ctrl, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
-    SendMessage(g_poll_sleep_time_edit, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
-    SendMessage(g_play_buffer_size_edit, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    SendMessage(g_controls.poll_sleep_time_spin_, UDM_SETBUDDY, (WPARAM)g_controls.poll_sleep_time_edit_, (LPARAM)0);
+    SendMessage(g_controls.play_buffer_size_spin_, UDM_SETBUDDY, (WPARAM)g_controls.play_buffer_size_edit_, (LPARAM)0);
+    SendMessage(g_controls.mmtimer_spin_, UDM_SETBUDDY, (WPARAM)g_controls.mmtimer_edit_, (LPARAM)0);
+    SendMessage(g_controls.mmtimer_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    SendMessage(g_controls.poll_sleep_time_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    SendMessage(g_controls.play_buffer_size_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
 
-	data_to_controls(&g_settings);
-	return TRUE;
+    data_to_controls(&g_settings, &g_controls);
+    return TRUE;
 } 
 
 /**
@@ -216,9 +220,10 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                         default:
                             break;
                     }
-                    /* If copy and master settings are different, and a copy fits the bounds, update the controls with copy contents */
+                    /* If copy is different than the master settings - it must have been altered. Thus, there was a spin action.
+                        Check if new settings validate OK, and if so, transfer those to control object. */
                     if (!receiver_settings_compare(&copy_for_spins, &g_settings) && receiver_settings_validate(&copy_for_spins))
-                        data_to_controls(&copy_for_spins);
+                        data_to_controls(&copy_for_spins, &g_controls);
                     break;
                 default:
                     break;
@@ -232,19 +237,19 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                 case IDC_MMTIMER_EDIT_CTRL:
                     if (EN_CHANGE == HIWORD(wParam))
                     {
-                        /* Make a settings copy */
+                        /* Make a copy of the master settings */
                         receiver_settings_copy(&copy_for_edits, &g_settings);
-                        /* Alter the copy with what the user or our code has changed & validate it */
-                        if (controls_to_data(&copy_for_edits) && receiver_settings_validate(&copy_for_edits))
+                        /* Alter the copy with what the user or our code has changed. Validate it */
+                        if (controls_to_data(&copy_for_edits, &g_controls) && receiver_settings_validate(&copy_for_edits))
                         {
-                            /* If settings correctly read and valid - make the copy our current settings */
+                            /* If entered settings correctly read and valid, they become our master settings. */
                             receiver_settings_copy(&g_settings, &copy_for_edits);
-                            EnableWindow(g_btok, TRUE);
+                            EnableWindow(g_controls.btok_, TRUE);
                         }
                         else
                         {
                             /* Either could not read settings or they are not valid. Either way - disable OK button */
-                            EnableWindow(g_btok, FALSE);
+                            EnableWindow(g_controls.btok_, FALSE);
                         }
                     }
                     break;
@@ -265,13 +270,13 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 
 int receiver_settings_do_dialog(HWND hWndParent, struct receiver_settings * p_settings)
 {
-	receiver_settings_copy(&g_settings, p_settings);
+    receiver_settings_copy(&g_settings, p_settings);
     /* NULL hInst means = read dialog template from this application's resource file */
-	if (IDOK == DialogBox(NULL, MAKEINTRESOURCE(IDD_RECEIVER_SETTINGS), hWndParent, McastSettingsProc))
-	{
-		receiver_settings_copy(p_settings, &g_settings);
-		return 1;
-	}
-	return 0;
+    if (IDOK == DialogBox(NULL, MAKEINTRESOURCE(IDD_RECEIVER_SETTINGS), hWndParent, McastSettingsProc))
+    {
+        receiver_settings_copy(p_settings, &g_settings);
+        return 1;
+    }
+    return 0;
 }
 
