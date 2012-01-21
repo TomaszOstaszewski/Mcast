@@ -4,22 +4,23 @@
 
 #define IDI_MAINICON                            101
 #define IDI_DISK                                104
-#define IDR_MENU1                               113
 #define IDD_MAIN_SENDER                         114
 #define IDD_MAIN_RECEIVER                       116
-#define IDR_MENU2                               117
 #define IDR_0_1                                 118
 #define IDR_0_2                                 119
 #define IDD_SENDER_SETTINGS                     122
 #define IDD_MCAST_SETTINGS                      124
 #define IDD_RECEIVER_SETTINGS                   125
 #define IDD_VERSION_DIALOG                      127
+#define IDR_MENU_SENDER                         128
+#define IDR_MENU_RECEIVER                       129
 #define IDC_IPADDRESS1                          1000
 #define IDC_RECEIVER_BUFFER_FILL                1000
 #define IDC_VERSION_INFO                        1000
 #define IDC_BUFFER_BYTES_EDIT                   1001
 #define IDC_EDIT1                               1002
 #define IDC_MCAST_SETTINGS                      1002
+#define IDC_MODULE_NAME                         1002
 #define IDC_MMTIMER_EDIT_CTRL                   1003
 #define IDC_WAVCOMBO                            1003
 #define IDC_MMTIMER_SPIN                        1004
@@ -36,7 +37,7 @@
 #define ID_RECEIVER_STOPRCV                     40001
 #define ID_SENDER_SETTINGS                      40001
 #define IDM_ABOUT_RECEIVER                      40002
-#define IDM_ABOUT_SENDER                        40002
+#define IDM_SENDER_ABOUT                        40002
 #define IDT_TIMER_1                             40002
 #define IDS_APPTITLE                            40003
 #define ID_SENDER_JOINMCAST                     40008

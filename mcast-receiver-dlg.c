@@ -39,6 +39,7 @@
 #include "mcast-settings.h"
 #include "receiver-settings-dlg.h"
 #include "receiver-settings.h"
+#include "about-dialog.h"
 
 /**
  * 
@@ -291,62 +292,6 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     return FALSE; /* We return FALSE, as we do call SetFocus() ourselves */
 }
 
-
-static INT_PTR CALLBACK VersionDialogProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
-{
-    static HWND hVersionInfo = NULL;
-    static TCHAR module_file_name[MAX_PATH+1];
-#define MODULE_VERSION_STRING_LENGTH (16)
-    static TCHAR module_version_string[MODULE_VERSION_STRING_LENGTH];
-    switch (uMessage)
-    {
-        case WM_INITDIALOG:
-            hVersionInfo = GetDlgItem(hDlg, IDC_VERSION_INFO);
-            if (_T('\0') == module_file_name[0])
-                GetModuleFileName(NULL, module_file_name, MAX_PATH+1);
-            {
-                DWORD dwSize;
-                dwSize = GetFileVersionInfoSize(module_file_name, &dwSize);
-                {
-                    uint8_t * data = alloca(dwSize);
-                    UINT                uiVerLen = 0;
-                    VS_FIXEDFILEINFO*   pFixedInfo = 0;     // pointer to fixed file info structure
-                    GetFileVersionInfo(module_file_name, 0, dwSize, (void *)&data[0]);
-
-                    // get the fixed file info (language-independend) 
-                    if( 0 != VerQueryValue(&data[0], TEXT("\\"), (void**)&pFixedInfo, (UINT *)&uiVerLen))
-                    {
-                        StringCchPrintf(module_version_string, MODULE_VERSION_STRING_LENGTH, "%u.%u.%u.%u", 
-                                HIWORD (pFixedInfo->dwProductVersionMS),
-                                LOWORD (pFixedInfo->dwProductVersionMS),
-                                HIWORD (pFixedInfo->dwProductVersionLS),
-                                LOWORD (pFixedInfo->dwProductVersionLS));
-                        SetWindowText(hVersionInfo, module_version_string);
-                    }
-                    else
-                    {
-                        debug_outputln("%s %u : %u", __FILE__, __LINE__, GetLastError());
-                    }
-                }
-            }
-            assert(hVersionInfo);
-            return TRUE;
-        case WM_COMMAND:
-            switch (LOWORD(wParam))
-            {
-                case IDOK:
-                case IDCANCEL:
-                    EndDialog(hDlg, LOWORD(wParam));
-                    break;
-                default:
-                    break;
-            }
-        default:
-            break;
-    }
-    return FALSE;
-}
- 
 /**
  * @brief Receiver dialog message processing routine.
  * @details Processes the dialog messages, mainly the WM_COMMMAND style ones.
@@ -400,7 +345,7 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                     handle_rcvstop(g_receiver);
                     break;
                 case IDM_ABOUT_RECEIVER:
-            	    DialogBox(g_hInst, MAKEINTRESOURCE(IDD_VERSION_DIALOG), hDlg, VersionDialogProc);
+                    display_about_dialog(hDlg);
                     break;
                 case IDOK:
                 case IDCANCEL:

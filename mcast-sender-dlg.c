@@ -33,6 +33,7 @@
 #include "mcast-sender-state-machine.h"
 #include "sender-settings-dlg.h"
 #include "sender-settings.h"
+#include "about-dialog.h"
 
 /**
  * @brief Global Application instance.
@@ -163,7 +164,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
             }
             return FALSE; /* Return FALSE, as we did set focus ourselves in UpdateUIwithCurrentState call, and we don't want to focus on the default control */
        case WM_COMMAND:
-            switch(wParam)
+            switch(LOWORD(wParam))
             {
                 case ID_SENDER_SETTINGS:
                     curr_state = sender_get_current_state(g_sender);
@@ -193,6 +194,9 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     break;
                 case ID_SENDER_STOPSENDING:
                     sender_handle_stopsending(g_sender);
+                    break;
+                case IDM_SENDER_ABOUT:
+                    display_about_dialog(hDlg);
                     break;
                 case IDOK:
                 case IDCANCEL: 
