@@ -1,6 +1,9 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /**
  * @file fifo-circular-buffer.c
+ * @brief A circular buffer implementation.
+ * @details 
+ * @date 04-Jan-2012
  * @author T. Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
@@ -22,9 +25,6 @@
  * authors and should not be interpreted as representing official policies, 
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
- * @date 04-Jan-2012
- * @brief 
- * @details 
  */
 #include "pcc.h"
 #include "fifo-circular-buffer.h"

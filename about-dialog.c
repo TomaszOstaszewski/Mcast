@@ -1,9 +1,9 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
- * @brief
  * @file about-dialog.c
  * @author T.Ostaszewski
  * @date Jan-2012
+ * @brief The "About ..." modal dialog implementation.
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
