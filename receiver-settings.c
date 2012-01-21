@@ -40,7 +40,7 @@
  */
 #define DEFAULT_NETPOLL_SLEEP_TIME (1)
 
-int receiver_settings_get_default( struct receiver_settings * p_settings)
+int receiver_settings_get_default(struct receiver_settings * p_settings)
 {
 	int result;
     master_riff_chunk_t * p_riff_chunk;

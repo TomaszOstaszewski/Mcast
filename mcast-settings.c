@@ -83,15 +83,15 @@ int mcast_settings_validate(struct mcast_settings const * p_settings)
 void mcast_settings_copy(struct mcast_settings * p_dest, struct mcast_settings const * p_source)
 {
 	struct mcast_settings tmp;	
-	CopyMemory(&tmp, p_source);
-	CopyMemory(p_dest, &tmp);
+	CopyMemory(&tmp, p_source, sizeof(struct mcast_settings));
+	CopyMemory(p_dest, &tmp, sizeof(struct mcast_settings));
 }
 
 void mcast_settings_swap(struct mcast_settings * p_left, struct mcast_settings * p_right)
 {
 	struct mcast_settings tmp;
-	CopyMemory(&tmp, p_left);
-	CopyMemory(p_left, p_right);
-	CopyMemory(p_right, &tmp);
+	CopyMemory(&tmp, p_left, sizeof(struct mcast_settings));
+	CopyMemory(p_left, p_right, sizeof(struct mcast_settings));
+	CopyMemory(p_right, &tmp, sizeof(struct mcast_settings));
 }
 

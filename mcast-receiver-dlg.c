@@ -256,7 +256,7 @@ static void UpdateUI(struct ui_controls * p_controls)
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
     int result;
-    result = receiver_settings_get_default(g_hInst, &g_settings);
+    result = receiver_settings_get_default(&g_settings);
     assert(result);
     if (result)
     {
