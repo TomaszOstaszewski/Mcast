@@ -16,6 +16,7 @@
 #define IDD_VERSION_DIALOG                      127
 #define IDC_IPADDRESS1                          1000
 #define IDC_RECEIVER_BUFFER_FILL                1000
+#define IDC_VERSION_INFO                        1000
 #define IDC_BUFFER_BYTES_EDIT                   1001
 #define IDC_EDIT1                               1002
 #define IDC_MCAST_SETTINGS                      1002
@@ -34,8 +35,8 @@
 #define IDS_APPTITLE_RECEIVER                   40001
 #define ID_RECEIVER_STOPRCV                     40001
 #define ID_SENDER_SETTINGS                      40001
-#define IDM__ABOUT_RECIEVER1                    40002
-#define IDM__ABOUT_SENDER1                      40002
+#define IDM_ABOUT_RECEIVER                      40002
+#define IDM_ABOUT_SENDER                        40002
 #define IDT_TIMER_1                             40002
 #define IDS_APPTITLE                            40003
 #define ID_SENDER_JOINMCAST                     40008

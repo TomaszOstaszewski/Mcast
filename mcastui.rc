@@ -36,7 +36,7 @@ IDR_MENU1 MENU
     }
     POPUP "&Help"
     {
-        MENUITEM "&About Sender", IDM__ABOUT_SENDER1
+        MENUITEM "&About Sender", IDM_ABOUT_SENDER
     }
 }
 
@@ -59,7 +59,7 @@ IDR_MENU2 MENU
     POPUP "&Help"
     {
         MENUITEM SEPARATOR
-        MENUITEM "&About Reciever", IDM__ABOUT_RECIEVER1
+        MENUITEM "&About Reciever", IDM_ABOUT_RECEIVER
     }
 }
 
@@ -178,7 +178,7 @@ FONT 8, "Ms Shell Dlg"
 {
     DEFPUSHBUTTON   "OK", IDOK, 129, 7, 50, 14
     PUSHBUTTON      "Cancel", IDCANCEL, 129, 24, 50, 14
-    LTEXT           "", IDC_STATIC, 7, 7, 110, 60, SS_LEFT
+    LTEXT           "", IDC_VERSION_INFO, 7, 7, 110, 60, SS_LEFT
 }
 
 
