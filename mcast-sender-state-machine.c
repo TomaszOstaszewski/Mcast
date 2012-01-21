@@ -266,54 +266,43 @@ sender_state_t sender_get_current_state(struct mcast_sender * p_sender)
 void sender_handle_mcastjoin(struct mcast_sender * p_sender)
 {
     assert(p_sender);
-    if (SENDER_INITIAL == p_sender->state_)
+    if (SENDER_INITIAL == p_sender->state_ && sender_handle_mcastjoin_internal(p_sender))
     {
-        if (sender_handle_mcastjoin_internal(p_sender))
-            p_sender->state_ = SENDER_MCAST_JOINED;
+        p_sender->state_ = SENDER_MCAST_JOINED;
+        return;
     }
-    else
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    }
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
 }
 
 void sender_handle_mcastleave(struct mcast_sender * p_sender)
 {
-    if (SENDER_MCAST_JOINED == p_sender->state_)
+    assert(p_sender);
+    if (SENDER_MCAST_JOINED == p_sender->state_ && sender_handle_mcastleave_internal(p_sender))
     {
-        if (sender_handle_mcastleave_internal(p_sender))
-            p_sender->state_ = SENDER_INITIAL;
+        p_sender->state_ = SENDER_INITIAL;
+        return;
     }
-    else
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    }
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
 }
 
 void sender_handle_startsending(struct mcast_sender * p_sender)
 {
     assert(p_sender);
-    if (SENDER_MCAST_JOINED == p_sender->state_)
+    if (SENDER_MCAST_JOINED == p_sender->state_ && sender_handle_startsending_internal(p_sender))
     {
-        if (sender_handle_startsending_internal(p_sender))
-            p_sender->state_ = SENDER_SENDING;
+        p_sender->state_ = SENDER_SENDING;
+        return;
     }
-    else
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    }
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
 }
 
 void sender_handle_stopsending(struct mcast_sender * p_sender)
 {
-    if (SENDER_SENDING == p_sender->state_)
+    assert(p_sender);
+    if (SENDER_SENDING == p_sender->state_ && sender_handle_stopsending_internal(p_sender))
     {
-        if (sender_handle_stopsending_internal(p_sender))
-            p_sender->state_ = SENDER_MCAST_JOINED;
+        p_sender->state_ = SENDER_MCAST_JOINED;
     }
-    else
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    }
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
 }
 
