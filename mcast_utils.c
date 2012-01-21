@@ -10,6 +10,7 @@
 #include "pcc.h"
 #include "mcast_utils.h"
 #include "resolve.h"
+#include "debug_helpers.h"
 
 /**
  * @brief
@@ -59,7 +60,7 @@ int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo *iface)
     }
     else
     {
-        fprintf(stderr, "Attemtping to join multicast group for invalid address family!\n");
+        debug_outputln("%s %4.4u : %d\n", group->ai_family);
         rc = SOCKET_ERROR;
     }
     if (rc != SOCKET_ERROR)
@@ -74,13 +75,7 @@ int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo *iface)
                 );
         if (rc == SOCKET_ERROR)
         {
-            fprintf(stderr, "JoinMulticastGroup: setsockopt failed: %d\n", WSAGetLastError());
-        }
-        else
-        {
-            printf("Joined group: ");
-            PrintAddress(group->ai_addr, (int) group->ai_addrlen);
-            printf("\n");
+            debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
         }
     }
     return rc;
@@ -118,7 +113,7 @@ int SetSendInterface(SOCKET s, struct addrinfo *iface)
     }
     else
     {
-        fprintf(stderr, "Attemtping to set sent interface for invalid address family!\n");
+        debug_outputln("%s %4.4u : %d\n", iface->ai_family);
         rc = SOCKET_ERROR;
     }
 
@@ -135,13 +130,7 @@ int SetSendInterface(SOCKET s, struct addrinfo *iface)
                        );
         if (rc == SOCKET_ERROR)
         {
-            fprintf(stderr, "setsockopt failed: %d\n", WSAGetLastError());
-        }
-        else
-        {
-            printf("Set sending interface to: ");
-            PrintAddress(iface->ai_addr, (int) iface->ai_addrlen);
-            printf("\n");
+            debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
         }
     }
     return rc;
@@ -180,7 +169,7 @@ int SetMulticastTtl(SOCKET s, int af, int ttl)
     }
     else
     {
-        fprintf(stderr, "Attemtping to set TTL for invalid address family!\n");
+        debug_outputln("%s %4.4u : %d\n", af);
         rc = SOCKET_ERROR;
     }
     if (rc != SOCKET_ERROR)
@@ -195,11 +184,7 @@ int SetMulticastTtl(SOCKET s, int af, int ttl)
                 );
         if (rc == SOCKET_ERROR)
         {
-            fprintf(stderr, "SetMulticastTtl: setsockopt failed: %d\n", WSAGetLastError());
-        }
-        else
-        {
-            printf("Set multicast ttl to: %d\n", ttl);
+            debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
         }
     }
     return rc;
@@ -239,7 +224,7 @@ int SetMulticastLoopBack(SOCKET s, int af, int loopval)
     }
     else
     {
-        fprintf(stderr, "Attemtping to set multicast loopback for invalid address family!\n");
+        debug_outputln("%s %4.4u : %d\n", af);
         rc = SOCKET_ERROR;
     }
     if (rc != SOCKET_ERROR)
@@ -254,11 +239,7 @@ int SetMulticastLoopBack(SOCKET s, int af, int loopval)
                 );
         if (rc == SOCKET_ERROR)
         {
-            fprintf(stderr, "SetMulticastLoopBack: setsockopt failed: %d\n", WSAGetLastError());
-        }
-        else
-        {
-            printf("Setting multicast loopback to: %d\n", loopval);
+            debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
         }
     }
     return rc;
