@@ -9,7 +9,12 @@ all: $(OUTDIR)\ut-fifo-circular-buffer.exe $(OUTDIR)\ut-input-buffer.exe $(OUTDI
 	@echo $(OUTDIR)\ut-fifo-circular-buffer.exe
 	@echo $(OUTDIR)\ut-input-buffer.exe
 	
-DXLIB="C:\Program Files\Microsoft DirectX SDK (June 2010)\Lib\x86"
+DXLIB="$(PROGRAMFILES)\Microsoft DirectX SDK (June 2010)\Lib\x86"
+# those are the paths for CSCOPE utility for Win32.
+# That one does not accept names with spaces in them - thus those paths are presented
+# in old 8.3 format.
+PSDKINCLUDE=C:\PROGRA~1\MI9547~1\Include
+DXINCLUDE=C:\PROGRA~1\MI7482~1\Include
 
 $(OUTDIR):
     @if not exist "$(OUTDIR_OBJ)/$(NULL)" mkdir $(OUTDIR_OBJ)
@@ -20,10 +25,10 @@ $(OUTDIR_PCC) : $(OUTDIR)
 $(OUTDIR_OBJ) : $(OUTDIR)
     @if not exist "$(OUTDIR_OBJ)/$(NULL)" mkdir $(OUTDIR_OBJ)!include "outdir.mk"
 
-#
-# Build rule for resource file
-#cdebug=$(cdebug) -DUSE_OWN_STDINT_H
+cscope:
+	@cscope -bk -I$(PSDKINCLUDE) -I$(DXINCLUDE)
 
+#cscope -bk -I$(DXINCLUDE) $(PSDKINCLUDE)
 #.c{$(OUTDIR_OBJ)}.obj::
 #    $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" $<
 

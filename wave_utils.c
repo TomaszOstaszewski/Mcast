@@ -85,6 +85,8 @@ int init_master_riff(master_riff_chunk_t ** pp_chunk, HINSTANCE hModule, LPCTSTR
 {
     HRSRC hRes;
     int result = 0;
+    if (NULL == hModule)
+        hModule = GetModuleHandle(NULL);
     hRes = FindResource(hModule, lpResName, "0");
     if (NULL != hRes)
     {

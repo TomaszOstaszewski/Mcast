@@ -56,6 +56,11 @@ static struct receiver_settings g_settings;
  */
 HINSTANCE   g_hInst;
 
+/*!
+ * @brief Maximum number of characters to be placed into the 'buffer bytes' edit control.
+ */
+#define BUFFER_BYTES_EDIT_TEXT_LIMIT (8)
+
 struct ui_controls {
     HWND hSettingsBtn;
     HWND hJoinMcastBtn;
@@ -65,8 +70,15 @@ struct ui_controls {
     HWND hStartRcv;
     HWND hStopRcv;
     HWND hProgressBar;
+    HWND hBufferBytesEdit;
     HMENU hMainMenu;
+    TCHAR buffer_bytes_edit[BUFFER_BYTES_EDIT_TEXT_LIMIT];
 } g_controls;
+
+/*!
+ * @brief Defines time how often the UI is updated.
+ */
+#define UI_UPDATE_TIMER_MS (500)
 
 /**
  * @brief Helper UI update function.
@@ -185,6 +197,14 @@ static void UpdateUIwithCurrentState(struct ui_controls * p_controls, receiver_s
             break;
     }
 }
+
+static void update_fifo_receiver_bytes_edit_control(struct ui_controls * p_controls)
+{
+    uint32_t fifo_bytes = fifo_circular_buffer_get_items_count(receiver_get_fifo(g_receiver));
+    StringCchPrintf(p_controls->buffer_bytes_edit, BUFFER_BYTES_EDIT_TEXT_LIMIT, "%u", fifo_bytes);
+    SetWindowText(p_controls->hBufferBytesEdit, p_controls->buffer_bytes_edit);
+}
+
 /**
  * @brief Main UI update function.
  * @details Updates the UI widgets if the reciever state changes (i.e. previously stored state is different than current one).
@@ -214,6 +234,7 @@ static void UpdateUI(struct ui_controls * p_controls)
         default:
             break;
     }
+    update_fifo_receiver_bytes_edit_control(p_controls);
 }
 
 /*!
@@ -245,6 +266,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
         p_controls->hStopRcv = GetDlgItem(hwnd, ID_RECEIVER_STOPRCV);
         p_controls->hStartRcv = GetDlgItem(hwnd, ID_RECEIVER_STARTRCV);
         p_controls->hProgressBar = GetDlgItem(hwnd, IDC_RECEIVER_BUFFER_FILL);
+        p_controls->hBufferBytesEdit = GetDlgItem(hwnd, IDC_BUFFER_BYTES_EDIT);
         p_controls->hMainMenu = GetMenu(hwnd);
         assert(p_controls->hSettingsBtn);
         assert(p_controls->hJoinMcastBtn);
@@ -253,11 +275,14 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
         assert(p_controls->hLeaveMcast);
         assert(p_controls->hStopRcv);
         assert(p_controls->hStartRcv);
-        assert(p_controls->hMainMenu);
         assert(p_controls->hProgressBar);
+        assert(p_controls->hBufferBytesEdit);
+        assert(p_controls->hMainMenu);
         SendMessage(p_controls->hProgressBar, PBM_SETRANGE32, 0, fifo_circular_buffer_get_capacity(receiver_get_fifo(g_receiver)));
-        SetTimer(hwnd, IDT_TIMER_1, 500, NULL);
+        SendMessage(p_controls->hBufferBytesEdit, EM_SETLIMITTEXT, (WPARAM)BUFFER_BYTES_EDIT_TEXT_LIMIT, (LPARAM)0);
+        SetTimer(hwnd, IDT_TIMER_1, UI_UPDATE_TIMER_MS , NULL);
         UpdateUIwithCurrentState(p_controls, receiver_get_state(g_receiver));
+        UpdateUI(p_controls);
     }
     else 
     {
