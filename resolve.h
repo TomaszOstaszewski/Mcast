@@ -34,6 +34,8 @@ struct addrinfo;
  * places null-terminated strings containing the host and service name.
  * @param[in] addrbuflen length of the buffer given as addrbuf parameter.
  * @return returns 0 on success, <>0 on failure
+ * @attention If the above hyperlinks to external pages fail, just use a internet search engine of your choice
+ * to find (or "google up") getaddrinfo and getnameinfo function descriptions.
  */
 int FormatAddress(struct sockaddr *sa, int salen, char *addrbuf, int addrbuflen);
 
@@ -55,7 +57,9 @@ int FormatAddress(struct sockaddr *sa, int salen, char *addrbuf, int addrbuflen)
  * @param[in] namebuf The pointer to caller-allocated buffer (of size namebuflen) into which getnameinfo() 
  * places null-terminated strings containing the host and service name.
  * @param[in] namebuflen length of the buffer given as namebuf parameter.
-  * @return
+ * @return returns 0 on success, <>0 otherwise.
+ * @attention If the above hyperlinks to external pages fail, just use a internet search engine of your choice
+ * to find (or "google up") getaddrinfo function description.
  */
 int  ReverseLookup(struct sockaddr *sa, int salen, char *namebuf, int namebuflen);
 
