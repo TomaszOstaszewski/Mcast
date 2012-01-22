@@ -32,7 +32,9 @@
 #include "common-dialogs-res.h"
 
 /*!
- * @brief Copy of the mcast_settings object passed by the caller.  * @details On this copy all the dialog operation is performed.
+ * @brief Copy of the mcast_settings object passed by the caller.  
+ * @details It is this copy which is being altered by dialog controls. After the dialog is done, 
+ * we copy it back.
  */
 static struct mcast_settings g_settings;
 
@@ -113,7 +115,7 @@ static int controls_to_data(struct mcast_settings * p_settings)
     if (result<=0) 
         goto error;
     /* The 5 digit figures in decimal don't fit into 2 bytes of hex.
-     * Therefore we may need to make some exceptions for values above 65535 - we enter the 65535 insted.
+     * Therefore we may need to make some exceptions for values above 65535 - we enter the 65535 instead.
      */
     if (port_host_order > USHRT_MAX)
         goto error;
@@ -131,7 +133,7 @@ error:
  * \li Initializes the control handles
  * \li Presents the settings on the UI
  * @param[in] hwnd handle to the window that received WM_INITDIALOG message
- * @param[in] hwndFocus handle to the Window that is to be got the keyboard focus upon dialog initalizing. 
+ * @param[in] hwndFocus handle to the Window that is to be got the keyboard focus upon dialog initializing. 
  * @param[in] lParam client specific parameter passed to DialogBoxParam function. This is a way to pass to the
  * handler some client specific data.
  * @param returns TRUE if the window indicated as hWndFocus is to get keyboard focus. Returns FALSE otherwise.
@@ -160,11 +162,6 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     EnableWindow(g_btok, TRUE) ;
     return TRUE;
 } 
-
-/*
-#define HANDLE_WM_COMMAND(hwnd, wParam, lParam, fn) \
-    ((fn)((hwnd), (int)(LOWORD(wParam)), (HWND)(lParam), (UINT)HIWORD(wParam)), 0L)
-*/
 
 /**
  * @brief Multicast settings dialog message processing routine.
