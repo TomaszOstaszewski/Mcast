@@ -84,12 +84,15 @@ struct receiver_settings_dlg_controls
     TCHAR text_buffer[TEXT_LIMIT+1];
 };
 
+/*!
+ * @brief Structure used to associate a number with a combo box item.
+ */
 struct val_2_combo {
     unsigned int val_; /*!< Value to be associated with combo box. */
     int combo_idx_; /*!< Combo box item number */
 };
  
-static struct val_2_combo  sample_rate_values[] = {
+static struct val_2_combo sample_rate_values[] = {
     { 8000, 0 },
     { 16000, 0 },
     { 32000, 0 },
@@ -97,7 +100,7 @@ static struct val_2_combo  sample_rate_values[] = {
     { 96000, 0 },
 };
 
-static struct val_2_combo  bits_per_sample_values[] = {
+static struct val_2_combo bits_per_sample_values[] = {
     { 8, 0 },
     { 16, 0 },
 };
@@ -166,7 +169,7 @@ static void data_to_controls(struct receiver_settings const * p_settings, struct
 }
 
 /*!
- * @brief Transfer data from UI to the object.
+ * @brief Transfer data from edit UI to the object.
  * @details Takes the values form the UI controls and saves them to the provided object.
  * @param[in] p_settings object to be written with UI data.
  * @return returns a non-zero value on success, 0 if failure has occured.
@@ -203,6 +206,12 @@ error:
     return 0;
 }
 
+/*!
+ * @brief Transfer data from combo UI to the object.
+ * @details Takes the values form the UI controls and saves them to the provided object.
+ * @param[in] p_settings object to be written with UI data.
+ * @return returns a non-zero value on success, 0 if failure has occured.
+ */
 static int combo_controls_to_data(struct receiver_settings * p_settings, struct receiver_settings_dlg_controls * p_controls)
 {
     int result;
@@ -329,7 +338,8 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                             break;
                     }
                     /* If copy is different than the master settings - it must have been altered. Thus, there was a spin action.
-                        Check if new settings validate OK, and if so, transfer those to control object. */
+                     *  Check if new settings validate OK, and if so, transfer those to control object. 
+                     */
                     if (!receiver_settings_compare(&copy_for_spins, &g_settings) && receiver_settings_validate(&copy_for_spins))
                         data_to_controls(&copy_for_spins, &g_controls);
                     break;
@@ -344,22 +354,25 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                 case IDC_POLL_SLEEP_TIME_EDIT:
                 case IDC_PLAY_BUFFER_SIZE_EDIT:
                 case IDC_MMTIMER_EDIT_CTRL:
-                    if (EN_CHANGE == HIWORD(wParam))
+                    switch (HIWORD(wParam))
                     {
-                        /* Make a copy of the master settings */
-                        receiver_settings_copy(&other_copy, &g_settings);
-                        /* Alter the copy with what the user or our code has changed. Validate it */
-                        if (edit_controls_to_data(&other_copy, &g_controls) && receiver_settings_validate(&other_copy))
-                        {
-                            /* If entered settings correctly read and valid, they become our master settings. */
-                            receiver_settings_copy(&g_settings, &other_copy);
-                            EnableWindow(g_controls.btok_, TRUE);
-                        }
-                        else
-                        {
-                            /* Either could not read settings or they are not valid. Either way - disable OK button */
-                            EnableWindow(g_controls.btok_, FALSE);
-                        }
+                        case EN_CHANGE:
+                            /* Make a copy of the master settings */
+                            receiver_settings_copy(&other_copy, &g_settings);
+                            /* Alter the copy with what the user or our code has changed. Validate it */
+                            if (edit_controls_to_data(&other_copy, &g_controls) && receiver_settings_validate(&other_copy))
+                            {
+                                /* If entered settings correctly read and valid, they become our master settings. */
+                                receiver_settings_copy(&g_settings, &other_copy);
+                                EnableWindow(g_controls.btok_, TRUE);
+                            }
+                            else
+                            {
+                                /* Either could not read settings or they are not valid. Either way - disable OK button */
+                                EnableWindow(g_controls.btok_, FALSE);
+                            }
+                        default: 
+                            break;
                     }
                     break;
                 case IDC_WAV_SAMPLE_RATE:
@@ -369,7 +382,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                         case CBN_SELCHANGE:
                             /* Make a copy of the master settings */
                             receiver_settings_copy(&other_copy, &g_settings);
-                            /* Fill the copy with what controls have for us */
+                            /* Fill the copy with what controls have */
                             if (combo_controls_to_data(&other_copy, &g_controls) && receiver_settings_validate(&other_copy))
                             {
                                 receiver_settings_copy(&g_settings, &other_copy);
