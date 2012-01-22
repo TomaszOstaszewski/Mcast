@@ -113,7 +113,7 @@ int pref_counter_get_duration(struct perf_counter * p_counter, _int64 * p_total,
     size_t idx;
     size_t items_count = p_counter->items_count_;
     if (0 == items_count)
-        return -1;
+        return 0;
     if (p_counter->items_count_ > MAX_PERF_ITEMS) 
         items_count = MAX_PERF_ITEMS;        
     *p_total = 0;
@@ -123,6 +123,6 @@ int pref_counter_get_duration(struct perf_counter * p_counter, _int64 * p_total,
         *p_total += p_counter->perf_table_[idx].after_ - p_counter->perf_table_[idx].before_ - p_counter->overhead_; 
     }
     *p_avg = *p_total/items_count;
-    return 0;
+    return 1;
 } 
 
