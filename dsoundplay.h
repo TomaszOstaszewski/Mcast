@@ -37,36 +37,55 @@
 extern "C" {
 #endif 
 
+/*!
+ * @brief Forward declaration.
+ */
 struct fifo_circular_buffer;
+
+/*!
+ * @brief Forward declaration.
+ */
 struct play_settings;
 
 /*!
- *
+ * @brief Defines a handle to the DirectSound player.
  */
 typedef struct tagDSOUNDPLAY * DSOUNDPLAY;
 
 /*!
- *
+ * @brief Creates a DirectSound player.
+ * @param[in] hWnd handle to the player window. This is to use specific cooperation functions. Can be NULL, in this case
+ * the foreground window or the desktop window will be used.
+ * @param[in] p_WFE pointer to the structure that describes waveform to be played.
+ * @param[in] g_fifo pointer to the fifo queue to be used by player. The player will fetch waveform data from that buffer.
+ * @param[in] play_settings pointer to the structure that describes player settings.
+ * @return returns the handle to the DirectSound player.
  */
 DSOUNDPLAY dsoundplayer_create(HWND hWnd, WAVEFORMATEX const * p_WFE, struct fifo_circular_buffer * g_fifo, struct play_settings const * play_settings);
 
 /*!
- *
+ * @brief Destroys the DirectSound player.
+ * @param[in] handle handle to the player obtained via call to dsoundplayer_create() function.
  */
 void dsoundplayer_destroy(DSOUNDPLAY handle);
 
 /*!
- *
+ * @brief Starts data playback.
+ * @param[in] handle handle to the player obtained via call to dsoundplayer_create() function.
+ * @return returns non zero on success, 0 otherwise.
  */
 int dsoundplayer_play(DSOUNDPLAY handle);
 
 /*!
- *
+ * @brief Pauses data playback.
+ * @param[in] handle handle to the player obtained via call to dsoundplayer_create() function.
  */
 void dsoundplayer_pause(DSOUNDPLAY handle);
 
 /*!
- *
+ * @brief Stops data playback.
+ * @param[in] handle handle to the player obtained via call to dsoundplayer_create() function.
+ * @return returns non zero on success, 0 otherwise.
  */
 int dsoundplayer_stop(DSOUNDPLAY handle);
 

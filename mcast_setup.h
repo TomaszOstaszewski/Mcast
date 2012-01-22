@@ -101,25 +101,51 @@ int setup_multicast_default(char * p_multicast_addr, char * p_port, struct mcast
 int setup_multicast_indirect(struct mcast_settings const * p_settings, struct mcast_connection * p_conn);
 
 /*!
- * 
+ * @brief Sends data over the socket.
+ * @param[in] p_conn describes the connection.
+ * @param[in] p_data pointer to the data to send.
+ * @param[in] data_size size of the data indicated by p_data parameter.
+ * @param[in] flags flags to pass to sendto() call.
+ * @return returns number of bytes sent. 
  */
 size_t mcast_sendto_flags(struct mcast_connection * p_conn, void const * p_data, size_t data_size, int flags);
 
 /*!
- * 
+ * @brief Setup the multicast connection with given parameters.
+ * @param[in] p_conn describes the connection.
+ * @param[in] p_data pointer to the data to be sent.
+ * @param[in] data_size size of the data indicated by p_data parameter.
+ * @return returns number of bytes sent. 
  */
 size_t mcast_sendto(struct mcast_connection * p_conn, void const * p_data, size_t data_size);
 
 /*!
- * 
+ * @brief Setup the multicast connection with given parameters.
+ * @param[in] p_conn describes the connection.
+ * @param[in] p_data pointer to the data to be received.
+ * @param[in] data_size number of bytes that p_data indicated buffer can accomodate.
+ * @return returns number of bytes received. 
  */
 size_t mcast_recvfrom(struct mcast_connection * p_conn, void * p_data, size_t data_size);
 
 /*!
- * 
+ * @brief Setup the multicast connection with given parameters.
+ * @param[in] p_conn describes the connection.
+ * @param[in] p_data pointer to the data to be received.
+ * @param[in] data_size number of bytes that p_data indicated buffer can accomodate.
+ * @param[in] flags flags to pass to recvfrom() call.
+ * @return returns number of bytes received. 
  */
 size_t mcast_recvfrom_flags(struct mcast_connection * p_conn, void * p_data, size_t data_size, int flags);
 
+/*!
+ * @brief Checks if there is some data to receive on the socket. 
+ * @details This is some more friendly wrapper for the BSD select() call.
+ * @param[in] p_conn describes the multicast connection.
+ * @param[in] dwTimeoutMs time to wait for new data, in milliseconds.
+ * @return returns non-zero if there is new data on the socket, returns 0 otherwise.
+ */
+int mcast_is_new_data(struct mcast_connection * p_conn, DWORD dwTimeoutMs);
 
 /*!
  * @brief Leaves the multicast group, closes socket.

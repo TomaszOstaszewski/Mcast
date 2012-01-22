@@ -34,12 +34,16 @@
 #include "mcast-sender-state-machine.h"
 
 #include "mcast_setup.h"
-#include "resource.h"
 #include "debug_helpers.h"
 #include "wave_utils.h"
 #include "mcast-sender-state-machine.h"
 #include "sender-settings.h"
 
+/*!
+ * @brief Maximum number of payload bytes that will fit a single 100BaseT Ethernet packet.
+ * @details The macro assumes that the payload also contains the IP and UDP header. What is 
+ * left is the user data and that amount of user data this macro represents.
+ */
 #define MAX_ETHER_PAYLOAD_SANS_UPD_IP (1500-20-8)
 
 /**
@@ -266,54 +270,43 @@ sender_state_t sender_get_current_state(struct mcast_sender * p_sender)
 void sender_handle_mcastjoin(struct mcast_sender * p_sender)
 {
     assert(p_sender);
-    if (SENDER_INITIAL == p_sender->state_)
+    if (SENDER_INITIAL == p_sender->state_ && sender_handle_mcastjoin_internal(p_sender))
     {
-        if (sender_handle_mcastjoin_internal(p_sender))
-            p_sender->state_ = SENDER_MCAST_JOINED;
+        p_sender->state_ = SENDER_MCAST_JOINED;
+        return;
     }
-    else
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    }
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
 }
 
 void sender_handle_mcastleave(struct mcast_sender * p_sender)
 {
-    if (SENDER_MCAST_JOINED == p_sender->state_)
+    assert(p_sender);
+    if (SENDER_MCAST_JOINED == p_sender->state_ && sender_handle_mcastleave_internal(p_sender))
     {
-        if (sender_handle_mcastleave_internal(p_sender))
-            p_sender->state_ = SENDER_INITIAL;
+        p_sender->state_ = SENDER_INITIAL;
+        return;
     }
-    else
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    }
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
 }
 
 void sender_handle_startsending(struct mcast_sender * p_sender)
 {
     assert(p_sender);
-    if (SENDER_MCAST_JOINED == p_sender->state_)
+    if (SENDER_MCAST_JOINED == p_sender->state_ && sender_handle_startsending_internal(p_sender))
     {
-        if (sender_handle_startsending_internal(p_sender))
-            p_sender->state_ = SENDER_SENDING;
+        p_sender->state_ = SENDER_SENDING;
+        return;
     }
-    else
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    }
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
 }
 
 void sender_handle_stopsending(struct mcast_sender * p_sender)
 {
-    if (SENDER_SENDING == p_sender->state_)
+    assert(p_sender);
+    if (SENDER_SENDING == p_sender->state_ && sender_handle_stopsending_internal(p_sender))
     {
-        if (sender_handle_stopsending_internal(p_sender))
-            p_sender->state_ = SENDER_MCAST_JOINED;
+        p_sender->state_ = SENDER_MCAST_JOINED;
     }
-    else
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    }
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
 }
 

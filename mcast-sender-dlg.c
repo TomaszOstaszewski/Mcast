@@ -1,6 +1,9 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /**
  * @file mcast-sender-dlg.c
+ * @brief Sender dialog application main file.
+ * @details 
+ * @date 03-Jan-2011
  * @author T.Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
@@ -22,18 +25,15 @@
  * authors and should not be interpreted as representing official policies, 
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
- * @date 03-Jan-2011
- * @brief Sender dialog application main file.
- * @details 
  */
 #include "pcc.h"
-#include "resource.h"
 #include "debug_helpers.h"
 #include "message-loop.h"
 #include "mcast-sender-state-machine.h"
 #include "sender-settings-dlg.h"
 #include "sender-settings.h"
 #include "about-dialog.h"
+#include "sender-res.h"
 
 /**
  * @brief Global Application instance.
@@ -128,7 +128,7 @@ static void UpdateUIwithCurrentState(HWND hDlg, sender_state_t state)
  */
 static void UpdateUI(HWND hDlg)
 {
-    static sender_state_t prev_state = SENDER_INITIAL;
+    static sender_state_t prev_state = -1;
     sender_state_t curr_state;
     assert(g_sender);
     curr_state = sender_get_current_state(g_sender);
@@ -156,11 +156,10 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
         case WM_INITDIALOG:
             {
                 int result;
-                result = get_default_settings(g_hInst, &g_settings);
+                result = get_default_settings(&g_settings);
                 assert(result);
                 g_sender = sender_create(&g_settings);
                 assert(g_sender);
-                UpdateUIwithCurrentState(hDlg, sender_get_current_state(g_sender));
             }
             return FALSE; /* Return FALSE, as we did set focus ourselves in UpdateUIwithCurrentState call, and we don't want to focus on the default control */
        case WM_COMMAND:

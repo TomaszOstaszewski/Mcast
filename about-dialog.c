@@ -1,9 +1,9 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
- * @brief
  * @file about-dialog.c
  * @author T.Ostaszewski
  * @date Jan-2012
+ * @brief The "About ..." modal dialog implementation.
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -28,12 +28,16 @@
 #include "pcc.h"
 #include "about-dialog.h"
 #include "debug_helpers.h"
-#include "resource.h"
+#include "common-dialogs-res.h"
 
 static HWND hVersionInfo = NULL;
 static HWND hModuleName = NULL;
 static TCHAR module_file_name[MAX_PATH+1];
+/*!
+ * @brief Maximum number of characters that are to appear on the version control.
+ */
 #define MODULE_VERSION_STRING_LENGTH (16)
+
 static TCHAR module_version_string[MODULE_VERSION_STRING_LENGTH];
 
 static INT_PTR CALLBACK VersionDialogProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)

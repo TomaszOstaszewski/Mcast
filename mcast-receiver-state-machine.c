@@ -54,7 +54,10 @@ struct mcast_receiver {
     struct receiver_settings settings_; /*!< Receiver settings for multicast connection. */
 };
 
-#define MAX_UDP_PACKET_LENGHT (2048)
+/*!
+ * @brief Default (expected) size of single UDP audio packet.
+ */
+#define DEFAULT_UDP_PACKET_CHUNK (2048)
 
 /**
  * @brief Entry point of the Multicast receiver thread 
@@ -65,9 +68,9 @@ struct mcast_receiver {
 static DWORD WINAPI ReceiverThreadProc(LPVOID param)
 {
     uint32_t count;
+    uint32_t stop = 0;
     struct mcast_receiver * p_receiver;
     struct data_item item;
-    struct sockaddr_in sock_addr;
     DWORD dwWaitTimeout;
     int bytes_recevied;
     DWORD dwWaitResult;
@@ -77,45 +80,40 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
     assert(p_receiver->conn_);
     assert(p_receiver->fifo_);
     sock_addr_size  = sizeof(struct sockaddr_in);
-    item.data_      = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, MAX_UDP_PACKET_LENGHT);
-    item.count_     = MAX_UDP_PACKET_LENGHT;
+    item.data_      = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, DEFAULT_UDP_PACKET_CHUNK);
+    item.count_     = DEFAULT_UDP_PACKET_CHUNK;
     dwWaitTimeout   = p_receiver->settings_.poll_sleep_time_;
-    for (count = 0; ; ++count)
+    for (count = 0; !stop; ++count)
     {
-        dwWaitResult = WaitForSingleObject(p_receiver->hStopEventThread_, dwWaitTimeout);
-        if (WAIT_TIMEOUT == dwWaitResult) /* Timedout - hence, nobody wants us to finish yet */
+        for (;mcast_is_new_data(p_receiver->conn_, dwWaitTimeout);)
         {
-            /* Receive data from the socket until you receiving this WSAMSGSIZE error
-             * It is a non-blocking socket, so this call may well yield WSAEWOULDBLOCK - indicating that there
-             * is nothing to receive. We ignore those errors.
-             */
             do { 
-                bytes_recevied = recvfrom(
-                        p_receiver->conn_->socket_,
-                        item.data_, 
-                        item.count_, 
-                        0,
-                        (struct sockaddr*)&sock_addr,
-                        &sock_addr_size
-                        );
+                /* Receive data from the socket until you receiving this WSAMSGSIZE error
+                 * It is a non-blocking socket, so this call may well yield WSAEWOULDBLOCK - indicating that there
+                 * is nothing to receive. We ignore those errors.
+                 */
+                bytes_recevied = mcast_recvfrom(p_receiver->conn_, item.data_, item.count_);
                 if (SOCKET_ERROR != bytes_recevied)
                 {
                     item.count_ = bytes_recevied;
                     fifo_circular_buffer_push_item(p_receiver->fifo_, &item);
                     break;
                 }
-                item.data_ = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, item.data_, item.count_ + MAX_UDP_PACKET_LENGHT);
-                item.count_ += DATA_ITEM_SIZE;
+                item.data_ = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, item.data_, item.count_ + DEFAULT_UDP_PACKET_CHUNK);
+                item.count_ += DEFAULT_UDP_PACKET_CHUNK;
             } while (WSAGetLastError() == WSAEMSGSIZE);
         }
-        else if (WAIT_OBJECT_0 == dwWaitResult) /* Signaled - hence, the external environment has just requested termination */
+        dwWaitResult = WaitForSingleObject(p_receiver->hStopEventThread_, 0);
+        switch (dwWaitResult)
         {
-            break;
-        }
-        else
-        {
-            debug_outputln("%s %d : %8.8x", __FILE__, __LINE__, dwWaitResult);
-            break;
+            case WAIT_TIMEOUT:
+                break;
+            case WAIT_OBJECT_0: /* Signaled - hence, the external environment has just requested termination */
+            case WAIT_FAILED:
+                stop = 1; /* Yes, break omission is intentional. */
+            default:
+                debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, dwWaitResult);
+                break;
         }
     }
     CloseHandle(p_receiver->hStopEventThread_);
@@ -137,7 +135,7 @@ static int handle_rcvstart_internal(struct mcast_receiver * p_receiver)
     assert(NULL == p_receiver->hRcvThread_);
     if (p_receiver && NULL == p_receiver->hStopEvent_ && NULL == p_receiver->hRcvThread_)
     {
-        p_receiver->hStopEvent_ = CreateEvent(NULL, TRUE, FALSE, "recv-event-0");
+        p_receiver->hStopEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
         if (NULL != p_receiver->hStopEvent_ && DuplicateHandle(GetCurrentProcess(), p_receiver->hStopEvent_, GetCurrentProcess(), &p_receiver->hStopEventThread_, 0, FALSE, DUPLICATE_SAME_ACCESS))
         {
             ResetEvent(p_receiver->hStopEvent_);
@@ -307,125 +305,108 @@ int receiver_destroy(struct mcast_receiver * p_receiver)
 
 void handle_play(struct mcast_receiver * p_receiver, HWND hMainWnd)
 {
-    if (RECEIVER_MCASTJOINED == p_receiver->state_)
+    if (RECEIVER_MCASTJOINED == p_receiver->state_ && handle_play_internal(hMainWnd, p_receiver))
     {
-        if (handle_play_internal(hMainWnd, p_receiver))
-            p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
+        p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
+        return;
     }
-    else if (RECEIVER_INITIAL == p_receiver->state_)
+    if (RECEIVER_INITIAL == p_receiver->state_ && handle_play_internal(hMainWnd, p_receiver))
     {
-        if (handle_play_internal(hMainWnd, p_receiver))
-            p_receiver->state_ = RECEIVER_PLAYING;
+        p_receiver->state_ = RECEIVER_PLAYING;
+        return;
     }
-    else if (RECEIVER_RECEIVING == p_receiver->state_)
+    if (RECEIVER_RECEIVING == p_receiver->state_ && handle_play_internal(hMainWnd, p_receiver))
     {
-        if (handle_play_internal(hMainWnd, p_receiver))
-            p_receiver->state_ = RECEIVER_RECEIVING_PLAYING;
+        p_receiver->state_ = RECEIVER_RECEIVING_PLAYING;
+        return;
     }
-    else
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    }
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
 }
 
 void handle_stop(struct mcast_receiver * p_receiver)
 {
-    if (RECEIVER_PLAYING == p_receiver->state_)
+    if (RECEIVER_PLAYING == p_receiver->state_ && handle_stop_internal(p_receiver))
     {
-        if  (handle_stop_internal(p_receiver))
-            p_receiver->state_ = RECEIVER_INITIAL;
+        p_receiver->state_ = RECEIVER_INITIAL;
+        return;
     }
-    else if (RECEIVER_RECEIVING_PLAYING == p_receiver->state_)
+    if (RECEIVER_RECEIVING_PLAYING == p_receiver->state_ && handle_stop_internal(p_receiver))
     {
-        if  (handle_stop_internal(p_receiver))
-            p_receiver->state_ = RECEIVER_RECEIVING;
+        p_receiver->state_ = RECEIVER_RECEIVING;
+        return;
     }
-    else if (RECEIVER_MCASTJOINED_PLAYING == p_receiver->state_)
+    if (RECEIVER_MCASTJOINED_PLAYING == p_receiver->state_ && handle_stop_internal(p_receiver))
     {
-        if  (handle_stop_internal(p_receiver))
-            p_receiver->state_ = RECEIVER_MCASTJOINED;
+        p_receiver->state_ = RECEIVER_MCASTJOINED;
+        return;
     }
-    else
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    }
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
 }
 
 void handle_rcvstart(struct mcast_receiver * p_receiver)
 {
-    if (RECEIVER_MCASTJOINED == p_receiver->state_)
+    if (RECEIVER_MCASTJOINED == p_receiver->state_ && handle_rcvstart_internal(p_receiver))
     {
-        if (handle_rcvstart_internal(p_receiver))
-            p_receiver->state_ = RECEIVER_RECEIVING;
+        p_receiver->state_ = RECEIVER_RECEIVING;
+        return;
     } 
-    else if (RECEIVER_MCASTJOINED_PLAYING == p_receiver->state_)
+    if (RECEIVER_MCASTJOINED_PLAYING == p_receiver->state_ && handle_rcvstart_internal(p_receiver))
     {
-        if (handle_rcvstart_internal(p_receiver))
-            p_receiver->state_ = RECEIVER_RECEIVING_PLAYING;
+        p_receiver->state_ = RECEIVER_RECEIVING_PLAYING;
+        return;
     }
-    else
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    }
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
 }
 
 void handle_rcvstop(struct mcast_receiver * p_receiver)
 {
-    if (RECEIVER_RECEIVING_PLAYING == p_receiver->state_)
+    if (RECEIVER_RECEIVING_PLAYING == p_receiver->state_ && handle_rcvstop_internal(p_receiver))
     {
-        if (handle_rcvstop_internal(p_receiver))
-            p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
+        p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
+        return;
     }
-    else if (RECEIVER_RECEIVING == p_receiver->state_)
+    if (RECEIVER_RECEIVING == p_receiver->state_ && handle_rcvstop_internal(p_receiver))
     {
-        if (handle_rcvstop_internal(p_receiver))
-            p_receiver->state_ = RECEIVER_MCASTJOINED;
+        p_receiver->state_ = RECEIVER_MCASTJOINED;
+        return;
     }
-    else
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    }
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
 }
 
 void handle_mcastjoin(struct mcast_receiver * p_receiver)
 {
-    debug_outputln("%s %u", __FILE__, __LINE__);
-    if (RECEIVER_INITIAL == p_receiver->state_)
+    if (RECEIVER_INITIAL == p_receiver->state_ && handle_mcastjoin_internal(p_receiver))
     {
-        if (handle_mcastjoin_internal(p_receiver))
-            p_receiver->state_ = RECEIVER_MCASTJOINED;
+        p_receiver->state_ = RECEIVER_MCASTJOINED;
+        return;
     }
-    else if (RECEIVER_PLAYING == p_receiver->state_)
+    if (RECEIVER_PLAYING == p_receiver->state_ && handle_mcastjoin_internal(p_receiver))
     {
-        if (handle_mcastjoin_internal(p_receiver))
-            p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
+        p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
+        return;
     }
-    else
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    }
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
 }
 
 void handle_mcastleave(struct mcast_receiver * p_receiver)
 {
-    if (RECEIVER_MCASTJOINED == p_receiver->state_)
+    if (RECEIVER_MCASTJOINED == p_receiver->state_ && handle_mcastleave_internal(p_receiver))
     {
-        if (handle_mcastleave_internal(p_receiver))
-            p_receiver->state_ = RECEIVER_INITIAL; 
+        p_receiver->state_ = RECEIVER_INITIAL; 
+        return;
     }
-    else if (RECEIVER_MCASTJOINED_PLAYING == p_receiver->state_)
+    if (RECEIVER_MCASTJOINED_PLAYING == p_receiver->state_ && handle_mcastleave_internal(p_receiver))
     {
-        if (handle_mcastleave_internal(p_receiver))
-            p_receiver->state_ = RECEIVER_PLAYING;
+        p_receiver->state_ = RECEIVER_PLAYING;
+        return;
     }
-    else
-    {
-        debug_outputln("%s %5.5d", __FILE__, __LINE__);
-    }
+    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    return;
 }
 
 receiver_state_t receiver_get_state(struct mcast_receiver * p_receiver)
 {
+    assert(p_receiver);
     return p_receiver->state_;
 }
 

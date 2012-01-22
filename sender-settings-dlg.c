@@ -1,7 +1,7 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
- * @brief
  * @file sender-settings-dlg.c
+ * @brief Defines the interface needed to obtain sender settings from UI, via means of the modal dialog box.
  * @author T.Ostaszewski
  * @date Jan-2012
  * @par License
@@ -28,13 +28,11 @@
  */
 #include "pcc.h"
 #include "debug_helpers.h"
-#include "resource.h"
 #include "sender-settings-dlg.h"
 #include "mcast-settings-dlg.h"
 #include "sender-settings.h"
 #include "mcast-settings.h"
-
-extern HINSTANCE g_hInst;
+#include "sender-res.h"
 
 /*!
  * @brief A copy of the sender settings object that this dialog operates on.
@@ -85,8 +83,19 @@ static HWND g_btok;
  */
 static TCHAR text_buffer[TEXT_LIMIT+1];
 
+/*!
+ * @brief Default number of samples per second.
+ */
 #define SAMPLES_PER_SEC (8000.0)
+
+/*!
+ * @brief Default number of bytes per sample.
+ */
 #define BYTES_PER_SAMPLE (2.0)
+
+/*!
+ * @brief Number of milliseconds in 1 second.
+ */
 #define MILLISECOND_IN_SEC (1000.0)
 
 static void update_calculated_controls(struct sender_settings const * p_settings)
@@ -99,6 +108,7 @@ static void update_calculated_controls(struct sender_settings const * p_settings
 /*!
  * @brief Transfer from data to UI
  * @details Takes values from the settings object and presents them on the UI
+ * @param[in] p_settings points to data to be transferred to the controls.
  */
 static void data_to_controls(struct sender_settings const * p_settings)
 {
@@ -112,7 +122,10 @@ static void data_to_controls(struct sender_settings const * p_settings)
 
 /*!
  * @brief Transfer data from UI to the object.
- * @details Takes the values form the UI controls and saves them to the provided object.
+ * @details Takes the values form the UI controls and saves them to the provided object. For numeric controls, 
+ * it is just calling sscanf() a couple number of times, each time validating if the entry we fetched can fit into destination.
+ * For instance, 5 digit decimal unsigned variable may range from 0 to 99999 - this won't fit 2 byte hex variable. We need to 
+ * check for that specifically. 
  * @param[in] p_settings object to be written with UI data.
  * @return returns a non-zero value on success, 0 if failure has occured. The failure is usually attributed to the fact
  * that data from controls cannot fit into representation offered by the target object.
@@ -257,7 +270,8 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 int sender_settings_from_dialog(HWND hWndParent, struct sender_settings * p_settings)
 {
     sender_settings_copy(&g_settings, p_settings);
-    if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), hWndParent, McastSettingsProc))
+    /* NULL hInst means = read dialog template from this application's resource file */
+    if (IDOK == DialogBox(NULL, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), hWndParent, McastSettingsProc))
     {
         sender_settings_copy(p_settings, &g_settings);
         return 1;
