@@ -18,9 +18,47 @@ struct sockaddr;
 struct sockaddr_in;
 struct addrinfo;
 
-int              PrintAddress(struct sockaddr const *sa, int salen);
-int              FormatAddress(struct sockaddr *sa, int salen, char *addrbuf, int addrbuflen);
-int              ReverseLookup(struct sockaddr *sa, int salen, char *namebuf, int namebuflen);
+/**
+ * @brief A wrapper for <a href="http://bit.ly/wQasV3">getnameinfo()</a> routine.
+ * @details Just like <a href="http://bit.ly/wQasV3">getnameinfo()</a>, the FormatAddress 
+ * function is the inverse of <a href="http://bit.ly/A81NVs">getaddrinfo()</a>: 
+ * it converts a socket address to a corresponding host and service, in a protocol-independent manner.
+ * It combines the functionality of gethostbyaddr and getservbyport,
+ * but unlike those functions, this function is reentrant and allows programs to eliminate IPv4-versus-IPv6 dependencies.
+ * The argument addrbuf is a pointer to caller-allocated buffer (of size addrbuflen) in which FormatAddress 
+ * places null-terminated string containing the host and service name.
+ * @param[in] sa A pointer to a generic socket address structure (of type  sockaddr_in  or  sockaddr_in6) 
+ * of size salen that holds the input IP address and port number. 
+ * @param[in] salen length of the SOCKADDR structure.
+ * @param[in] addrbuf The pointer to caller-allocated buffer (of size addrbuflen) into which getnameinfo() 
+ * places null-terminated strings containing the host and service name.
+ * @param[in] addrbuflen length of the buffer given as addrbuf parameter.
+ * @return returns 0 on success, <>0 on failure
+ */
+int FormatAddress(struct sockaddr *sa, int salen, char *addrbuf, int addrbuflen);
+
+/**
+ * @brief A wrapper for <a href="http://bit.ly/A81NVs">getaddrinfo()</a> function.
+ * @details Just like <a href="http://bit.ly/A81NVs">getaddrinfo()</a> function, this function, given node and service, 
+ * which identify an Internet host and a service, returns one or more addrinfo structures, 
+ * each of which contains an Internet address that can be specified in a call to bind or connect.  
+ * The getaddrinfo function combines the functionality provided by the getservbyname and getservbyport functions
+ * into a single interface, but unlike the latter functions, this function is reentrant and allows programs to eliminate
+ * IPv4-versus-IPv6 dependencies.
+ * This routine resolves the specified address and returns a list of addrinfo
+ * structure containing SOCKADDR structures representing the resolved addresses.
+ * Note that if 'addr' is non-NULL, then this routine will resolve it whether
+ * it is a string listeral address or a hostname.
+ * @param[in] sa A pointer to a generic socket address structure (of type  sockaddr_in  or  sockaddr_in6) 
+ * of size salen that holds the input IP address and port number. 
+ * @param[in] salen length of the SOCKADDR structure.
+ * @param[in] namebuf The pointer to caller-allocated buffer (of size namebuflen) into which getnameinfo() 
+ * places null-terminated strings containing the host and service name.
+ * @param[in] namebuflen length of the buffer given as namebuf parameter.
+  * @return
+ */
+int  ReverseLookup(struct sockaddr *sa, int salen, char *namebuf, int namebuflen);
+
 struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int proto);
 struct addrinfo *ResolveAddress_2(struct sockaddr_in const * p_addr, int af, int type, int proto);
 
