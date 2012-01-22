@@ -86,6 +86,7 @@ about-dialog.h \
 debug_helpers.c \
 debug_helpers.h \
 dsoundplay.h \
+ex-perf-counter.c \
 fifo-circular-buffer.c \
 fifo-circular-buffer.h \
 input-buffer.c \
@@ -136,7 +137,7 @@ EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =
 EXCLUDE_SYMBOLS        =
-EXAMPLE_PATH           =
+EXAMPLE_PATH           = .
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
 IMAGE_PATH             =

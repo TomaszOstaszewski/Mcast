@@ -5,7 +5,7 @@ OUTDIR_OBJ=$(OUTDIR)\obj
 OUTDIR_PCC=$(OUTDIR)\pcc
 #----- OUTDIR_OBJ is defined in WIN32.MAK This is the name of the destination directory-------
         
-all: $(OUTDIR)\ut-fifo-circular-buffer.exe $(OUTDIR)\ut-input-buffer.exe $(OUTDIR)\sender.exe $(OUTDIR)\receiver.exe
+all: $(OUTDIR)\ex-perf-counter.exe $(OUTDIR)\ut-fifo-circular-buffer.exe $(OUTDIR)\ut-input-buffer.exe $(OUTDIR)\sender.exe $(OUTDIR)\receiver.exe
 	@echo $(OUTDIR)\ut-fifo-circular-buffer.exe
 	@echo $(OUTDIR)\ut-input-buffer.exe
 	
@@ -122,14 +122,24 @@ $(OUTDIR_OBJ)\ut-input-buffer.obj: ut-input-buffer.c input-buffer.h $(OUTDIR_OBJ
 $(OUTDIR_OBJ)\ut-fifo-circular-buffer.obj: ut-fifo-circular-buffer.c $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
+#
+#@if not exist "$(OUTDIR_OBJ)\\"$(@B).S del /q /s /Fa"$(OUTDIR_OBJ)\\"$(@B).S
+$(OUTDIR_OBJ)\ex-perf-counter.obj: ex-perf-counter.c perf-counter-itf.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
+    @if exist "$(OUTDIR_OBJ)\$(@B).S" del /Q /F "$(OUTDIR_OBJ)\$(@B).S"
+    $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
+
 # Tests
 $(OUTDIR)\ut-fifo-circular-buffer.exe: $(OUTDIR_OBJ)\fifo-circular-buffer.obj $(OUTDIR_OBJ)\ut-fifo-circular-buffer.obj $(OUTDIR_OBJ)\timeofday.obj
 	@ECHO $@
-	$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$@.map /PDB:$(OUTDIR_OBJ)\ut-fifo-circular-buffer.pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
+	$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map /PDB:$(OUTDIR_OBJ)\$(@B).pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
 	
 $(OUTDIR)\ut-input-buffer.exe: $(OUTDIR_OBJ)\input-buffer.obj $(OUTDIR_OBJ)\ut-input-buffer.obj 
 	@ECHO $@
-	$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$@.map /PDB:$(OUTDIR_OBJ)\ut-fifo-circular-buffer.pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
+	$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map /PDB:$(OUTDIR_OBJ)\$(@B).pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
+
+$(OUTDIR)\ex-perf-counter.exe: $(OUTDIR_OBJ)\ex-perf-counter.obj $(OUTDIR_OBJ)\perf-counter-itf.obj
+	@ECHO $@
+	$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map /PDB:$(OUTDIR_OBJ)\$(@B).pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
 
 # Applications
 $(OUTDIR)\receiver.exe: $(OUTDIR_OBJ)\receiver.res $(OUTDIR_OBJ)\common-dialogs.res $(OUTDIR_OBJ)\mcast-receiver-dlg.obj $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\input-buffer.obj $(OUTDIR_OBJ)\fifo-circular-buffer.obj $(OUTDIR_OBJ)\dsoundplay.obj $(OUTDIR_OBJ)\mcast_setup.obj $(OUTDIR_OBJ)\mcast_utils.obj $(OUTDIR_OBJ)\timeofday.obj $(OUTDIR_OBJ)\resolve.obj $(OUTDIR_OBJ)\message-loop.obj  $(OUTDIR_OBJ)\mcast-receiver-state-machine.obj $(OUTDIR_OBJ)\receiver-settings.obj $(OUTDIR_OBJ)\receiver-settings-dlg.obj $(OUTDIR_OBJ)\mcast-settings.obj $(OUTDIR_OBJ)\mcast-settings-dlg.obj $(OUTDIR_OBJ)\play-settings.obj $(OUTDIR_OBJ)\about-dialog.obj
