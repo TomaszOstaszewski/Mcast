@@ -112,10 +112,9 @@ static void fill_combo(HWND hCombo, struct val_2_combo * values, unsigned int co
         StringCchPrintf(text_buffer, 8, "%u", values[index].val_);
         combo_idx = ComboBox_InsertString(hCombo, -1, text_buffer);
         assert(CB_ERR != combo_idx);
-        set_item_ptr_result = ComboBox_SetItemData(hCombo, combo_idx, &values[index]);
+        set_item_ptr_result = ComboBox_SetItemData(hCombo, combo_idx, index);
         assert(CB_ERR != set_item_ptr_result);
         values[index].combo_idx_ = combo_idx;
-        debug_outputln("%s %d : %u %d", __FILE__, __LINE__, values[index].val_, values[index].combo_idx_);
     }
 }
 
@@ -172,10 +171,11 @@ static void data_to_controls(struct receiver_settings const * p_settings, struct
  * @param[in] p_settings object to be written with UI data.
  * @return returns a non-zero value on success, 0 if failure has occured.
  */
-static int controls_to_data(struct receiver_settings * p_settings, struct receiver_settings_dlg_controls * p_controls)
+static int edit_controls_to_data(struct receiver_settings * p_settings, struct receiver_settings_dlg_controls * p_controls)
 {
     int result;
     unsigned int poll_sleep_time, play_buffer_size, timer_delay;
+    /* Get values from edit controls */
     memset(p_controls->text_buffer, 0, sizeof(p_controls->text_buffer));
     *((WORD *)p_controls->text_buffer) = TEXT_LIMIT;
     SendMessage(p_controls->poll_sleep_time_edit_, EM_GETLINE, 0, (LPARAM)p_controls->text_buffer); 
@@ -194,6 +194,7 @@ static int controls_to_data(struct receiver_settings * p_settings, struct receiv
     result = sscanf(p_controls->text_buffer, "%u", &timer_delay);
     if (result<=0 || timer_delay > USHRT_MAX)
         goto error;
+    /* Get a value from sample rate combo control */
     p_settings->play_settings_.timer_delay_ = timer_delay;
     p_settings->play_settings_.play_buffer_size_ = play_buffer_size;
     p_settings->poll_sleep_time_ = poll_sleep_time;
@@ -202,6 +203,50 @@ error:
     return 0;
 }
 
+static int combo_controls_to_data(struct receiver_settings * p_settings, struct receiver_settings_dlg_controls * p_controls)
+{
+    int result;
+    WORD wBitsPerSample;
+    DWORD nSamplesPerSec;
+    unsigned int combo_data_item;
+    /* Get a value from sample rate combo control */
+    result = ComboBox_GetCurSel(p_controls->sample_rate_combo_);
+    assert(CB_ERR != result);
+    if (CB_ERR == result)
+    {
+        debug_outputln("%s %d", __FILE__, __LINE__);
+        goto error;
+    }
+    combo_data_item = ComboBox_GetItemData(p_controls->sample_rate_combo_, result);
+    assert(combo_data_item < sizeof(sample_rate_values)/sizeof(sample_rate_values[0]));
+    if (combo_data_item >= sizeof(sample_rate_values)/sizeof(sample_rate_values[0]))
+    {
+        debug_outputln("%s %d : %d %u", __FILE__, __LINE__, combo_data_item, sizeof(sample_rate_values)/sizeof(sample_rate_values));
+        goto error;
+    }
+    nSamplesPerSec = sample_rate_values[combo_data_item].val_;
+    /* Get a value from bits per sample combo control */
+    result = ComboBox_GetCurSel(p_controls->bits_per_sample_combo_);
+    assert(CB_ERR != result);
+    if (CB_ERR == result)
+    {
+        debug_outputln("%s %d", __FILE__, __LINE__);
+        goto error;
+    }
+    combo_data_item = ComboBox_GetItemData(p_controls->bits_per_sample_combo_, result);
+    assert(combo_data_item < sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]));
+    if(combo_data_item >= sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]))
+    {
+        debug_outputln("%s %d : %d %u", __FILE__, __LINE__, combo_data_item, sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]));
+        goto error;
+    }
+    wBitsPerSample = bits_per_sample_values[combo_data_item].val_;
+    p_settings->wfex_.wBitsPerSample = wBitsPerSample;
+    p_settings->wfex_.nSamplesPerSec = nSamplesPerSec;
+    return 1;
+error:
+    return 0;
+}
 /*!
  * @brief Handler for WM_INITDIALOG message.
  * @details This handler does as follows:
@@ -255,7 +300,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
     static struct receiver_settings copy_for_spins;
-    static struct receiver_settings copy_for_edits;
+    static struct receiver_settings other_copy;
     NMHDR * p_notify_header;
     NMUPDOWN * p_up_down;
     switch (uMessage)
@@ -302,12 +347,12 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                     if (EN_CHANGE == HIWORD(wParam))
                     {
                         /* Make a copy of the master settings */
-                        receiver_settings_copy(&copy_for_edits, &g_settings);
+                        receiver_settings_copy(&other_copy, &g_settings);
                         /* Alter the copy with what the user or our code has changed. Validate it */
-                        if (controls_to_data(&copy_for_edits, &g_controls) && receiver_settings_validate(&copy_for_edits))
+                        if (edit_controls_to_data(&other_copy, &g_controls) && receiver_settings_validate(&other_copy))
                         {
                             /* If entered settings correctly read and valid, they become our master settings. */
-                            receiver_settings_copy(&g_settings, &copy_for_edits);
+                            receiver_settings_copy(&g_settings, &other_copy);
                             EnableWindow(g_controls.btok_, TRUE);
                         }
                         else
@@ -315,6 +360,28 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                             /* Either could not read settings or they are not valid. Either way - disable OK button */
                             EnableWindow(g_controls.btok_, FALSE);
                         }
+                    }
+                    break;
+                case IDC_WAV_SAMPLE_RATE:
+                case IDC_WAV_BITS_PER_SAMPLE:
+                    switch (HIWORD(wParam))
+                    {
+                        case CBN_SELCHANGE:
+                            /* Make a copy of the master settings */
+                            receiver_settings_copy(&other_copy, &g_settings);
+                            /* Fill the copy with what controls have for us */
+                            if (combo_controls_to_data(&other_copy, &g_controls) && receiver_settings_validate(&other_copy))
+                            {
+                                receiver_settings_copy(&g_settings, &other_copy);
+                                EnableWindow(g_controls.btok_, TRUE);
+                            }
+                            else
+                            {
+                                EnableWindow(g_controls.btok_, FALSE);
+                            }
+                            break;
+                        default: 
+                            break;
                     }
                     break;
                 case IDC_MCAST_SETTINGS: 
