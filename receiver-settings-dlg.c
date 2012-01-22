@@ -67,14 +67,57 @@ struct receiver_settings_dlg_controls
      */
     HWND mmtimer_spin_;
     /*!
+     * @brief Handle to the WAV sample rate combo box.
+     */
+    HWND sample_rate_combo_;
+    /*!
+     * @brief Handle to the WAV bits per sample rate combo box.
+     */
+    HWND bits_per_sample_combo_;
+    /*!
      * @brief Handle to the Multimedit timer timeout spin control.
      */
     HWND btok_;
     /*!
-     * @brief Buffer that holds a number typed into one of the edit controls.
+     * @brief Buffer that holds a number typed into any of the edit controls.
      */
     TCHAR text_buffer[TEXT_LIMIT+1];
 };
+
+struct val_2_combo {
+    unsigned int val_; /*!< Value to be associated with combo box. */
+    int combo_idx_; /*!< Combo box item number */
+};
+ 
+static struct val_2_combo  sample_rate_values[] = {
+    { 8000, 0 },
+    { 16000, 0 },
+    { 32000, 0 },
+    { 44100, 0 },
+    { 96000, 0 },
+};
+
+static struct val_2_combo  bits_per_sample_values[] = {
+    { 8, 0 },
+    { 16, 0 },
+};
+
+static void fill_combo(HWND hCombo, struct val_2_combo * values, unsigned int count)
+{
+    static TCHAR text_buffer[8] = {0};
+    size_t index;
+    for (index = 0; index < count; ++index)
+    {
+        int combo_idx, set_item_ptr_result;
+        StringCchPrintf(text_buffer, 8, "%u", values[index].val_);
+        combo_idx = ComboBox_InsertString(hCombo, -1, text_buffer);
+        assert(CB_ERR != combo_idx);
+        set_item_ptr_result = ComboBox_SetItemData(hCombo, combo_idx, &values[index]);
+        assert(CB_ERR != set_item_ptr_result);
+        values[index].combo_idx_ = combo_idx;
+        debug_outputln("%s %d : %u %d", __FILE__, __LINE__, values[index].val_, values[index].combo_idx_);
+    }
+}
 
 /*!
  * @brief The object that has all the controls.
@@ -94,12 +137,33 @@ static struct receiver_settings g_settings;
  */
 static void data_to_controls(struct receiver_settings const * p_settings, struct receiver_settings_dlg_controls * p_controls)
 {
+    size_t idx;
     StringCchPrintf(p_controls->text_buffer, TEXT_LIMIT+1, "%hu", p_settings->poll_sleep_time_);
     SetWindowText(p_controls->poll_sleep_time_edit_, p_controls->text_buffer);
     StringCchPrintf(p_controls->text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.play_buffer_size_);
     SetWindowText(p_controls->play_buffer_size_edit_, p_controls->text_buffer);
     StringCchPrintf(p_controls->text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.timer_delay_);
     SetWindowText(p_controls->mmtimer_edit_, p_controls->text_buffer);
+    /* Find the sample rate that matches the combo box items */
+    for (idx = 0; idx < sizeof(sample_rate_values)/sizeof(sample_rate_values[0]); ++idx)
+    {
+        if (p_settings->wfex_.nSamplesPerSec == sample_rate_values[idx].val_)
+        {
+            ComboBox_SetCurSel(p_controls->sample_rate_combo_, sample_rate_values[idx].combo_idx_);
+            break;
+        }
+    }
+    assert(idx < sizeof(sample_rate_values)/sizeof(sample_rate_values[0]));
+    /* Find the sample rate that matches the combo box items */
+    for (idx = 0; idx < sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]); ++idx)
+    {
+        if (p_settings->wfex_.wBitsPerSample == bits_per_sample_values[idx].val_)
+        {
+            ComboBox_SetCurSel(p_controls->bits_per_sample_combo_, bits_per_sample_values[idx].combo_idx_);
+            break;
+        }
+    }
+    assert(idx < sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]));
 }
 
 /*!
@@ -147,28 +211,34 @@ error:
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
     struct receiver_settings * p_settings = &g_settings;
-    g_controls.poll_sleep_time_edit_ = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_EDIT);
-    assert(g_controls.poll_sleep_time_edit_);
-    g_controls.poll_sleep_time_spin_ = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_SPIN);
-    assert(g_controls.poll_sleep_time_spin_);
-    g_controls.play_buffer_size_edit_ = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_EDIT); 
-    assert(g_controls.play_buffer_size_edit_);
-    g_controls.play_buffer_size_spin_ = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_SPIN);
-    assert(g_controls.play_buffer_size_spin_);
-    g_controls.mmtimer_edit_ = GetDlgItem(hwnd, IDC_MMTIMER_EDIT_CTRL);
-    assert(g_controls.mmtimer_edit_);
-    g_controls.mmtimer_spin_ = GetDlgItem(hwnd, IDC_MMTIMER_SPIN);
-    assert(g_controls.mmtimer_spin_);
-    g_controls.btok_ = GetDlgItem(hwnd, IDOK);
-    assert(g_controls.btok_);
+    struct receiver_settings_dlg_controls * p_controls = &g_controls;
+    p_controls->poll_sleep_time_edit_ = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_EDIT);
+    assert(p_controls->poll_sleep_time_edit_);
+    p_controls->poll_sleep_time_spin_ = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_SPIN);
+    assert(p_controls->poll_sleep_time_spin_);
+    p_controls->play_buffer_size_edit_ = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_EDIT); 
+    assert(p_controls->play_buffer_size_edit_);
+    p_controls->play_buffer_size_spin_ = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_SPIN);
+    assert(p_controls->play_buffer_size_spin_);
+    p_controls->mmtimer_edit_ = GetDlgItem(hwnd, IDC_MMTIMER_EDIT_CTRL);
+    assert(p_controls->mmtimer_edit_);
+    p_controls->mmtimer_spin_ = GetDlgItem(hwnd, IDC_MMTIMER_SPIN);
+    assert(p_controls->mmtimer_spin_);
+    p_controls->sample_rate_combo_ = GetDlgItem(hwnd, IDC_WAV_SAMPLE_RATE);
+    assert(p_controls->sample_rate_combo_);
+    p_controls->bits_per_sample_combo_ = GetDlgItem(hwnd, IDC_WAV_BITS_PER_SAMPLE);
+    assert(p_controls->bits_per_sample_combo_);
+    p_controls->btok_ = GetDlgItem(hwnd, IDOK);
+    assert(p_controls->btok_);
 
-    SendMessage(g_controls.poll_sleep_time_spin_, UDM_SETBUDDY, (WPARAM)g_controls.poll_sleep_time_edit_, (LPARAM)0);
-    SendMessage(g_controls.play_buffer_size_spin_, UDM_SETBUDDY, (WPARAM)g_controls.play_buffer_size_edit_, (LPARAM)0);
-    SendMessage(g_controls.mmtimer_spin_, UDM_SETBUDDY, (WPARAM)g_controls.mmtimer_edit_, (LPARAM)0);
-    SendMessage(g_controls.mmtimer_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
-    SendMessage(g_controls.poll_sleep_time_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
-    SendMessage(g_controls.play_buffer_size_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
-
+    SendMessage(p_controls->poll_sleep_time_spin_, UDM_SETBUDDY, (WPARAM)p_controls->poll_sleep_time_edit_, (LPARAM)0);
+    SendMessage(p_controls->play_buffer_size_spin_, UDM_SETBUDDY, (WPARAM)p_controls->play_buffer_size_edit_, (LPARAM)0);
+    SendMessage(p_controls->mmtimer_spin_, UDM_SETBUDDY, (WPARAM)p_controls->mmtimer_edit_, (LPARAM)0);
+    SendMessage(p_controls->mmtimer_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    SendMessage(p_controls->poll_sleep_time_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    SendMessage(p_controls->play_buffer_size_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    fill_combo(p_controls->sample_rate_combo_, sample_rate_values, sizeof(sample_rate_values)/sizeof(sample_rate_values[0]));
+    fill_combo(p_controls->bits_per_sample_combo_, bits_per_sample_values, sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]));
     data_to_controls(&g_settings, &g_controls);
     return TRUE;
 } 
