@@ -52,7 +52,7 @@ int FormatAddress(struct sockaddr *sa, int salen, char *addrbuf, int addrbuflen)
     return S_OK == hr ? NO_ERROR : -1;
 }
 
-int ReverseLookup(struct sockaddr *sa, int salen, char *namebuf, int namebuflen)
+struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int proto)
 {
     struct addrinfo hints,
     *res = NULL;
