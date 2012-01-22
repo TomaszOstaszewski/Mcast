@@ -27,7 +27,7 @@
  * @endcode
  */
 
-#include "pcc.h"
+//#include "pcc.h"
 #include "perf-counter-itf.h"
 
 /*!
@@ -56,7 +56,7 @@ struct perf_counter * pref_counter_create(void)
     struct perf_counter * p_counter = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct performance_data));
     if (NULL != p_counter)
     {
-        _int64 before, after;
+        LARGE_INTEGER before, after;
         QueryPerformanceCounter((LARGE_INTEGER*)&before);
         QueryPerformanceCounter((LARGE_INTEGER*)&after);
         p_counter->overhead_ = after - before;

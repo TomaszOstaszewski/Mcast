@@ -3,7 +3,11 @@
 /**
  * @file perf-counter-itf.h
  * @brief Performance counter utilities interface.
- * @details
+ * @details Those wrappers are here to avoid writting the same boilerplate code again and again. Here's a short
+ * instruction on how to use this functions:
+ * \li Create a performance counter object.
+ * \li In the piece of code you want to query performance of - call pref_counter_mark_before() before the timed piece of code execution and then pref_counter_mark_after() after the piece of code.
+ * \li After this code has been executed enough number of times, call pref_counter_get_average_duration() to get average time (in clock ticks) it took to execute the code.
  * @author T.Ostaszewski
  * @date 04-Jan-2012
  * @par License
@@ -33,7 +37,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
-
+#include <windows.h>
+#include <stdlib.h>
 #include <stddef.h>
 
 struct perf_counter;
@@ -66,6 +71,11 @@ void pref_counter_mark_after(struct perf_counter * pref_data);
  * @brief
  */
 int pref_counter_get_average_duration(struct perf_counter * pref_data, _int64 * p_out);
+
+/*!
+ * \example ex-perf-counter.c
+ * Here's an example on how to get a timing of a piece of code using this functions.
+ */
 
 #if defined __cplusplus
 }
