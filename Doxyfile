@@ -86,7 +86,6 @@ about-dialog.h \
 debug_helpers.c \
 debug_helpers.h \
 dsoundplay.h \
-ex-perf-counter.c \
 fifo-circular-buffer.c \
 fifo-circular-buffer.h \
 input-buffer.c \

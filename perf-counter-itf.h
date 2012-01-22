@@ -52,25 +52,42 @@ struct perf_counter * pref_counter_create(void);
 
 /*!
  * @brief Destroys a performance measurement object.
- * @param[in] p_perf_data a handle to the performance measurement object, obtained via call to perf_counter_create.
+ * @param[in] p_counter a handle to the performance measurement object, obtained via call to perf_counter_create.
  * @sa pref_counter_create
  */
-void pref_counter_destroy(struct perf_counter * p_perf_data);
+void pref_counter_destroy(struct perf_counter * p_counter);
 
 /*!
- * @brief 
+ * @brief Marks the beginning of the measurement of the profiled code segment.
+ * @param[in] p_counter handle to the performence measurement object, obtained via call to perf_counter_create().
  */
-void pref_counter_mark_before(struct perf_counter * pref_data);
+void pref_counter_mark_before(struct perf_counter * p_counter);
 
 /*!
- * @brief
+ * @brief Marks the end beginning of the measurement of the profiled code segment.
+ * @param[in] p_counter handle to the performence measurement object, obtained via call to perf_counter_create().
  */
-void pref_counter_mark_after(struct perf_counter * pref_data);
+void pref_counter_mark_after(struct perf_counter * p_counter);
 
 /*!
- * @brief
+ * @brief Gets the total and average duration it takes to execute a profiled code segment.
+ * @param[in] p_counter handle to the performence measurement object, obtained via call to perf_counter_create().
+ * @param[out] p_total this memory location will be written with <b>total</b> time it takes to execute profiled code segment. 
+ * @param[out] p_avg this memory location will be written with <b>average</b> time it takes to execute profiled code segment. 
+ * @return Returns a non-zero value on success, 0 otherwise.
+ * @attention The units of used by p_total and p_avg are timer ticsk. To covert it to wall time, please divide it by value obtained
+ * via call to perf_counter_get_freq().
+ * @sa perf_counter_get_freq
  */
-int pref_counter_get_average_duration(struct perf_counter * pref_data, _int64 * p_out);
+int pref_counter_get_duration(struct perf_counter * p_counter, _int64 * p_total, _int64 * p_avg);
+
+/*!
+ * @brief Returns the frequency of the timer used for performance measurement.
+ * @param[in] p_counter handle to the performence measurement object, obtained via call to perf_counter_create().
+ * @return returns the frequency of the timer used for performance measurement.
+ * @sa pref_counter_get_duration
+ */
+_int64 pref_counter_get_freq(struct perf_counter * p_counter);
 
 /*!
  * \example ex-perf-counter.c
