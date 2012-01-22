@@ -81,7 +81,7 @@ int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_buff
          idx != p_item->count_; 
          ++idx, ++p_circular_buffer->write_idx_) 
     {
-        p_circular_buffer->data_buffer_[((0x0000ffff) & p_circular_buffer->write_idx_)] = p_item->data_[idx];
+        p_circular_buffer->data_buffer_[((MAX_ITEMS-1) & p_circular_buffer->write_idx_)] = p_item->data_[idx];
         if ((p_circular_buffer->write_idx_ - p_circular_buffer->read_idx_) == MAX_ITEMS)
         {
             ++p_circular_buffer->read_idx_;
@@ -97,7 +97,7 @@ int fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_circular_buf
         ; idx != p_item->count_ && (p_circular_buffer->write_idx_ - p_circular_buffer->read_idx_) != 0
         ; ++idx, ++p_circular_buffer->read_idx_)
     {
-        p_item->data_[idx] = p_circular_buffer->data_buffer_[((0x0000ffff) & p_circular_buffer->read_idx_)];
+        p_item->data_[idx] = p_circular_buffer->data_buffer_[((MAX_ITEMS-1) & p_circular_buffer->read_idx_)];
     }
     p_item->count_ = idx;
     return 0;
