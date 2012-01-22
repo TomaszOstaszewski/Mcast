@@ -56,10 +56,6 @@ int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * inte
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
-    {
-        struct sockaddr_in * p_in_addr = (struct sockaddr_in *)p_mcast_conn->multiAddr_->ai_addr;
-        debug_outputln("%s %5.5d : %4.4hu %4.4hu %8.8x %s", __FILE__, __LINE__, p_in_addr->sin_port, ntohs(p_in_addr->sin_port), p_in_addr->sin_addr, inet_ntoa(p_in_addr->sin_addr));
-    }
 	// Resolve the binding address
 	p_mcast_conn->bindAddr_ 	= ResolveAddress(bindAddr, p_port, p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
 	if (NULL == p_mcast_conn->bindAddr_)
@@ -102,6 +98,7 @@ int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * inte
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
+#if 0
 	{
 		struct sockaddr_in local_bind = { 0 };
 		socklen_t local_data_len = sizeof(local_bind);
@@ -115,6 +112,7 @@ int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * inte
 			debug_outputln("%s %d : %u", __FILE__, __LINE__, rc);
 		}
 	}
+#endif
 	// Join the multicast group if specified
 	rc = JoinMulticastGroup(p_mcast_conn->socket_, p_mcast_conn->multiAddr_, p_mcast_conn->resolveAddr_);
 	if (rc == SOCKET_ERROR)
@@ -153,8 +151,10 @@ cleanup:
 int setup_multicast_addr(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * interfaceAddr, uint8_t nTTL, struct sockaddr_in const * p_in_addr, struct mcast_connection * p_mcast_conn)
 {
     char port[8];
+    int result;
     StringCchPrintf(port, 8, "%d", ntohs(p_in_addr->sin_port));
-    return setup_multicast(bConnect, bReuseAddr, bindAddr, interfaceAddr, nTTL, inet_ntoa(p_in_addr->sin_addr), port, p_mcast_conn);
+    result = setup_multicast(bConnect, bReuseAddr, bindAddr, interfaceAddr, nTTL, inet_ntoa(p_in_addr->sin_addr), port, p_mcast_conn);
+    return result;
 }
 
 int setup_multicast_default(char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
@@ -200,6 +200,30 @@ size_t mcast_recvfrom_flags(struct mcast_connection * p_conn, void * p_data, siz
             p_conn->multiAddr_->ai_addr,
             &p_conn->multiAddr_->ai_addrlen
             );
+}
+
+int mcast_is_new_data(struct mcast_connection * p_conn, DWORD dwTimeoutMs)
+{
+    fd_set read_sel; 
+    int result;
+    struct timeval timeout, *p_timeout;
+    ZeroMemory(&timeout, sizeof(struct timeval));
+    FD_ZERO(&read_sel);
+    FD_SET(p_conn->socket_, &read_sel);
+    if (0xffffffff == dwTimeoutMs)
+        p_timeout = NULL;
+    else
+    {
+        timeout.tv_sec = dwTimeoutMs / 1000;
+        timeout.tv_usec = (dwTimeoutMs - 1000*(dwTimeoutMs/1000))*1000;
+        p_timeout = &timeout; 
+    }
+    result = select(0 /* This parameter is ignored in WINSOCK */, &read_sel, NULL, NULL, p_timeout);
+    if (SOCKET_ERROR == result)
+    {
+        debug_outputln("%s %u : %u", __FILE__, __LINE__, WSAGetLastError());
+    }
+    return result;
 }
 
 size_t mcast_recvfrom(struct mcast_connection * p_conn, void * p_data, size_t data_size)

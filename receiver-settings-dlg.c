@@ -1,15 +1,15 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
- * @brief Functions for multicast group membership settings manipulation.
  * @file receiver-settings-dlg.c
+ * @brief Defines the interface needed to obtain receiver's settings from UI, via means of the modal dialog box.
  * @author T.Ostaszewski
  * @date Jan-2012
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
- * 	1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
- *	2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
- * 	and/or other materials provided with the distribution.
+ *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
+ *  and/or other materials provided with the distribution.
  * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
@@ -27,12 +27,101 @@
  */
 #include "pcc.h"
 #include "debug_helpers.h"
-#include "resource.h"
 #include "receiver-settings.h"
 #include "receiver-settings-dlg.h"
 #include "mcast-settings-dlg.h"
+#include "receiver-res.h"
 
-extern HINSTANCE g_hInst;
+/*!
+ * @brief Maximum number of digits in the dialogs edit controls.
+ */
+#define TEXT_LIMIT (5)
+
+/*!
+ * @brief A structure that gathers all the control handles in one place.
+ */
+struct receiver_settings_dlg_controls  
+{
+    /*!
+     * @brief Handle to the poll sleep time delay edit control.
+     */
+    HWND poll_sleep_time_edit_;
+    /*!
+     * @brief Handle to the poll sleep time delay spin control.
+     */
+    HWND poll_sleep_time_spin_;
+    /*!
+     * @brief Handle to the play buffer size edit control.
+     */
+    HWND play_buffer_size_edit_;
+    /*!
+     * @brief Handle to the play buffer size spin control.
+     */
+    HWND play_buffer_size_spin_;
+    /*!
+     * @brief Handle to the Multimedit timer timeout edit control.
+     */
+    HWND mmtimer_edit_;
+    /*!
+     * @brief Handle to the Multimedit timer timeout spin control.
+     */
+    HWND mmtimer_spin_;
+    /*!
+     * @brief Handle to the WAV sample rate combo box.
+     */
+    HWND sample_rate_combo_;
+    /*!
+     * @brief Handle to the WAV bits per sample rate combo box.
+     */
+    HWND bits_per_sample_combo_;
+    /*!
+     * @brief Handle to the Multimedit timer timeout spin control.
+     */
+    HWND btok_;
+    /*!
+     * @brief Buffer that holds a number typed into any of the edit controls.
+     */
+    TCHAR text_buffer[TEXT_LIMIT+1];
+};
+
+struct val_2_combo {
+    unsigned int val_; /*!< Value to be associated with combo box. */
+    int combo_idx_; /*!< Combo box item number */
+};
+ 
+static struct val_2_combo  sample_rate_values[] = {
+    { 8000, 0 },
+    { 16000, 0 },
+    { 32000, 0 },
+    { 44100, 0 },
+    { 96000, 0 },
+};
+
+static struct val_2_combo  bits_per_sample_values[] = {
+    { 8, 0 },
+    { 16, 0 },
+};
+
+static void fill_combo(HWND hCombo, struct val_2_combo * values, unsigned int count)
+{
+    static TCHAR text_buffer[8] = {0};
+    size_t index;
+    for (index = 0; index < count; ++index)
+    {
+        int combo_idx, set_item_ptr_result;
+        StringCchPrintf(text_buffer, 8, "%u", values[index].val_);
+        combo_idx = ComboBox_InsertString(hCombo, -1, text_buffer);
+        assert(CB_ERR != combo_idx);
+        set_item_ptr_result = ComboBox_SetItemData(hCombo, combo_idx, index);
+        assert(CB_ERR != set_item_ptr_result);
+        values[index].combo_idx_ = combo_idx;
+    }
+}
+
+/*!
+ * @brief The object that has all the controls.
+ */
+static struct receiver_settings_dlg_controls g_controls;
 
 /*!
  * @brief A copy of the receiver settings object that this dialog operates on.
@@ -42,63 +131,38 @@ extern HINSTANCE g_hInst;
 static struct receiver_settings g_settings;
 
 /*!
- * @brief Handle to the poll sleep time delay edit control.
- */
-static HWND g_poll_sleep_time_edit;
-
-/*!
- * @brief Handle to the poll sleep time delay spin control.
- */
-static HWND g_poll_sleep_time_spin;
-
-/*!
- * @brief Handle to the play buffer size edit control.
- */
-static HWND g_play_buffer_size_edit;
-
-/*!
- * @brief Handle to the play buffer size spin control.
- */
-static HWND g_play_buffer_size_spin;
-
-/*!
- * @brief Handle to the Multimedit timer timeout edit control.
- */
-static HWND g_mmtimer_edit_ctrl;
-
-/*!
- * @brief Handle to the Multimedit timer timeout spin control.
- */
-static HWND g_mmtimer_spin_ctrl;
-
-/*!
- * @brief Handle to the Multimedit timer timeout spin control.
- */
-static HWND g_btok;
-
-/*!
- * @brief Maximum number of digits in the dialogs edit controls.
- */
-#define TEXT_LIMIT (5)
-
-/*!
- * @brief Buffer that holds a number typed into one of the edit controls.
- */
-static TCHAR text_buffer[TEXT_LIMIT+1];
-
-/*!
  * @brief Transfer from data to UI
  * @details Takes values from the settings object and presents them on the UI
  */
-static void data_to_controls(struct receiver_settings const * p_settings)
+static void data_to_controls(struct receiver_settings const * p_settings, struct receiver_settings_dlg_controls * p_controls)
 {
-	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->poll_sleep_time_);
-	SetWindowText(g_poll_sleep_time_edit, text_buffer);
-	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.play_buffer_size_);
-	SetWindowText(g_play_buffer_size_edit, text_buffer);
-	StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.timer_delay_);
-	SetWindowText(g_mmtimer_edit_ctrl, text_buffer);
-    //debug_outputln("%s %d : %u", __FILE__, __LINE__, p_settings->play_settings_.timer_delay_);
+    size_t idx;
+    StringCchPrintf(p_controls->text_buffer, TEXT_LIMIT+1, "%hu", p_settings->poll_sleep_time_);
+    SetWindowText(p_controls->poll_sleep_time_edit_, p_controls->text_buffer);
+    StringCchPrintf(p_controls->text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.play_buffer_size_);
+    SetWindowText(p_controls->play_buffer_size_edit_, p_controls->text_buffer);
+    StringCchPrintf(p_controls->text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.timer_delay_);
+    SetWindowText(p_controls->mmtimer_edit_, p_controls->text_buffer);
+    /* Find the sample rate that matches the combo box items */
+    for (idx = 0; idx < sizeof(sample_rate_values)/sizeof(sample_rate_values[0]); ++idx)
+    {
+        if (p_settings->wfex_.nSamplesPerSec == sample_rate_values[idx].val_)
+        {
+            ComboBox_SetCurSel(p_controls->sample_rate_combo_, sample_rate_values[idx].combo_idx_);
+            break;
+        }
+    }
+    assert(idx < sizeof(sample_rate_values)/sizeof(sample_rate_values[0]));
+    /* Find the sample rate that matches the combo box items */
+    for (idx = 0; idx < sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]); ++idx)
+    {
+        if (p_settings->wfex_.wBitsPerSample == bits_per_sample_values[idx].val_)
+        {
+            ComboBox_SetCurSel(p_controls->bits_per_sample_combo_, bits_per_sample_values[idx].combo_idx_);
+            break;
+        }
+    }
+    assert(idx < sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]));
 }
 
 /*!
@@ -107,34 +171,30 @@ static void data_to_controls(struct receiver_settings const * p_settings)
  * @param[in] p_settings object to be written with UI data.
  * @return returns a non-zero value on success, 0 if failure has occured.
  */
-static int controls_to_data(struct receiver_settings * p_settings)
+static int edit_controls_to_data(struct receiver_settings * p_settings, struct receiver_settings_dlg_controls * p_controls)
 {
     int result;
     unsigned int poll_sleep_time, play_buffer_size, timer_delay;
-    memset(text_buffer, 0, sizeof(text_buffer));
-    *((WORD *)text_buffer) = TEXT_LIMIT;
-    SendMessage(g_poll_sleep_time_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
-    result = sscanf(text_buffer, "%u", &poll_sleep_time);
-    if (result<=0)
+    /* Get values from edit controls */
+    memset(p_controls->text_buffer, 0, sizeof(p_controls->text_buffer));
+    *((WORD *)p_controls->text_buffer) = TEXT_LIMIT;
+    SendMessage(p_controls->poll_sleep_time_edit_, EM_GETLINE, 0, (LPARAM)p_controls->text_buffer); 
+    result = sscanf(p_controls->text_buffer, "%u", &poll_sleep_time);
+    if (result<=0 || poll_sleep_time > USHRT_MAX)
         goto error;
-    if (poll_sleep_time > USHRT_MAX)
+    memset(p_controls->text_buffer, 0, sizeof(p_controls->text_buffer));
+    *((WORD *)p_controls->text_buffer) = TEXT_LIMIT;
+    SendMessage(p_controls->play_buffer_size_edit_, EM_GETLINE, 0, (LPARAM)p_controls->text_buffer); 
+    result = sscanf(p_controls->text_buffer, "%u", &play_buffer_size);
+    if (result<=0 || play_buffer_size > USHRT_MAX)
         goto error;
-    memset(text_buffer, 0, sizeof(text_buffer));
-    *((WORD *)text_buffer) = TEXT_LIMIT;
-    SendMessage(g_play_buffer_size_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
-    result = sscanf(text_buffer, "%u", &play_buffer_size);
-    if (result<=0)
+    memset(p_controls->text_buffer, 0, sizeof(p_controls->text_buffer));
+    *((WORD *)p_controls->text_buffer) = TEXT_LIMIT;
+    SendMessage(p_controls->mmtimer_edit_, EM_GETLINE, 0, (LPARAM)p_controls->text_buffer); 
+    result = sscanf(p_controls->text_buffer, "%u", &timer_delay);
+    if (result<=0 || timer_delay > USHRT_MAX)
         goto error;
-    if (play_buffer_size > USHRT_MAX)
-        goto error;
-    memset(text_buffer, 0, sizeof(text_buffer));
-    *((WORD *)text_buffer) = TEXT_LIMIT;
-    SendMessage(g_mmtimer_edit_ctrl, EM_GETLINE, 0, (LPARAM)text_buffer); 
-    result = sscanf(text_buffer, "%u", &timer_delay);
-    if (result<=0)
-        goto error;
-    if (timer_delay > USHRT_MAX)
-        goto error;
+    /* Get a value from sample rate combo control */
     p_settings->play_settings_.timer_delay_ = timer_delay;
     p_settings->play_settings_.play_buffer_size_ = play_buffer_size;
     p_settings->poll_sleep_time_ = poll_sleep_time;
@@ -143,6 +203,50 @@ error:
     return 0;
 }
 
+static int combo_controls_to_data(struct receiver_settings * p_settings, struct receiver_settings_dlg_controls * p_controls)
+{
+    int result;
+    WORD wBitsPerSample;
+    DWORD nSamplesPerSec;
+    unsigned int combo_data_item;
+    /* Get a value from sample rate combo control */
+    result = ComboBox_GetCurSel(p_controls->sample_rate_combo_);
+    assert(CB_ERR != result);
+    if (CB_ERR == result)
+    {
+        debug_outputln("%s %d", __FILE__, __LINE__);
+        goto error;
+    }
+    combo_data_item = ComboBox_GetItemData(p_controls->sample_rate_combo_, result);
+    assert(combo_data_item < sizeof(sample_rate_values)/sizeof(sample_rate_values[0]));
+    if (combo_data_item >= sizeof(sample_rate_values)/sizeof(sample_rate_values[0]))
+    {
+        debug_outputln("%s %d : %d %u", __FILE__, __LINE__, combo_data_item, sizeof(sample_rate_values)/sizeof(sample_rate_values));
+        goto error;
+    }
+    nSamplesPerSec = sample_rate_values[combo_data_item].val_;
+    /* Get a value from bits per sample combo control */
+    result = ComboBox_GetCurSel(p_controls->bits_per_sample_combo_);
+    assert(CB_ERR != result);
+    if (CB_ERR == result)
+    {
+        debug_outputln("%s %d", __FILE__, __LINE__);
+        goto error;
+    }
+    combo_data_item = ComboBox_GetItemData(p_controls->bits_per_sample_combo_, result);
+    assert(combo_data_item < sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]));
+    if(combo_data_item >= sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]))
+    {
+        debug_outputln("%s %d : %d %u", __FILE__, __LINE__, combo_data_item, sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]));
+        goto error;
+    }
+    wBitsPerSample = bits_per_sample_values[combo_data_item].val_;
+    p_settings->wfex_.wBitsPerSample = wBitsPerSample;
+    p_settings->wfex_.nSamplesPerSec = nSamplesPerSec;
+    return 1;
+error:
+    return 0;
+}
 /*!
  * @brief Handler for WM_INITDIALOG message.
  * @details This handler does as follows:
@@ -152,30 +256,36 @@ error:
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
     struct receiver_settings * p_settings = &g_settings;
-	g_poll_sleep_time_edit = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_EDIT);
-	assert(g_poll_sleep_time_edit);
-	g_poll_sleep_time_spin = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_SPIN);
-	assert(g_poll_sleep_time_spin);
-	g_play_buffer_size_edit = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_EDIT); 
-	assert(g_play_buffer_size_edit);
-	g_play_buffer_size_spin = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_SPIN);
-	assert(g_play_buffer_size_spin);
-    g_mmtimer_edit_ctrl = GetDlgItem(hwnd, IDC_MMTIMER_EDIT_CTRL);
-    assert(g_mmtimer_edit_ctrl);
-    g_mmtimer_spin_ctrl = GetDlgItem(hwnd, IDC_MMTIMER_SPIN);
-    assert(g_mmtimer_spin_ctrl);
-    g_btok = GetDlgItem(hwnd, IDOK);
-    assert(g_btok);
+    struct receiver_settings_dlg_controls * p_controls = &g_controls;
+    p_controls->poll_sleep_time_edit_ = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_EDIT);
+    assert(p_controls->poll_sleep_time_edit_);
+    p_controls->poll_sleep_time_spin_ = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_SPIN);
+    assert(p_controls->poll_sleep_time_spin_);
+    p_controls->play_buffer_size_edit_ = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_EDIT); 
+    assert(p_controls->play_buffer_size_edit_);
+    p_controls->play_buffer_size_spin_ = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_SPIN);
+    assert(p_controls->play_buffer_size_spin_);
+    p_controls->mmtimer_edit_ = GetDlgItem(hwnd, IDC_MMTIMER_EDIT_CTRL);
+    assert(p_controls->mmtimer_edit_);
+    p_controls->mmtimer_spin_ = GetDlgItem(hwnd, IDC_MMTIMER_SPIN);
+    assert(p_controls->mmtimer_spin_);
+    p_controls->sample_rate_combo_ = GetDlgItem(hwnd, IDC_WAV_SAMPLE_RATE);
+    assert(p_controls->sample_rate_combo_);
+    p_controls->bits_per_sample_combo_ = GetDlgItem(hwnd, IDC_WAV_BITS_PER_SAMPLE);
+    assert(p_controls->bits_per_sample_combo_);
+    p_controls->btok_ = GetDlgItem(hwnd, IDOK);
+    assert(p_controls->btok_);
 
-	SendMessage(g_poll_sleep_time_spin, UDM_SETBUDDY, (WPARAM)g_poll_sleep_time_edit, (LPARAM)0);
-	SendMessage(g_play_buffer_size_spin, UDM_SETBUDDY, (WPARAM)g_play_buffer_size_edit, (LPARAM)0);
-	SendMessage(g_mmtimer_spin_ctrl, UDM_SETBUDDY, (WPARAM)g_mmtimer_edit_ctrl, (LPARAM)0);
-    SendMessage(g_mmtimer_edit_ctrl, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
-    SendMessage(g_poll_sleep_time_edit, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
-    SendMessage(g_play_buffer_size_edit, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
-
-	data_to_controls(&g_settings);
-	return TRUE;
+    SendMessage(p_controls->poll_sleep_time_spin_, UDM_SETBUDDY, (WPARAM)p_controls->poll_sleep_time_edit_, (LPARAM)0);
+    SendMessage(p_controls->play_buffer_size_spin_, UDM_SETBUDDY, (WPARAM)p_controls->play_buffer_size_edit_, (LPARAM)0);
+    SendMessage(p_controls->mmtimer_spin_, UDM_SETBUDDY, (WPARAM)p_controls->mmtimer_edit_, (LPARAM)0);
+    SendMessage(p_controls->mmtimer_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    SendMessage(p_controls->poll_sleep_time_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    SendMessage(p_controls->play_buffer_size_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    fill_combo(p_controls->sample_rate_combo_, sample_rate_values, sizeof(sample_rate_values)/sizeof(sample_rate_values[0]));
+    fill_combo(p_controls->bits_per_sample_combo_, bits_per_sample_values, sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]));
+    data_to_controls(&g_settings, &g_controls);
+    return TRUE;
 } 
 
 /**
@@ -190,7 +300,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
     static struct receiver_settings copy_for_spins;
-    static struct receiver_settings copy_for_edits;
+    static struct receiver_settings other_copy;
     NMHDR * p_notify_header;
     NMUPDOWN * p_up_down;
     switch (uMessage)
@@ -218,9 +328,10 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                         default:
                             break;
                     }
-                    /* If copy and master settings are different, and a copy fits the bounds, update the controls with copy contents */
+                    /* If copy is different than the master settings - it must have been altered. Thus, there was a spin action.
+                        Check if new settings validate OK, and if so, transfer those to control object. */
                     if (!receiver_settings_compare(&copy_for_spins, &g_settings) && receiver_settings_validate(&copy_for_spins))
-                        data_to_controls(&copy_for_spins);
+                        data_to_controls(&copy_for_spins, &g_controls);
                     break;
                 default:
                     break;
@@ -229,25 +340,48 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
         case WM_COMMAND:
             switch(LOWORD(wParam))
             {
+                /* Process notificatoins from edit controls */
                 case IDC_POLL_SLEEP_TIME_EDIT:
                 case IDC_PLAY_BUFFER_SIZE_EDIT:
                 case IDC_MMTIMER_EDIT_CTRL:
                     if (EN_CHANGE == HIWORD(wParam))
                     {
-                        /* Make a settings copy */
-                        receiver_settings_copy(&copy_for_edits, &g_settings);
-                        /* Alter the copy with what the user or our code has changed & validate it */
-                        if (controls_to_data(&copy_for_edits) && receiver_settings_validate(&copy_for_edits))
+                        /* Make a copy of the master settings */
+                        receiver_settings_copy(&other_copy, &g_settings);
+                        /* Alter the copy with what the user or our code has changed. Validate it */
+                        if (edit_controls_to_data(&other_copy, &g_controls) && receiver_settings_validate(&other_copy))
                         {
-                            /* If settings correctly read and valid - make the copy our current settings */
-                            receiver_settings_copy(&g_settings, &copy_for_edits);
-                            EnableWindow(g_btok, TRUE);
+                            /* If entered settings correctly read and valid, they become our master settings. */
+                            receiver_settings_copy(&g_settings, &other_copy);
+                            EnableWindow(g_controls.btok_, TRUE);
                         }
                         else
                         {
                             /* Either could not read settings or they are not valid. Either way - disable OK button */
-                            EnableWindow(g_btok, FALSE);
+                            EnableWindow(g_controls.btok_, FALSE);
                         }
+                    }
+                    break;
+                case IDC_WAV_SAMPLE_RATE:
+                case IDC_WAV_BITS_PER_SAMPLE:
+                    switch (HIWORD(wParam))
+                    {
+                        case CBN_SELCHANGE:
+                            /* Make a copy of the master settings */
+                            receiver_settings_copy(&other_copy, &g_settings);
+                            /* Fill the copy with what controls have for us */
+                            if (combo_controls_to_data(&other_copy, &g_controls) && receiver_settings_validate(&other_copy))
+                            {
+                                receiver_settings_copy(&g_settings, &other_copy);
+                                EnableWindow(g_controls.btok_, TRUE);
+                            }
+                            else
+                            {
+                                EnableWindow(g_controls.btok_, FALSE);
+                            }
+                            break;
+                        default: 
+                            break;
                     }
                     break;
                 case IDC_MCAST_SETTINGS: 
@@ -267,12 +401,13 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 
 int receiver_settings_do_dialog(HWND hWndParent, struct receiver_settings * p_settings)
 {
-	receiver_settings_copy(&g_settings, p_settings);
-	if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_RECEIVER_SETTINGS), hWndParent, McastSettingsProc))
-	{
-		receiver_settings_copy(p_settings, &g_settings);
-		return 1;
-	}
-	return 0;
+    receiver_settings_copy(&g_settings, p_settings);
+    /* NULL hInst means = read dialog template from this application's resource file */
+    if (IDOK == DialogBox(NULL, MAKEINTRESOURCE(IDD_RECEIVER_SETTINGS), hWndParent, McastSettingsProc))
+    {
+        receiver_settings_copy(p_settings, &g_settings);
+        return 1;
+    }
+    return 0;
 }
 

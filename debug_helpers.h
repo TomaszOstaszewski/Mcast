@@ -47,12 +47,25 @@ extern "C" {
 HRESULT debug_outputln(LPCTSTR formatString, ...);
 
 /*!
- * 
+ * @brief Flush the output buffer.
+ * @details Call this function, if you need to flush the output buffer before it will be flushed itself because of the buffer overload.
  */
 void debug_output_flush(void);
 
 /*!
- * 
+ * @brief Outputs a formated text into the debug window, appends a newline.
+ * @attention This is a buffered write. This may not appear immediately in the debug window.
+ * @details The debug window is the one to which we write using OutputDebugString. 
+ * Usually, it is attached to a debugger, but can also be seen using DebugView application
+ * from Sysinternal.
+ * With each call to this function, data will be written to the buffer. If a call to this
+ * function will cause the buffer to be overwritten (buffer capacity reaches 0), the entire buffer
+ * will be flushed to the debug window. Then the string will be formatted and written to the buffer.
+ * In order to force the string being written immediately, please call debug_output_flush() function.
+ * You may also call debug_outputln() function, which does not do any buffering.
+ * @param[in] formatString
+ * @sa debug_output_flush
+ * @return
  */
 HRESULT debug_outputln_buffered(LPCTSTR formatString, ...);
 

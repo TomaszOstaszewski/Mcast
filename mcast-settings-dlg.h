@@ -1,8 +1,8 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @file mcast-settings-dlg.h
- * @brief 
- * @details
+ * @brief Multicast settings dialog interface.
+ * @details This file contains headers of the functions that allow the client to get multicast settings from the UI, via modal dialog window.
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -34,7 +34,8 @@ struct mcast_settings;
 /*!
  * @brief Displays a dialog from which multicast settings are obtained.
  * @details Dialog controls allow for modification of the parameters.
- * @param[in] hWndParent handle to the parent window.
+ * @param[in] hParent handle to the parent window. The dialog displayed is a modal one, 
+ * hence this window will be disabled for the time of displaying this dialog.
  * @param[in,out] p_settings points to the settings which will be altered by the dialog
  * @return returns <>0 if the settings were changed by the dialog (UI), returns 0 otherwise.
  */

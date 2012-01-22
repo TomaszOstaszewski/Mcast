@@ -10,6 +10,7 @@
 #include "pcc.h"
 #include "mcast_utils.h"
 #include "resolve.h"
+#include "debug_helpers.h"
 
 /**
  * @brief
@@ -19,9 +20,10 @@
  * different which requires different handlers. For IPv6 the scope-ID 
  * (interface index) is specified for the local interface whereas for IPv4
  * the actual IPv4 address of the interface is given.
- * @param[in] s
- * @param[in] group
- * @param[in] iface
+ * @param[in] s socket that shall join mulitcast group
+ * @param[in] group multicast group address
+ * @param[in] iface interface to be used for multicast communication.
+ * @return returns 0 on success, SOCKET_ERROR otherwise
  */
 int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo *iface)
 {
@@ -59,28 +61,16 @@ int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo *iface)
     }
     else
     {
-        fprintf(stderr, "Attemtping to join multicast group for invalid address family!\n");
+        debug_outputln("%s %4.4u : %d\n", group->ai_family);
         rc = SOCKET_ERROR;
     }
     if (rc != SOCKET_ERROR)
     {
         // Join the group
-        rc = setsockopt(
-                s, 
-                optlevel, 
-                option,
-                optval,
-                optlen
-                );
+        rc = setsockopt(s, optlevel, option, optval, optlen);
         if (rc == SOCKET_ERROR)
         {
-            fprintf(stderr, "JoinMulticastGroup: setsockopt failed: %d\n", WSAGetLastError());
-        }
-        else
-        {
-            printf("Joined group: ");
-            PrintAddress(group->ai_addr, (int) group->ai_addrlen);
-            printf("\n");
+            debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
         }
     }
     return rc;
@@ -90,6 +80,9 @@ int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo *iface)
  * @brief This routine sets the send (outgoing) interface of the socket.
  * @details Again, for v4 the IP address is used to specify the interface while
  * for v6 its the scope-ID.
+ * @param s socket to set the interface.
+ * @param iface address of the interface.
+ * @return returns 0 on success, SOCKET_ERROR otherwise
  */
 int SetSendInterface(SOCKET s, struct addrinfo *iface)
 {
@@ -118,7 +111,7 @@ int SetSendInterface(SOCKET s, struct addrinfo *iface)
     }
     else
     {
-        fprintf(stderr, "Attemtping to set sent interface for invalid address family!\n");
+        debug_outputln("%s %4.4u : %d\n", iface->ai_family);
         rc = SOCKET_ERROR;
     }
 
@@ -126,22 +119,10 @@ int SetSendInterface(SOCKET s, struct addrinfo *iface)
     if (rc != SOCKET_ERROR)
     {
         // Set the send interface
-        rc = setsockopt(
-                s, 
-                optlevel, 
-                option,
-                optval,
-                optlen
-                       );
+        rc = setsockopt(s, optlevel, option, optval, optlen);
         if (rc == SOCKET_ERROR)
         {
-            fprintf(stderr, "setsockopt failed: %d\n", WSAGetLastError());
-        }
-        else
-        {
-            printf("Set sending interface to: ");
-            PrintAddress(iface->ai_addr, (int) iface->ai_addrlen);
-            printf("\n");
+            debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
         }
     }
     return rc;
@@ -152,6 +133,7 @@ int SetSendInterface(SOCKET s, struct addrinfo *iface)
  * @param[in] s - socket for which TTL is to be set.
  * @param[in] af - Address family.
  * @param[in] ttl - TTL value to be set.
+ * @return returns 0 on success, SOCKET_ERROR otherwise
  */
 int SetMulticastTtl(SOCKET s, int af, int ttl)
 {
@@ -180,26 +162,16 @@ int SetMulticastTtl(SOCKET s, int af, int ttl)
     }
     else
     {
-        fprintf(stderr, "Attemtping to set TTL for invalid address family!\n");
+        debug_outputln("%s %4.4u : %d\n", af);
         rc = SOCKET_ERROR;
     }
     if (rc != SOCKET_ERROR)
     {
         // Set the TTL value
-        rc = setsockopt(
-                s, 
-                optlevel, 
-                option,
-                optval, 
-                optlen
-                );
+        rc = setsockopt(s, optlevel, option, optval, optlen);
         if (rc == SOCKET_ERROR)
         {
-            fprintf(stderr, "SetMulticastTtl: setsockopt failed: %d\n", WSAGetLastError());
-        }
-        else
-        {
-            printf("Set multicast ttl to: %d\n", ttl);
+            debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
         }
     }
     return rc;
@@ -211,6 +183,7 @@ int SetMulticastTtl(SOCKET s, int af, int ttl)
  * data will be placed in the receive queue for the socket such that if a
  * receive is posted on the socket its own data will be read. For this sample
  * it doesn't really matter as if invoked as the sender, no data is read.
+ * @return returns 0 on success, SOCKET_ERROR otherwise
  */
 int SetMulticastLoopBack(SOCKET s, int af, int loopval)
 {
@@ -239,26 +212,16 @@ int SetMulticastLoopBack(SOCKET s, int af, int loopval)
     }
     else
     {
-        fprintf(stderr, "Attemtping to set multicast loopback for invalid address family!\n");
+        debug_outputln("%s %4.4u : %d\n", af);
         rc = SOCKET_ERROR;
     }
     if (rc != SOCKET_ERROR)
     {
         // Set the multpoint loopback
-        rc = setsockopt(
-                s, 
-                optlevel, 
-                option,
-                optval, 
-                optlen
-                );
+        rc = setsockopt(s, optlevel, option, optval, optlen);
         if (rc == SOCKET_ERROR)
         {
-            fprintf(stderr, "SetMulticastLoopBack: setsockopt failed: %d\n", WSAGetLastError());
-        }
-        else
-        {
-            printf("Setting multicast loopback to: %d\n", loopval);
+            debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
         }
     }
     return rc;

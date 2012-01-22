@@ -79,14 +79,57 @@ WARN_IF_DOC_ERROR      = YES
 WARN_NO_PARAMDOC       = YES
 WARN_FORMAT            = "$file:$line: $text"
 WARN_LOGFILE           = doxy.warn
-INPUT = debug_helpers.c fifo-circular-buffer.c input-buffer.c mcast-receiver-dlg.c \
-mcast-receiver-state-machine.c mcast-sender-dlg.c mcast-sender-state-machine.c mcast-settings-dlg.c \
-mcast-settings.c mcast_setup.c mcast_utils.c message-loop.c pcc.c perf-counter-itf.c receiver-settings-dlg.c receiver-settings.c \
-resolve.c sender-settings-dlg.c sender-settings.c timeofday.c ut-buffer-tests.c ut-fifo-circular-buffer.c \
-ut-input-buffer.c wave_utils.c debug_helpers.h dsoundplay.h fifo-circular-buffer.h input-buffer.h \
-mcast-receiver-state-machine.h mcast-sender-state-machine.h mcast-settings-dlg.h mcast-settings.h \
-mcast_setup.h mcast_utils.h message-loop.h pcc.h perf-counter-itf.h receiver-settings-dlg.h receiver-settings.h resolve.h \
-sender-settings-dlg.h sender-settings.h std-int.h timeofday.h wave_utils.h 
+
+INPUT =\
+about-dialog.c \
+about-dialog.h \
+debug_helpers.c \
+debug_helpers.h \
+dsoundplay.h \
+ex-perf-counter.c \
+fifo-circular-buffer.c \
+fifo-circular-buffer.h \
+input-buffer.c \
+input-buffer.h \
+mcast-receiver-dlg.c \
+mcast-receiver-state-machine.c \
+mcast-receiver-state-machine.h \
+mcast-sender-dlg.c \
+mcast-sender-state-machine.c \
+mcast-sender-state-machine.h \
+mcast-settings-dlg.c \
+mcast-settings-dlg.h \
+mcast-settings.c \
+mcast-settings.h \
+mcast_setup.c \
+mcast_setup.h \
+mcast_utils.c \
+mcast_utils.h \
+message-loop.c \
+message-loop.h \
+pcc.h \
+perf-counter-itf.c \
+perf-counter-itf.h \
+play-settings.c \
+play-settings.h \
+receiver-settings-dlg.c \
+receiver-settings-dlg.h \
+receiver-settings.c \
+receiver-settings.h \
+resolve.c \
+resolve.h \
+sender-settings-dlg.c \
+sender-settings-dlg.h \
+sender-settings.c \
+sender-settings.h \
+std-int.h \
+timeofday.c \
+timeofday.h \
+wave_utils.c \
+wave_utils.h \
+
+#vc2003stdint.h \
+
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          =
 RECURSIVE              = NO
@@ -94,7 +137,7 @@ EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =
 EXCLUDE_SYMBOLS        =
-EXAMPLE_PATH           =
+EXAMPLE_PATH           = .
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
 IMAGE_PATH             =

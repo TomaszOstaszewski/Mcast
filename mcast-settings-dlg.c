@@ -2,8 +2,8 @@
 
 /*!
  * @file mcast-settings-dlg.c
- * @brief
- * @details
+ * @brief Multicast settings dialog implementation.
+ * @details This file contains implementation of the functions that allow the client to get multicast settings from the UI, via modal dialog window.
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -29,12 +29,12 @@
 #include "mcast-settings.h"
 #include "mcast-settings-dlg.h"
 #include "debug_helpers.h"
-#include "resource.h"
-
-extern HINSTANCE g_hInst;
+#include "common-dialogs-res.h"
 
 /*!
- * @brief Copy of the mcast_settings object passed by the caller.  * @details On this copy all the dialog operation is performed.
+ * @brief Copy of the mcast_settings object passed by the caller.  
+ * @details It is this copy which is being altered by dialog controls. After the dialog is done, 
+ * we copy it back.
  */
 static struct mcast_settings g_settings;
 
@@ -115,7 +115,7 @@ static int controls_to_data(struct mcast_settings * p_settings)
     if (result<=0) 
         goto error;
     /* The 5 digit figures in decimal don't fit into 2 bytes of hex.
-     * Therefore we may need to make some exceptions for values above 65535 - we enter the 65535 insted.
+     * Therefore we may need to make some exceptions for values above 65535 - we enter the 65535 instead.
      */
     if (port_host_order > USHRT_MAX)
         goto error;
@@ -133,7 +133,7 @@ error:
  * \li Initializes the control handles
  * \li Presents the settings on the UI
  * @param[in] hwnd handle to the window that received WM_INITDIALOG message
- * @param[in] hwndFocus handle to the Window that is to be got the keyboard focus upon dialog initalizing. 
+ * @param[in] hwndFocus handle to the Window that is to be got the keyboard focus upon dialog initializing. 
  * @param[in] lParam client specific parameter passed to DialogBoxParam function. This is a way to pass to the
  * handler some client specific data.
  * @param returns TRUE if the window indicated as hWndFocus is to get keyboard focus. Returns FALSE otherwise.
@@ -162,11 +162,6 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     EnableWindow(g_btok, TRUE) ;
     return TRUE;
 } 
-
-/*
-#define HANDLE_WM_COMMAND(hwnd, wParam, lParam, fn) \
-    ((fn)((hwnd), (int)(LOWORD(wParam)), (HWND)(lParam), (UINT)HIWORD(wParam)), 0L)
-*/
 
 /**
  * @brief Multicast settings dialog message processing routine.
@@ -225,7 +220,8 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 int get_settings_from_dialog(HWND hParent, struct mcast_settings * p_settings)
 {
     mcast_settings_copy(&g_settings, p_settings);
-    if (IDOK == DialogBox(g_hInst, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc))
+    /* NULL hInst means = read template from this application's resource file. */
+    if (IDOK == DialogBox(NULL, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc))
     {
         mcast_settings_copy(p_settings, &g_settings);
         return 1;

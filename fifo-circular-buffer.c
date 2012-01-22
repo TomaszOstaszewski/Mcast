@@ -1,6 +1,9 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /**
  * @file fifo-circular-buffer.c
+ * @brief A circular buffer implementation.
+ * @details 
+ * @date 04-Jan-2012
  * @author T. Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
@@ -22,23 +25,24 @@
  * authors and should not be interpreted as representing official policies, 
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
- * @date 04-Jan-2012
- * @brief 
- * @details 
  */
 #include "pcc.h"
 #include "fifo-circular-buffer.h"
 
+/*!
+ * @brief Maximum number of bytes to be placed into queue.
+ * @details If more bytes will be placed into queue, they will overwrite the beginning of the queue.
+ */
 #define MAX_ITEMS (0x10000)
 
 /*!
- * @brief
+ * @brief The circular buffer data structure
  */
 struct fifo_circular_buffer
 {
-    uint32_t    read_idx_;                  /*!< */
-    uint32_t    write_idx_;                 /*!< */
-    uint8_t     data_buffer_[MAX_ITEMS];    /*!< */
+    uint32_t    read_idx_;                  /*!< Current read index. */
+    uint32_t    write_idx_;                 /*!< Current read index.*/
+    uint8_t     data_buffer_[MAX_ITEMS];    /*!< Data buffer from which bytes are read/to which will be written. */
 };
 
 struct fifo_circular_buffer *  fifo_circular_buffer_create(void)
