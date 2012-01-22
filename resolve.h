@@ -14,9 +14,13 @@
 extern "C" {
 #endif
 
-int              PrintAddress(SOCKADDR const *sa, int salen);
-int              FormatAddress(SOCKADDR *sa, int salen, char *addrbuf, int addrbuflen);
-int              ReverseLookup(SOCKADDR *sa, int salen, char *namebuf, int namebuflen);
+struct sockaddr;
+struct sockaddr_in;
+struct addrinfo;
+
+int              PrintAddress(struct sockaddr const *sa, int salen);
+int              FormatAddress(struct sockaddr *sa, int salen, char *addrbuf, int addrbuflen);
+int              ReverseLookup(struct sockaddr *sa, int salen, char *namebuf, int namebuflen);
 struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int proto);
 struct addrinfo *ResolveAddress_2(struct sockaddr_in const * p_addr, int af, int type, int proto);
 

@@ -166,7 +166,7 @@
 #define WAVE_UTILS_16606182_713B_4823_B290_4BE6CBA65CCC
 
 #include <windows.h>
-#include <MMreg.h>
+#include <mmreg.h>
 #include "std-int.h"
 
 #if defined __cplusplus
