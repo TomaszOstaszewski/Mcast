@@ -34,7 +34,7 @@
 extern "C" {
 #endif 
 
-#include <Windows.h>
+#include <windows.h>
 
 /*!
  * @brief Outputs a formated text into the debug window, appends a newline.

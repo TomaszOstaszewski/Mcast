@@ -320,7 +320,7 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                     }
                     else
                     {
-                        debug_outputln("%s %5.5d", __FILE__, __LINE__);
+                        debug_outputln("%s %5.5d : %d", __FILE__, __LINE__, receiver_get_state(g_receiver));
                     }
                     break;
                 case ID_RECEIVER_JOINMCAST:

@@ -27,7 +27,7 @@
 #if !defined MCAST_SETTINGS_DLG_7739F7BD_F961_404C_BDA9_66827C057F08
 #define MCAST_SETTINGS_DLG_7739F7BD_F961_404C_BDA9_66827C057F08
 
-#include <Windows.h>
+#include <windows.h>
 
 struct mcast_settings;
 

@@ -320,7 +320,7 @@ void handle_play(struct mcast_receiver * p_receiver, HWND hMainWnd)
         p_receiver->state_ = RECEIVER_RECEIVING_PLAYING;
         return;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void handle_stop(struct mcast_receiver * p_receiver)
@@ -340,7 +340,7 @@ void handle_stop(struct mcast_receiver * p_receiver)
         p_receiver->state_ = RECEIVER_MCASTJOINED;
         return;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void handle_rcvstart(struct mcast_receiver * p_receiver)
@@ -355,7 +355,7 @@ void handle_rcvstart(struct mcast_receiver * p_receiver)
         p_receiver->state_ = RECEIVER_RECEIVING_PLAYING;
         return;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void handle_rcvstop(struct mcast_receiver * p_receiver)
@@ -370,7 +370,7 @@ void handle_rcvstop(struct mcast_receiver * p_receiver)
         p_receiver->state_ = RECEIVER_MCASTJOINED;
         return;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void handle_mcastjoin(struct mcast_receiver * p_receiver)
@@ -385,7 +385,7 @@ void handle_mcastjoin(struct mcast_receiver * p_receiver)
         p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
         return;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void handle_mcastleave(struct mcast_receiver * p_receiver)
@@ -400,7 +400,7 @@ void handle_mcastleave(struct mcast_receiver * p_receiver)
         p_receiver->state_ = RECEIVER_PLAYING;
         return;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
     return;
 }
 
