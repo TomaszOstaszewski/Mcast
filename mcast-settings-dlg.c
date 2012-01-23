@@ -80,17 +80,23 @@ static const struct mcast_range {
 static TCHAR port_buffer[TEXT_LIMIT+1];
 
 /*!
+ * @brief Handle to the main dialog.
+ */
+static HWND g_hwnd;
+
+/*!
  * @brief Transfer from data to UI
  * @details Takes values from the settings object and presents them on the UI
  * @param[in] p_settings pointer to the settings object whose contents are to be presented on the screen.
  */
 static void data_to_controls(struct mcast_settings const * p_settings)
 {
+    NMIPADDRESS ipnotify;
     int result;
+    size_t index;
     unsigned long ipaddr_host_order;
     uint8_t ip_addr[4];
     StringCchPrintf(port_buffer, 8, "%hu", ntohs(p_settings->mcast_addr_.sin_port));
-    debug_outputln("%s %4.4u : %s %u", __FILE__, __LINE__, port_buffer, ntohs(p_settings->mcast_addr_.sin_port));
     SetWindowText(g_ipport_edit_ctrl, port_buffer);
     ipaddr_host_order = ntohl(g_settings.mcast_addr_.sin_addr.s_addr);
     ip_addr[0] = (uint8_t)(0xff & (ipaddr_host_order >> 24));
@@ -98,7 +104,18 @@ static void data_to_controls(struct mcast_settings const * p_settings)
     ip_addr[2] = (uint8_t)(0xff & (ipaddr_host_order >> 8));
     ip_addr[3] = (uint8_t)(0xff & (ipaddr_host_order >> 0));
     result = SendMessage(g_ipaddr_ctrl, IPM_SETADDRESS, (WPARAM)0, (LPARAM)MAKEIPADDRESS(ip_addr[0],ip_addr[1],ip_addr[2],ip_addr[3])); 
-    /* Notiy oursevels */
+    /* The IP control does not send notify messages when address is changed via IPM_SETADDRESS. Therefore, 
+     * simulate those notifications ourselvers.
+     */
+    ipnotify.hdr.hwndFrom = g_ipaddr_ctrl;
+    ipnotify.hdr.idFrom = IDC_IPADDRESS1;
+    ipnotify.hdr.code = IPN_FIELDCHANGED;
+    for (index = 0; index < sizeof(ip_addr)/sizeof(ip_addr[0]); ++index)
+    {
+        ipnotify.iField = index;
+        ipnotify.iValue = ip_addr[index];
+        SendMessage(g_hwnd, WM_NOTIFY, 0, (LPARAM)&ipnotify);
+    }
 }
 
 /*!
@@ -118,7 +135,6 @@ static int controls_to_data(struct mcast_settings * p_settings)
     /* The 5 digit figures in decimal don't fit into 2 bytes of hex.
      * Therefore we may need to make some exceptions for values above 65535 - we enter the 65535 instead.
      */
-    debug_outputln("%s %4.4u : %d %s %u", __FILE__, __LINE__, result, port_buffer, port_host_order);
     if (result<=0 || port_host_order > USHRT_MAX)
         goto error;
     p_settings->mcast_addr_.sin_port = htons((unsigned short)port_host_order);
@@ -163,7 +179,6 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     g_btok = GetDlgItem(hwnd, IDOK);
     assert(g_btok);
     data_to_controls(&g_settings);
-    EnableWindow(g_btok, TRUE);
     return TRUE;
 } 
 
@@ -189,6 +204,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
     switch (uMessage)
     {
         case WM_INITDIALOG:
+            g_hwnd = hDlg;
             return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
         case WM_NOTIFY:
             p_nmhdr = (NMHDR*)lParam;
@@ -198,7 +214,6 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                     p_nm_ipaddr = (NMIPADDRESS*)p_nmhdr; 
                     mcast_settings_copy(&settings_copy_for_ip, &g_settings);
                     ipaddr = ntohl(settings_copy_for_ip.mcast_addr_.sin_addr.s_addr);
-                    debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, ipaddr);
                     switch (p_nm_ipaddr->iField)
                     {
                         case 0:
@@ -216,34 +231,36 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                         default:
                             break;
                     }
-                    debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, ipaddr);
+                    settings_copy_for_ip.mcast_addr_.sin_addr.s_addr = htonl(ipaddr);
+                    if (mcast_settings_validate(&settings_copy_for_ip))
+                    {
+                        mcast_settings_copy(&g_settings, &settings_copy_for_ip);
+                        EnableWindow(g_btok, TRUE);
+                    }
+                    else
+                    {
+                        EnableWindow(g_btok, FALSE);
+                    }
                     break;
                 case UDN_DELTAPOS:
                     p_nm_updown = (NMUPDOWN *)p_nmhdr;
                     mcast_settings_copy(&settings_copy_for_spins, &g_settings);
-                    debug_outputln("%s %4.4u", __FILE__, __LINE__);
                     switch (p_nm_updown->hdr.idFrom)
                     {
                         case IDC_PORT_SPIN:
-                            debug_outputln("%s %4.4u", __FILE__, __LINE__);
                             port = ntohs(settings_copy_for_spins.mcast_addr_.sin_port);
                             port -= p_nm_updown->iDelta;
                             settings_copy_for_spins.mcast_addr_.sin_port = htons(port);
-                            debug_outputln("%s %4.4u : %5.5u", __FILE__, __LINE__, port);
                             break;
                         default:
-                            debug_outputln("%s %4.4u", __FILE__, __LINE__);
                             break;
                     }
-                    if (!mcast_settings_compare(&settings_copy_for_spins, &g_settings))
+                    if (!mcast_settings_compare(&settings_copy_for_spins, &g_settings) && mcast_settings_validate(&settings_copy_for_spins))
                     {
-                        //if (!mcast_settings_compare(&settings_copy_for_spins, &g_settings) && mcast_settings_validate(&settings_copy_for_spins))
-                        debug_outputln("%s %4.4u", __FILE__, __LINE__);
-                        //if (mcast_settings_validate(&settings_copy_for_spins))
-                        {
-                            //debug_outputln("%s %4.4u : %5.5hu %5.5hu", __FILE__, __LINE__, );
-                            data_to_controls(&settings_copy_for_spins);
-                        }
+                        /* No need to enable or disable OK button here - the data_to_controls() triggers notificatinos from edit controls,
+                         * which result in appropriate validation code being run 
+                        */
+                        data_to_controls(&settings_copy_for_spins);
                     }
                 default:
                     break;
@@ -254,12 +271,9 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
             switch (LOWORD(wParam))
             {
                 case IDC_EDIT1:
-                    debug_outputln("%s %4.4u", __FILE__, __LINE__);
                     mcast_settings_copy(&settings_copy, &g_settings);
-                    debug_outputln("%s %4.4u", __FILE__, __LINE__);
                     if (controls_to_data(&settings_copy) && mcast_settings_validate(&settings_copy))
                     {
-                        debug_outputln("%s %4.4u", __FILE__, __LINE__);
                         mcast_settings_copy(&g_settings, &settings_copy);
                         EnableWindow(g_btok, TRUE);  
                     }

@@ -76,15 +76,14 @@ int mcast_settings_validate(struct mcast_settings const * p_settings)
     unsigned long addr  = ntohl(p_settings->mcast_addr_.sin_addr.s_addr); 
     if (port < 1024)
     {
-        debug_outputln("%s %4.4u", __FILE__, __LINE__);
+        debug_outputln("%s %4.4u : %p %5.5hu", __FILE__, __LINE__, p_settings, (unsigned short)port);
         return 0;
     }
     if (addr < MIN_MCAST_ADDR || addr > MAX_MCAST_ADDR)
     {
-        debug_outputln("%s %4.4u : %8.8x %8.8x ", __FILE__, __LINE__, addr, htonl(addr));
+        debug_outputln("%s %4.4u : %p %8.8x ", __FILE__, __LINE__, p_settings, addr);
         return 0;
     }
-    debug_outputln("%s %4.4u", __FILE__, __LINE__);
     return 1;
 }
 

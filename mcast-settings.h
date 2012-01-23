@@ -78,6 +78,24 @@ void mcast_settings_copy(struct mcast_settings * p_dest, struct mcast_settings c
  */
 void mcast_settings_swap(struct mcast_settings * p_left, struct mcast_settings * p_right);
 
+/*!
+ * @brief Compares if two settings are equal.
+ * @details The compare and swap methods are so commonly used that they have been abstracted with this
+ * @code
+ * if (mcast_settings_compare(p_left, p_righ))
+ * {
+ *      printf("Objects %p and %p are equal.\n", p_left, p_right);
+ * }
+ * else
+ * {
+ *      printf("Objects %p and %p are different.\n", p_left, p_right);
+ * }
+ * @endcode
+ * @param[in,out] p_left left hand element of the comparison.
+ * @param[in,out] p_right right hand element of the comparison.
+ * @return Returns non zero if settings are equal, returns 0 otherwise.
+ * @attention The return value is negation of this you would get from calling memcpy().
+ */
 int mcast_settings_compare(struct mcast_settings const * p_left, struct mcast_settings const * p_right);
 
 #if defined __cplusplus
