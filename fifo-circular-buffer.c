@@ -40,8 +40,8 @@
  */
 struct fifo_circular_buffer
 {
-    uint32_t    read_idx_;                  /*!< Current read index. */
-    uint32_t    write_idx_;                 /*!< Current read index.*/
+    volatile uint32_t    read_idx_;                  /*!< Current read index. */
+    volatile uint32_t    write_idx_;                 /*!< Current read index.*/
     uint8_t     data_buffer_[MAX_ITEMS];    /*!< Data buffer from which bytes are read/to which will be written. */
 };
 
@@ -76,13 +76,15 @@ int fifo_circular_buffer_is_free_space(struct fifo_circular_buffer * p_circular_
 
 int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_buffer, struct data_item const * p_item)
 {
-    uint32_t idx;
-    for (idx = 0; 
-         idx != p_item->count_; 
-         ++idx, ++p_circular_buffer->write_idx_) 
+    uint16_t buffer_index = (MAX_ITEMS-1) & p_circular_buffer->write_idx_;
+    uint16_t idx;
+    for (idx = 0 
+         ;idx != p_item->count_
+         ;++idx, ++p_circular_buffer->write_idx_, ++buffer_index) 
     {
-        p_circular_buffer->data_buffer_[((0x0000ffff) & p_circular_buffer->write_idx_)] = p_item->data_[idx];
-        if ((p_circular_buffer->write_idx_ - p_circular_buffer->read_idx_) == MAX_ITEMS)
+        assert(buffer_index < MAX_ITEMS);
+        p_circular_buffer->data_buffer_[buffer_index] = p_item->data_[idx];
+        if (p_circular_buffer->write_idx_ - p_circular_buffer->read_idx_ == MAX_ITEMS)
         {
             ++p_circular_buffer->read_idx_;
         }
@@ -92,12 +94,12 @@ int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_buff
 
 int fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_circular_buffer, struct data_item * p_item)
 {
-    uint32_t    idx;
-    for ( idx = 0
+    uint16_t idx;
+    for (idx = 0
         ; idx != p_item->count_ && (p_circular_buffer->write_idx_ - p_circular_buffer->read_idx_) != 0
         ; ++idx, ++p_circular_buffer->read_idx_)
     {
-        p_item->data_[idx] = p_circular_buffer->data_buffer_[((0x0000ffff) & p_circular_buffer->read_idx_)];
+        p_item->data_[idx] = p_circular_buffer->data_buffer_[((MAX_ITEMS-1) & p_circular_buffer->read_idx_)];
     }
     p_item->count_ = idx;
     return 0;
