@@ -1,7 +1,7 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 
 /**
- * @file fifo-circular-buffer.h
+* @file fifo-circular-buffer.h
  * @author T.Ostaszewski
  * @brief A circular buffer interface.
  * @details This file contains forward declarations of circular buffer functions. The circular buffer is 
@@ -41,7 +41,7 @@ extern "C" {
  * @brief Helper structure to fetch/put data from/into queue.
  */
 typedef struct data_item {
-    uint32_t    	count_; /*!< Number of items to fetch/put */
+    uint16_t    	count_; /*!< Number of items to fetch/put */
     uint8_t     *	data_; /*!< Array in which data will be placed/from where it will be retrieved. */
 } data_item_t;
 
