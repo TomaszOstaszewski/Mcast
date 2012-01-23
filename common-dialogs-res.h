@@ -8,3 +8,4 @@
 #define IDC_VERSION_INFO                        1000
 #define IDC_EDIT1                               1002
 #define IDC_MODULE_NAME                         1002
+#define IDC_PORT_SPIN                           1003

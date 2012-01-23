@@ -29,16 +29,27 @@
 #include "sender-settings.h"
 #include "wave_utils.h"
 #include "sender-res.h"
-
-/*!
- * @brief Default timespan between moments the subsequent audio packets are being send.
- */
-#define DEFAULT_CHUNK_SEND_TIMEOUT (90)
+#include "debug_helpers.h"
 
 /*!
  * @brief Default number of bytes in the audio packet.
  */
 #define DEFAULT_WAV_CHUNK_SIZE    (1024+256+128)
+
+/*!
+ * @brief Default sample rate.
+ */
+#define DEFAULT_SAMPLE_RATE (8000)
+
+/*!
+ * @brief Default bytes per sample.
+ */
+#define DEFAULT_BYTES_PER_SAMPLE (2)
+
+/*!
+ * @brief Default timespan, in milliseconds, between moments the subsequent audio packets are being send.
+ */
+#define DEFAULT_CHUNK_SEND_TIMEOUT_MS ((int)((1000.0*DEFAULT_WAV_CHUNK_SIZE)/(DEFAULT_SAMPLE_RATE*DEFAULT_BYTES_PER_SAMPLE)))
 
 /*!
  * @brief Lower boundary on time it takes to send next audio packet after the previous one has been sent.
@@ -71,7 +82,7 @@ int get_default_settings(struct sender_settings * p_settings)
 	assert(result);
 	if (result) 
 	{
-		p_settings->send_delay_ = DEFAULT_CHUNK_SEND_TIMEOUT;
+		p_settings->send_delay_ = DEFAULT_CHUNK_SEND_TIMEOUT_MS;
 		p_settings->chunk_size_ = DEFAULT_WAV_CHUNK_SIZE;
 		result = mcast_settings_get_default(&p_settings->mcast_settings_);
         assert(result);

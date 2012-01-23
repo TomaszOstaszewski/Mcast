@@ -27,6 +27,7 @@
  */
 #include "pcc.h"
 #include "mcast-settings.h"
+#include "debug_helpers.H"
 
 /*!
  * @brief Default multicast group IPv4 address.
@@ -74,9 +75,15 @@ int mcast_settings_validate(struct mcast_settings const * p_settings)
     unsigned short port = ntohs(p_settings->mcast_addr_.sin_port);
     unsigned long addr  = ntohl(p_settings->mcast_addr_.sin_addr.s_addr); 
     if (port < 1024)
+    {
+        debug_outputln("%s %4.4u : %p %5.5hu", __FILE__, __LINE__, p_settings, (unsigned short)port);
         return 0;
+    }
     if (addr < MIN_MCAST_ADDR || addr > MAX_MCAST_ADDR)
+    {
+        debug_outputln("%s %4.4u : %p %8.8x ", __FILE__, __LINE__, p_settings, addr);
         return 0;
+    }
     return 1;
 }
 
@@ -93,5 +100,10 @@ void mcast_settings_swap(struct mcast_settings * p_left, struct mcast_settings *
 	CopyMemory(&tmp, p_left, sizeof(struct mcast_settings));
 	CopyMemory(p_left, p_right, sizeof(struct mcast_settings));
 	CopyMemory(p_right, &tmp, sizeof(struct mcast_settings));
+}
+
+int mcast_settings_compare(struct mcast_settings const * p_left, struct mcast_settings const * p_right)
+{
+    return !memcmp(p_left, p_right, sizeof(struct mcast_settings));
 }
 

@@ -48,6 +48,8 @@ static HWND g_ipaddr_ctrl;
  */
 static HWND g_ipport_edit_ctrl;
 
+static HWND port_spin_;
+
 /*!
  * @brief Handle to the IP port edit control.
  */
@@ -78,13 +80,20 @@ static const struct mcast_range {
 static TCHAR port_buffer[TEXT_LIMIT+1];
 
 /*!
+ * @brief Handle to the main dialog.
+ */
+static HWND g_hwnd;
+
+/*!
  * @brief Transfer from data to UI
  * @details Takes values from the settings object and presents them on the UI
  * @param[in] p_settings pointer to the settings object whose contents are to be presented on the screen.
  */
 static void data_to_controls(struct mcast_settings const * p_settings)
 {
+    NMIPADDRESS ipnotify;
     int result;
+    size_t index;
     unsigned long ipaddr_host_order;
     uint8_t ip_addr[4];
     StringCchPrintf(port_buffer, 8, "%hu", ntohs(p_settings->mcast_addr_.sin_port));
@@ -94,8 +103,19 @@ static void data_to_controls(struct mcast_settings const * p_settings)
     ip_addr[1] = (uint8_t)(0xff & (ipaddr_host_order >> 16));
     ip_addr[2] = (uint8_t)(0xff & (ipaddr_host_order >> 8));
     ip_addr[3] = (uint8_t)(0xff & (ipaddr_host_order >> 0));
-    //SendMessage(g_ipaddr_ctrl, IPM_SETADDRESS, (WPARAM)0, (LPARAM)ipaddr_host_order); 
     result = SendMessage(g_ipaddr_ctrl, IPM_SETADDRESS, (WPARAM)0, (LPARAM)MAKEIPADDRESS(ip_addr[0],ip_addr[1],ip_addr[2],ip_addr[3])); 
+    /* The IP control does not send notify messages when address is changed via IPM_SETADDRESS. Therefore, 
+     * simulate those notifications ourselvers.
+     */
+    ipnotify.hdr.hwndFrom = g_ipaddr_ctrl;
+    ipnotify.hdr.idFrom = IDC_IPADDRESS1;
+    ipnotify.hdr.code = IPN_FIELDCHANGED;
+    for (index = 0; index < sizeof(ip_addr)/sizeof(ip_addr[0]); ++index)
+    {
+        ipnotify.iField = index;
+        ipnotify.iValue = ip_addr[index];
+        SendMessage(g_hwnd, WM_NOTIFY, 0, (LPARAM)&ipnotify);
+    }
 }
 
 /*!
@@ -112,12 +132,10 @@ static int controls_to_data(struct mcast_settings * p_settings)
     *((WORD *)port_buffer) = TEXT_LIMIT;
     SendMessage(g_ipport_edit_ctrl, EM_GETLINE, 0, (LPARAM)port_buffer);
     result = sscanf(port_buffer, "%u", &port_host_order);
-    if (result<=0) 
-        goto error;
     /* The 5 digit figures in decimal don't fit into 2 bytes of hex.
      * Therefore we may need to make some exceptions for values above 65535 - we enter the 65535 instead.
      */
-    if (port_host_order > USHRT_MAX)
+    if (result<=0 || port_host_order > USHRT_MAX)
         goto error;
     p_settings->mcast_addr_.sin_port = htons((unsigned short)port_host_order);
     SendMessage(g_ipaddr_ctrl, IPM_GETADDRESS, (WPARAM)0, (LPARAM)&address);
@@ -145,6 +163,8 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(g_ipaddr_ctrl);
     g_ipport_edit_ctrl = GetDlgItem(hwnd, IDC_EDIT1);
     assert(g_ipport_edit_ctrl);
+    port_spin_ = GetDlgItem(hwnd, IDC_PORT_SPIN);
+    assert(port_spin_);
 
     result = SendMessage(g_ipaddr_ctrl, IPM_SETRANGE, (WPARAM)0, (LPARAM)MAKEIPRANGE(valid_mcast_range_table[0].low_,valid_mcast_range_table[0].high_)); 
     assert(0 != result);
@@ -159,7 +179,6 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     g_btok = GetDlgItem(hwnd, IDOK);
     assert(g_btok);
     data_to_controls(&g_settings);
-    EnableWindow(g_btok, TRUE) ;
     return TRUE;
 } 
 
@@ -175,16 +194,75 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
     static struct mcast_settings settings_copy;
+    static struct mcast_settings settings_copy_for_spins;
+    static struct mcast_settings settings_copy_for_ip;
     NMHDR * p_nmhdr;
+    NMUPDOWN * p_nm_updown;
+    NMIPADDRESS * p_nm_ipaddr;
+    unsigned short port;
+    unsigned long ipaddr;
     switch (uMessage)
     {
         case WM_INITDIALOG:
+            g_hwnd = hDlg;
             return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
         case WM_NOTIFY:
             p_nmhdr = (NMHDR*)lParam;
             switch (p_nmhdr->code)
             {
                 case IPN_FIELDCHANGED:
+                    p_nm_ipaddr = (NMIPADDRESS*)p_nmhdr; 
+                    mcast_settings_copy(&settings_copy_for_ip, &g_settings);
+                    ipaddr = ntohl(settings_copy_for_ip.mcast_addr_.sin_addr.s_addr);
+                    switch (p_nm_ipaddr->iField)
+                    {
+                        case 0:
+                            ipaddr &= (ipaddr & 0x00ffffff) | ((p_nm_ipaddr->iValue & 0xff) << 24);
+                            break;
+                        case 1:
+                            ipaddr &= (ipaddr & 0xff00ffff) | ((p_nm_ipaddr->iValue & 0xff) << 16);
+                            break;
+                        case 2:
+                            ipaddr &= (ipaddr & 0xffff00ff) | ((p_nm_ipaddr->iValue & 0xff) << 8);
+                            break;
+                        case 3:
+                            ipaddr &= (ipaddr & 0xffffff00) | (p_nm_ipaddr->iValue & 0xff);
+                            break;
+                        default:
+                            break;
+                    }
+                    settings_copy_for_ip.mcast_addr_.sin_addr.s_addr = htonl(ipaddr);
+                    if (mcast_settings_validate(&settings_copy_for_ip))
+                    {
+                        mcast_settings_copy(&g_settings, &settings_copy_for_ip);
+                        EnableWindow(g_btok, TRUE);
+                    }
+                    else
+                    {
+                        EnableWindow(g_btok, FALSE);
+                    }
+                    break;
+                case UDN_DELTAPOS:
+                    p_nm_updown = (NMUPDOWN *)p_nmhdr;
+                    mcast_settings_copy(&settings_copy_for_spins, &g_settings);
+                    switch (p_nm_updown->hdr.idFrom)
+                    {
+                        case IDC_PORT_SPIN:
+                            port = ntohs(settings_copy_for_spins.mcast_addr_.sin_port);
+                            port -= p_nm_updown->iDelta;
+                            settings_copy_for_spins.mcast_addr_.sin_port = htons(port);
+                            break;
+                        default:
+                            break;
+                    }
+                    if (!mcast_settings_compare(&settings_copy_for_spins, &g_settings) && mcast_settings_validate(&settings_copy_for_spins))
+                    {
+                        /* No need to enable or disable OK button here - the data_to_controls() triggers notificatinos from edit controls,
+                         * which result in appropriate validation code being run 
+                        */
+                        data_to_controls(&settings_copy_for_spins);
+                    }
+                default:
                     break;
             }
             break;
