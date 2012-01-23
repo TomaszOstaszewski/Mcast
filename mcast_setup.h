@@ -31,8 +31,8 @@
 #define MCAST_SETUP_H_870702C0_B65B_4828_949C_490704388A28
 
 #include <stddef.h>
-#include <Windows.h>
-#include <Winsock2.h>
+#include <windows.h>
+#include <winsock2.h>
 #include <ws2tcpip.h>
 #include "mcast-settings.h"
 
