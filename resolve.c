@@ -11,79 +11,20 @@
 #include "resolve.h"
 #include "debug_helpers.h"
 
-/**
- * @brief Common routines for resolving addresses and hostnames
- * @details This routine takes a SOCKADDR structure and its lenght and prints converts it to a string representation. 
- * @param[in] sa the SOCKADDR structure to be printed.
- * @param[in] salen length of the SOCKADDR structure.
- * @return returns 0 on success, <>0 on failure
- */
-int PrintAddress(SOCKADDR const*sa, int salen)
+int FormatAddress(struct sockaddr *sa, int salen, char *addrbuf, int addrbuflen)
 {
-    char    host[NI_MAXHOST],
-            serv[NI_MAXSERV];
-    int     hostlen = NI_MAXHOST,
-            servlen = NI_MAXSERV,
-            rc;
-    // Validate argument
-    if (sa == NULL)
-        return WSAEFAULT;
-    rc = getnameinfo(sa, salen, host, hostlen, serv, servlen, NI_NUMERICHOST | NI_NUMERICSERV);
-    if (rc != 0)
-    {
-        debug_outputln("%s %u : %d", __FILE__, __LINE__, rc);
-        return rc;
-    }
-
-    // If the port is zero then don't print it
-    if (strncmp(serv, "0", 1) != 0)
-    {
-        if (sa->sa_family == AF_INET6)
-		{
-            debug_outputln("[%s]:%s", host, serv);
-		}
-        else
-		{
-            debug_outputln("%s:%s", host, serv);
-		}
-    }
-    else
-        debug_outputln("%s", host);
-
-    return NO_ERROR;
-}
-
-/**
- * @brief Common routines for resolving addresses and hostnames
- * @details This is similar to the PrintAddress function except that instead of printing the string address to the console, it is formatted into the supplied string buffer.
- * @param[in] sa the SOCKADDR structure to be printed.
- * @param[in] salen length of the SOCKADDR structure.
- * @param[in] addrbuf buffer to which formatted address will be written.
- * @param[in] addrbuflen length of the buffer given as addrbuf parameter.
- * @return returns 0 on success, <>0 on failure
- */
-int FormatAddress(SOCKADDR *sa, int salen, char *addrbuf, int addrbuflen)
-{
+	HRESULT hr;
     char    host[NI_MAXHOST],
             serv[NI_MAXSERV];
     int     hostlen = NI_MAXHOST,
             servlen = NI_MAXSERV,
             rc;
 
-    // Validate input
+    /* Validate input */
     if ((sa == NULL) || (addrbuf == NULL))
         return WSAEFAULT;
-
-    // Format the name
-    rc = getnameinfo(
-            sa,
-            salen,
-            host,
-            hostlen,
-            serv,
-            servlen,
-            NI_NUMERICHOST | NI_NUMERICSERV     // Convert to numeric representation
-            );
+    /* Format the name */
+    rc = getnameinfo(sa, salen, host, hostlen, serv, servlen, NI_NUMERICHOST | NI_NUMERICSERV /* Convert to numeric representation */);
     if (rc != 0)
     {
         debug_outputln("%s %u : %d", __FILE__, __LINE__, rc);
@@ -95,36 +36,22 @@ int FormatAddress(SOCKADDR *sa, int salen, char *addrbuf, int addrbuflen)
     {
         if (sa->sa_family == AF_INET)
 		{
-            //_snprintf_s(addrbuf,addrbuflen,addrbuflen-1,"%s:%s",host,serv);
+			hr = StringCchPrintf(addrbuf, addrbuflen, "%s:%s", host, serv);
 		}
         else if (sa->sa_family == AF_INET6)
 		{
-            //_snprintf_s(addrbuf, addrbuflen,addrbuflen-1, "[%s]:%s", host, serv);
+			hr = StringCchPrintf(addrbuf, addrbuflen, "[%s]:%s", host, serv);
 		}
         else
             addrbuf[0] = '\0';
     }
     else
     {
-        //_snprintf_s(addrbuf, addrbuflen,addrbuflen-1, "%s", host);
+        hr = StringCchPrintf(addrbuf, addrbuflen, "%s", host);
     }
-
-    return NO_ERROR;
+    return S_OK == hr ? NO_ERROR : -1;
 }
 
-/**
- * @brief Common routines for resolving addresses and hostnames
- * @details This routine resolves the specified address and returns a list of addrinfo
- * structure containing SOCKADDR structures representing the resolved addresses.
- * Note that if 'addr' is non-NULL, then getaddrinfo will resolve it whether
- * it is a string listeral address or a hostname.
- * @param[in] addr
- * @param[in] port
- * @param[in] af
- * @param[in] type
- * @param[in] proto
- * @return
- */
 struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int proto)
 {
     struct addrinfo hints,
@@ -133,16 +60,11 @@ struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int pr
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_flags  = ((addr) ? 0 : AI_PASSIVE);
-    hints.ai_family = af; //((addr) ? AF_UNSPEC : af);
+    hints.ai_family = af; /*((addr) ? AF_UNSPEC : af);*/
     hints.ai_socktype = type;
     hints.ai_protocol = proto;
 
-    rc = getaddrinfo(
-            addr,
-            port,
-           &hints,
-           &res
-            );
+    rc = getaddrinfo(addr, port, &hints, &res);
     if (rc != 0)
     {
         return NULL;
@@ -177,26 +99,17 @@ int ReverseLookup(SOCKADDR *sa, int salen, char *buf, int buflen)
     char    host[NI_MAXHOST];
     int     hostlen=NI_MAXHOST,
             rc;
-    // Validate parameters
+    /* Validate parameters */
     if ((sa == NULL) || (buf == NULL))
         return WSAEFAULT;
 
-    rc = getnameinfo(
-            sa,
-            salen,
-            host,
-            hostlen,
-            NULL,
-            0,
-            0
-            );
+    rc = getnameinfo(sa, salen, host, hostlen, NULL, 0, 0);
     if (rc != 0)
     {
         debug_outputln("%s %u : %d", __FILE__, __LINE__, rc);
         return rc;
     }
 	StringCchPrintf(buf, buflen, "%s", host);
-    //strncpy_s(buf,buflen,host,buflen-1);
     return NO_ERROR;
 }
 
