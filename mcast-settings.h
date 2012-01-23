@@ -78,6 +78,8 @@ void mcast_settings_copy(struct mcast_settings * p_dest, struct mcast_settings c
  */
 void mcast_settings_swap(struct mcast_settings * p_left, struct mcast_settings * p_right);
 
+int mcast_settings_compare(struct mcast_settings const * p_left, struct mcast_settings const * p_right);
+
 #if defined __cplusplus
 }
 #endif

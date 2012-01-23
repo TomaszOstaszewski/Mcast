@@ -48,6 +48,8 @@ static HWND g_ipaddr_ctrl;
  */
 static HWND g_ipport_edit_ctrl;
 
+static HWND port_spin_;
+
 /*!
  * @brief Handle to the IP port edit control.
  */
@@ -88,14 +90,15 @@ static void data_to_controls(struct mcast_settings const * p_settings)
     unsigned long ipaddr_host_order;
     uint8_t ip_addr[4];
     StringCchPrintf(port_buffer, 8, "%hu", ntohs(p_settings->mcast_addr_.sin_port));
+    debug_outputln("%s %4.4u : %s %u", __FILE__, __LINE__, port_buffer, ntohs(p_settings->mcast_addr_.sin_port));
     SetWindowText(g_ipport_edit_ctrl, port_buffer);
     ipaddr_host_order = ntohl(g_settings.mcast_addr_.sin_addr.s_addr);
     ip_addr[0] = (uint8_t)(0xff & (ipaddr_host_order >> 24));
     ip_addr[1] = (uint8_t)(0xff & (ipaddr_host_order >> 16));
     ip_addr[2] = (uint8_t)(0xff & (ipaddr_host_order >> 8));
     ip_addr[3] = (uint8_t)(0xff & (ipaddr_host_order >> 0));
-    //SendMessage(g_ipaddr_ctrl, IPM_SETADDRESS, (WPARAM)0, (LPARAM)ipaddr_host_order); 
     result = SendMessage(g_ipaddr_ctrl, IPM_SETADDRESS, (WPARAM)0, (LPARAM)MAKEIPADDRESS(ip_addr[0],ip_addr[1],ip_addr[2],ip_addr[3])); 
+    /* Notiy oursevels */
 }
 
 /*!
@@ -112,12 +115,11 @@ static int controls_to_data(struct mcast_settings * p_settings)
     *((WORD *)port_buffer) = TEXT_LIMIT;
     SendMessage(g_ipport_edit_ctrl, EM_GETLINE, 0, (LPARAM)port_buffer);
     result = sscanf(port_buffer, "%u", &port_host_order);
-    if (result<=0) 
-        goto error;
     /* The 5 digit figures in decimal don't fit into 2 bytes of hex.
      * Therefore we may need to make some exceptions for values above 65535 - we enter the 65535 instead.
      */
-    if (port_host_order > USHRT_MAX)
+    debug_outputln("%s %4.4u : %d %s %u", __FILE__, __LINE__, result, port_buffer, port_host_order);
+    if (result<=0 || port_host_order > USHRT_MAX)
         goto error;
     p_settings->mcast_addr_.sin_port = htons((unsigned short)port_host_order);
     SendMessage(g_ipaddr_ctrl, IPM_GETADDRESS, (WPARAM)0, (LPARAM)&address);
@@ -145,6 +147,8 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(g_ipaddr_ctrl);
     g_ipport_edit_ctrl = GetDlgItem(hwnd, IDC_EDIT1);
     assert(g_ipport_edit_ctrl);
+    port_spin_ = GetDlgItem(hwnd, IDC_PORT_SPIN);
+    assert(port_spin_);
 
     result = SendMessage(g_ipaddr_ctrl, IPM_SETRANGE, (WPARAM)0, (LPARAM)MAKEIPRANGE(valid_mcast_range_table[0].low_,valid_mcast_range_table[0].high_)); 
     assert(0 != result);
@@ -159,7 +163,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     g_btok = GetDlgItem(hwnd, IDOK);
     assert(g_btok);
     data_to_controls(&g_settings);
-    EnableWindow(g_btok, TRUE) ;
+    EnableWindow(g_btok, TRUE);
     return TRUE;
 } 
 
@@ -175,7 +179,13 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
     static struct mcast_settings settings_copy;
+    static struct mcast_settings settings_copy_for_spins;
+    static struct mcast_settings settings_copy_for_ip;
     NMHDR * p_nmhdr;
+    NMUPDOWN * p_nm_updown;
+    NMIPADDRESS * p_nm_ipaddr;
+    unsigned short port;
+    unsigned long ipaddr;
     switch (uMessage)
     {
         case WM_INITDIALOG:
@@ -185,6 +195,57 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
             switch (p_nmhdr->code)
             {
                 case IPN_FIELDCHANGED:
+                    p_nm_ipaddr = (NMIPADDRESS*)p_nmhdr; 
+                    mcast_settings_copy(&settings_copy_for_ip, &g_settings);
+                    ipaddr = ntohl(settings_copy_for_ip.mcast_addr_.sin_addr.s_addr);
+                    debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, ipaddr);
+                    switch (p_nm_ipaddr->iField)
+                    {
+                        case 0:
+                            ipaddr &= (ipaddr & 0x00ffffff) | ((p_nm_ipaddr->iValue & 0xff) << 24);
+                            break;
+                        case 1:
+                            ipaddr &= (ipaddr & 0xff00ffff) | ((p_nm_ipaddr->iValue & 0xff) << 16);
+                            break;
+                        case 2:
+                            ipaddr &= (ipaddr & 0xffff00ff) | ((p_nm_ipaddr->iValue & 0xff) << 8);
+                            break;
+                        case 3:
+                            ipaddr &= (ipaddr & 0xffffff00) | (p_nm_ipaddr->iValue & 0xff);
+                            break;
+                        default:
+                            break;
+                    }
+                    debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, ipaddr);
+                    break;
+                case UDN_DELTAPOS:
+                    p_nm_updown = (NMUPDOWN *)p_nmhdr;
+                    mcast_settings_copy(&settings_copy_for_spins, &g_settings);
+                    debug_outputln("%s %4.4u", __FILE__, __LINE__);
+                    switch (p_nm_updown->hdr.idFrom)
+                    {
+                        case IDC_PORT_SPIN:
+                            debug_outputln("%s %4.4u", __FILE__, __LINE__);
+                            port = ntohs(settings_copy_for_spins.mcast_addr_.sin_port);
+                            port -= p_nm_updown->iDelta;
+                            settings_copy_for_spins.mcast_addr_.sin_port = htons(port);
+                            debug_outputln("%s %4.4u : %5.5u", __FILE__, __LINE__, port);
+                            break;
+                        default:
+                            debug_outputln("%s %4.4u", __FILE__, __LINE__);
+                            break;
+                    }
+                    if (!mcast_settings_compare(&settings_copy_for_spins, &g_settings))
+                    {
+                        //if (!mcast_settings_compare(&settings_copy_for_spins, &g_settings) && mcast_settings_validate(&settings_copy_for_spins))
+                        debug_outputln("%s %4.4u", __FILE__, __LINE__);
+                        //if (mcast_settings_validate(&settings_copy_for_spins))
+                        {
+                            //debug_outputln("%s %4.4u : %5.5hu %5.5hu", __FILE__, __LINE__, );
+                            data_to_controls(&settings_copy_for_spins);
+                        }
+                    }
+                default:
                     break;
             }
             break;
@@ -193,9 +254,12 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
             switch (LOWORD(wParam))
             {
                 case IDC_EDIT1:
+                    debug_outputln("%s %4.4u", __FILE__, __LINE__);
                     mcast_settings_copy(&settings_copy, &g_settings);
+                    debug_outputln("%s %4.4u", __FILE__, __LINE__);
                     if (controls_to_data(&settings_copy) && mcast_settings_validate(&settings_copy))
                     {
+                        debug_outputln("%s %4.4u", __FILE__, __LINE__);
                         mcast_settings_copy(&g_settings, &settings_copy);
                         EnableWindow(g_btok, TRUE);  
                     }
