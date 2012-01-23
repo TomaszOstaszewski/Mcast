@@ -34,24 +34,26 @@
 #include "play-settings.h"
 
 /*!
- * @brief
+ * @brief The sound player structure. 
+ * @details Gathers all the variables needed to successfully play chunks of PCM
+ * data using DirectSound.
  */
 struct dsound_data {
     WAVEFORMATEX wfe_;
-    LPDIRECTSOUND8          p_direct_sound_8_;              /*!< */
-    LPDIRECTSOUNDBUFFER     p_primary_sound_buffer_;        /*!< */
-    LPDIRECTSOUNDBUFFER8    p_secondary_sound_buffer_;      /*!< */
-    MMRESULT timer_;                                        /*!< */
-    BOOL buf_1_filled_;                                     /*!< */
-    BOOL buf_2_filled_;                                     /*!< */
-    size_t                  nHalfBufferSize_;               /*!< */
-    struct fifo_circular_buffer * fifo_;
-    struct play_settings play_settings_;
+    LPDIRECTSOUND8          p_direct_sound_8_;              /*!< The DirectSound Object. */
+    LPDIRECTSOUNDBUFFER     p_primary_sound_buffer_;        /*!< The DirectSound primary buffer. */
+    LPDIRECTSOUNDBUFFER8    p_secondary_sound_buffer_;      /*!< The DirectSound secondary buffer. */
+    MMRESULT timer_;                                        /*!< Multimedia timer that feeds the data to the buffers. */
+    BOOL buf_1_filled_;                                     /*!< Flag indicating that a buffer 1 has been filled. */
+    BOOL buf_2_filled_;                                     /*!< Flag indicating that a buffer 2 has been filled. */
+    size_t                  nHalfBufferSize_;               /*!< Size of a single buffer. */
+    struct fifo_circular_buffer * fifo_;	/*!< A fifo queue - from that queue we fetch the data and feed to the buffers.*/
+    struct play_settings play_settings_;	/*!< Settings for our player (how many bytes per buffer, timer frequency).*/
 };
 
 /**
  * @brief Helper routine, gets the device capabilities.
- * @param[in] lpdsb
+ * @param[in] lpdsb pointer to the direct sound buffer, either primary or secondary.
  * @return returns S_OK if succeeded, any other value indicates an error.
  * @sa http://bit.ly/zP10oa
  */
@@ -343,7 +345,6 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound
     }
     CopyMemory(&p_ds_data->wfe_, p_WFE, sizeof(WAVEFORMATEX));
     p_ds_data->nHalfBufferSize_ = p_ds_data->play_settings_.play_buffer_size_;
-    debug_outputln("%s %5.5d : %8.8u", __FILE__, __LINE__, p_ds_data->nHalfBufferSize_);
     hr = create_buffers(p_ds_data->p_direct_sound_8_, &p_ds_data->p_primary_sound_buffer_, &p_ds_data->p_secondary_sound_buffer_, &p_ds_data->wfe_, p_ds_data->nHalfBufferSize_);
     if (FAILED(hr))
     {
@@ -360,9 +361,13 @@ error:
     return hr;
 }
 
-extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, WAVEFORMATEX const * p_WFE, struct fifo_circular_buffer * fifo, struct play_settings const * play_settings)
+extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, 
+	WAVEFORMATEX const * p_WFE, 
+	struct fifo_circular_buffer * fifo, 
+	struct play_settings const * play_settings)
 {
-    struct dsound_data * p_retval = (struct dsound_data*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dsound_data));
+    struct dsound_data * p_retval = 
+		(struct dsound_data*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dsound_data));
     if (NULL != p_retval)
     {
         HRESULT hr;
@@ -391,8 +396,12 @@ extern "C" void dsoundplayer_destroy(DSOUNDPLAY handle)
 extern "C" int dsoundplayer_play(DSOUNDPLAY handle) 
 {
     struct dsound_data * p_ds_data = (struct dsound_data*)handle;
+	struct play_settings const * p_set = &p_ds_data->play_settings;
     LPDIRECTSOUNDBUFFER8 lpdsbStatic = p_ds_data->p_secondary_sound_buffer_;
-    p_ds_data->timer_ = timeSetEvent(p_ds_data->play_settings_.timer_delay_, p_ds_data->play_settings_.timer_resolution_, &sTimerCallback, (DWORD)p_ds_data, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
+    p_ds_data->timer_ = timeSetEvent(
+		p_set->timer_delay_, 
+		p_set->timer_resolution_, 
+		&sTimerCallback, (DWORD)p_ds_data, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
     if (NULL != p_ds_data->timer_)
     {
         HRESULT hr;

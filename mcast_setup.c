@@ -190,7 +190,6 @@ size_t mcast_sendto(struct mcast_connection * p_conn, void const * p_data, size_
     return mcast_sendto_flags(p_conn, p_data, data_size, 0);
 }
 
-
 size_t mcast_recvfrom_flags(struct mcast_connection * p_conn, void * p_data, size_t data_size, int flags)
 {
     return recvfrom(p_conn->socket_, 
