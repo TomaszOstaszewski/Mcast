@@ -40,18 +40,20 @@
 
 #include <windows.h>
 #include <windowsx.h>
-#include <Winerror.h>
 #include <commctrl.h>
-#include <MMReg.h>
-#include <MMSystem.h>
-#include <dsound.h>
-#include <Objbase.h>
+#include <winerror.h>
+#include <mmreg.h>
+#include <mmsystem.h>
 #include <tchar.h>
-#undef _ftcscat
-#include <Strsafe.h>
-#include <Winsock2.h>
+#include <objbase.h>
+#include <winsock2.h>
 #include <ws2tcpip.h>
 #include <malloc.h> /* For alloca() */
+#if !defined __MINGW32__
+#undef _ftcscat
+#include <dsound.h>
+#include <strsafe.h>
+#endif
 
 #include <assert.h>
 #include <assert.h>
