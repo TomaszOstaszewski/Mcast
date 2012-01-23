@@ -220,7 +220,6 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                             break;
                         case IDC_PACKET_DELAY_SPIN:
                             copy_for_spins.send_delay_ -= p_up_down->iDelta;
-                            debug_outputln("%5.5u : %u", __LINE__, copy_for_spins.send_delay_);
                             break;
                         default:
                             break;

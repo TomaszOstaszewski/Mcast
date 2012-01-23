@@ -97,6 +97,7 @@ void sender_settings_copy(struct sender_settings * p_dest, struct sender_setting
  * @param[in,out] p_left first object to swap data with.
  * @param[in,out] p_right second object to swap data with.
  * @return returns non-zero on success, 0 otherwise.
+ * @attention The return value is negation of this you would get from calling memcpy().
  */
 void sender_settings_swap(struct sender_settings * p_left, struct sender_settings * p_right);
 
