@@ -51,13 +51,36 @@ struct dsound_data {
     struct play_settings play_settings_;	/*!< Settings for our player (how many bytes per buffer, timer frequency).*/
 };
 
+#define MAKE_FLAG_2_DESC(x) { x, #x }
+static struct flag_2_desc {
+    DWORD flag_;
+    LPCTSTR desc_;
+} flags_to_descs[] = {
+    MAKE_FLAG_2_DESC(DSBCAPS_PRIMARYBUFFER),
+    MAKE_FLAG_2_DESC(DSBCAPS_STATIC),
+    MAKE_FLAG_2_DESC(DSBCAPS_LOCHARDWARE),
+    MAKE_FLAG_2_DESC(DSBCAPS_LOCSOFTWARE),
+    MAKE_FLAG_2_DESC(DSBCAPS_CTRL3D),
+    MAKE_FLAG_2_DESC(DSBCAPS_CTRLFREQUENCY),
+    MAKE_FLAG_2_DESC(DSBCAPS_CTRLPAN),
+    MAKE_FLAG_2_DESC(DSBCAPS_CTRLVOLUME),
+    MAKE_FLAG_2_DESC(DSBCAPS_CTRLPOSITIONNOTIFY),
+    MAKE_FLAG_2_DESC(DSBCAPS_CTRLFX),
+    MAKE_FLAG_2_DESC(DSBCAPS_STICKYFOCUS),
+    MAKE_FLAG_2_DESC(DSBCAPS_GLOBALFOCUS),
+    MAKE_FLAG_2_DESC(DSBCAPS_GETCURRENTPOSITION2),
+    MAKE_FLAG_2_DESC(DSBCAPS_MUTE3DATMAXDISTANCE),
+    MAKE_FLAG_2_DESC(DSBCAPS_LOCDEFER),
+    { 0x00080000, "DSBCAPS_TRUEPLAYPOSITION" },
+};
+
 /**
  * @brief Helper routine, gets the device capabilities.
  * @param[in] lpdsb pointer to the direct sound buffer, either primary or secondary.
  * @return returns S_OK if succeeded, any other value indicates an error.
  * @sa http://bit.ly/zP10oa
  */
-static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER8 lpdsb)
+static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb)
 {
     DSBCAPS caps;
     HRESULT hr;
@@ -66,6 +89,8 @@ static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER8 lpdsb)
     hr = lpdsb->GetCaps(&caps);
     if (SUCCEEDED(hr))
     {
+        size_t index;
+        
         debug_outputln("%s %5.5d : %8.8x %8.8u %8.8u %8.8u"
                 ,__FILE__, __LINE__
                 ,caps.dwFlags
@@ -73,6 +98,14 @@ static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER8 lpdsb)
                 ,caps.dwUnlockTransferRate
                 ,caps.dwPlayCpuOverhead
                 );    
+        
+        for (index = 0; index <sizeof(flags_to_descs)/sizeof(flags_to_descs[0]); ++index)
+        {
+            if (caps.dwFlags & flags_to_descs[index].flag_)
+                debug_outputln("%s %5.5d : %s"
+                    ,__FILE__, __LINE__
+                    ,flags_to_descs[index].desc_);
+         }
     }
     else
     {
@@ -120,6 +153,7 @@ static HRESULT create_buffers(LPDIRECTSOUND8 p_direct_sound_8,
         debug_outputln("%s %5.5d : %8.8x", __FILE__, __LINE__, hr);
         goto error;
     }
+    get_buffer_caps(*pp_primary_buffer);
     /* Secondary buffer */
     bufferDesc.dwFlags = DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLPAN | DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLFREQUENCY | DSBCAPS_GLOBALFOCUS | DSBCAPS_CTRLPOSITIONNOTIFY;
     bufferDesc.dwBufferBytes = 2*half_buffer_size; /* double buffering - one buffer being played, whereas the other is being filled in */
