@@ -63,7 +63,7 @@ static void dump_addrinfo(struct addrinfo const * p_info)
     }
 }
 
-int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * interfaceAddr, uint8_t nTTL, char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
+int setup_multicast(BOOL bConnect, char * bindAddr, char * interfaceAddr, uint8_t nTTL, char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
 {
 	int rc;
     /* */
@@ -104,7 +104,7 @@ int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * inte
 		goto cleanup;
 	}
 	//debug_outputln("%s %d : %8.8x", __FILE__, __LINE__, retval);
-	if (bReuseAddr)
+	//if (bReuseAddr)
 	{
 		int optval;
 		optval = 1;
@@ -171,25 +171,24 @@ cleanup:
 	return 0;
 }
 
-int setup_multicast_addr(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * interfaceAddr, uint8_t nTTL, struct sockaddr_in const * p_in_addr, struct mcast_connection * p_mcast_conn)
+int setup_multicast_addr(BOOL bConnect, char * bindAddr, char * interfaceAddr, uint8_t nTTL, struct sockaddr_in const * p_in_addr, struct mcast_connection * p_mcast_conn)
 {
     char port[8];
     int result;
     StringCchPrintf(port, 8, "%d", ntohs(p_in_addr->sin_port));
-    result = setup_multicast(bConnect, bReuseAddr, bindAddr, interfaceAddr, nTTL, inet_ntoa(p_in_addr->sin_addr), port, p_mcast_conn);
+    result = setup_multicast(bConnect, bindAddr, interfaceAddr, nTTL, inet_ntoa(p_in_addr->sin_addr), port, p_mcast_conn);
     return result;
 }
 
 int setup_multicast_default(char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
 {
-    return setup_multicast(FALSE, TRUE, NULL, NULL, DEFAULT_TTL, p_multicast_addr, p_port, p_mcast_conn);
+    return setup_multicast(FALSE, NULL, NULL, DEFAULT_TTL, p_multicast_addr, p_port, p_mcast_conn);
 }
 
 int setup_multicast_indirect(struct mcast_settings const * p_settings, struct mcast_connection * p_conn)
 {
     return setup_multicast_addr(
             p_settings->bConnect_,
-            p_settings->bReuseAddr_,
             p_settings->bindAddr_,
             p_settings->interface_,
             p_settings->nTTL_,

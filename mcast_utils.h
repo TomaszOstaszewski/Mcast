@@ -22,7 +22,7 @@
  * @param[in] iface
  * @return
  */
-int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo *iface);
+int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo const *iface);
 
 /*!
  * @brief
@@ -34,7 +34,7 @@ int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo *iface)
  * @param[in] iface
  * @return
  */
- int SetSendInterface(SOCKET s, struct addrinfo *iface);
+ int SetSendInterface(SOCKET s, struct addrinfo const *iface);
 
 /*!
  * @brief This routine sets the multicast TTL value for the socket.

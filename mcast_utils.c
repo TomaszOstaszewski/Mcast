@@ -25,7 +25,7 @@
  * @param[in] iface interface to be used for multicast communication.
  * @return returns 0 on success, SOCKET_ERROR otherwise
  */
-int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo *iface)
+int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo const *iface)
 {
     struct ip_mreq   mreqv4;
     struct ipv6_mreq mreqv6;
@@ -84,7 +84,7 @@ int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo *iface)
  * @param iface address of the interface.
  * @return returns 0 on success, SOCKET_ERROR otherwise
  */
-int SetSendInterface(SOCKET s, struct addrinfo *iface)
+int SetSendInterface(SOCKET s, struct addrinfo const *iface)
 {
     char *optval=NULL;
     int   optlevel = 0,
