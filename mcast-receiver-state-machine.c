@@ -199,7 +199,7 @@ static int handle_mcastjoin_internal(struct mcast_receiver * p_receiver)
     assert(NULL != p_receiver->conn_);
     if (NULL != p_receiver->conn_)
     {
-        mcast_result = setup_multicast_addr(FALSE, TRUE, NULL, NULL, 8, &p_receiver->settings_.mcast_settings_.mcast_addr_, p_receiver->conn_);
+        mcast_result = setup_multicast_indirect(&p_receiver->settings_.mcast_settings_, p_receiver->conn_);
         assert(mcast_result);
         if (mcast_result)
         {

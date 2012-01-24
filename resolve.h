@@ -16,6 +16,7 @@ extern "C" {
 
 struct sockaddr;
 struct sockaddr_in;
+struct sockaddr_in6; /* This one is from "ws2tcpip.h" */
 struct addrinfo;
 
 /**
@@ -58,12 +59,48 @@ int FormatAddress(struct sockaddr *sa, int salen, char *addrbuf, int addrbuflen)
  * for any address family (either IPv4 or IPv6, for example) that can be used with node and service. 
  * @param[in] type This field specifies the preferred socket type, for example <b>SOCK_STREAM</b> or <b>SOCK_DGRAM</b>. 
  * Specifying 0 in this field indicates that socket addresses of any type can be returned by the function. 
- * @param[in] proto This field specifies the protocol for the returned socket addresses. Specifying 0 in this field indicates that socket addresses with any protocol can be returned. 
- * @return returns 0 on success, <>0 otherwise.
+ * @param[in] proto This field specifies the protocol for the returned socket addresses. 
+ * Specifying 0 in this field indicates that socket addresses with any protocol can be returned. 
+ * @return returns a pointer to the addrinfo structure. 
+ * The caller is responsible for calling <a hre="http://bit.ly/tOD5Ts">freeaddrinfo()</a> when he is done with the value returned to free resources occupied by that structure.
+ * On failure returns NULL.
  * @attention If the above hyperlinks to external pages fail, just use a internet search engine of your choice
  * to find (or "google up") getaddrinfo function description.
  */
 struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int proto);
+
+/**
+ * @brief Another wariant of ResolveAddress, but takes the flags parameter.
+ * @details Just like <a href="http://bit.ly/A81NVs">getaddrinfo()</a> function, this function, given node and service, 
+ * which identify an Internet host and a service, returns one or more addrinfo structures, 
+ * each of which contains an Internet address that can be specified in a call to bind or connect.  
+ * The getaddrinfo function combines the functionality provided by the getservbyname and getservbyport functions
+ * into a single interface, but unlike the latter functions, this function is reentrant and allows programs to eliminate
+ * IPv4-versus-IPv6 dependencies.
+ * This routine resolves the specified address and returns a list of addrinfo
+ * structure containing SOCKADDR structures representing the resolved addresses.
+ * Note that if 'addr' is non-NULL, then this routine will resolve it whether
+ * it is a string listeral address or a hostname.
+ * @param[in] addr Null terminated string that contains the IPv4 or IPv6 address, i.e. "192.168.0.1".
+ * @param[in] port Null terminated string that contains the IP port, i.e. "4242".
+ * @param[in] af This field specifies the desired address family for the returned addresses. 
+ * Valid values for this field include <b>AF_INET</b> and <b>AF_INET6</b>. The value <b>AF_UNSPEC</b> indicates that the function should return socket addresses 
+ * for any address family (either IPv4 or IPv6, for example) that can be used with node and service. 
+ * @param[in] type This field specifies the preferred socket type, for example <b>SOCK_STREAM</b> or <b>SOCK_DGRAM</b>. 
+ * Specifying 0 in this field indicates that socket addresses of any type can be returned by the function. 
+ * @param[in] proto This field specifies the protocol for the returned socket addresses. 
+ * Specifying 0 in this field indicates that socket addresses with any protocol can be returned. 
+ * @param[in] flags Either 0 or one or more of the following values (ORed together):
+ * \li <b>AI_PASSIVE</b> indicatest that socket address will be used in bind() call
+ * \li <b>AI_CANONNAME</b> indicates to return canonical name in first ai_canonname
+ * \li <b>AI_NUMERICHOST</b> indicates that node name must be a numeric address string
+ * @return returns a pointer to the addrinfo structure. 
+ * The caller is responsible for calling <a hre="http://bit.ly/tOD5Ts">freeaddrinfo()</a> when he is done with the value returned to free resources occupied by that structure.
+ * On failure returns NULL.
+ * @attention If the above hyperlinks to external pages fail, just use a internet search engine of your choice
+ * to find (or "google up") getaddrinfo function description.
+ */
+struct addrinfo *ResolveAddressWithFlags(char *addr, char *port, int af, int type, int proto, int flags);
 
 /**
  * @brief Another wrapper for <a href="http://bit.ly/A81NVs">getaddrinfo()</a> function.
@@ -77,21 +114,22 @@ struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int pr
  * structure containing SOCKADDR structures representing the resolved addresses.
  * Note that if 'addr' is non-NULL, then this routine will resolve it whether
  * it is a string listeral address or a hostname.
- * @param[in] p_addr
- * @param[in] port Null terminated string that contains the IP port, i.e. "4242".
- * @param[in] af This field specifies the desired address family for the returned addresses. 
- * Valid values for this field include <b>AF_INET</b> and <b>AF_INET6</b>. The value <b>AF_UNSPEC</b> indicates that the function should return socket addresses 
- * for any address family (either IPv4 or IPv6, for example) that can be used with node and service. 
+ * @param[in] p_in_addr Pointer to the sockaddr_in structure, that contains IPv4 address and port requested.
  * @param[in] type This field specifies the preferred socket type, for example <b>SOCK_STREAM</b> or <b>SOCK_DGRAM</b>. 
  * Specifying 0 in this field indicates that socket addresses of any type can be returned by the function. 
- * @param[in] proto This field specifies the protocol for the returned socket addresses. Specifying 0 in this field indicates that socket addresses with any protocol can be returned. 
- * @return returns 0 on success, <>0 otherwise.
+ * @param[in] proto This field specifies the protocol for the returned socket addresses. 
+ * Specifying 0 in this field indicates that socket addresses with any protocol can be returned. 
+ * @param[in] flags Either 0 or one or more of the following values (ORed together):
+ * \li <b>AI_PASSIVE</b> indicatest that socket address will be used in bind() call
+ * \li <b>AI_CANONNAME</b> indicates to return canonical name in first ai_canonname
+ * \li <b>AI_NUMERICHOST</b> indicates that node name must be a numeric address string
+ * @return returns a pointer to the addrinfo structure. 
+ * The caller is responsible for calling <a hre="http://bit.ly/tOD5Ts">freeaddrinfo()</a> when he is done with the value returned to free resources occupied by that structure.
+ * @return returns a pointer to the addrinfo structure. 
  * @attention If the above hyperlinks to external pages fail, just use a internet search engine of your choice
  * to find (or "google up") getaddrinfo function description.
  */
-struct addrinfo *ResolveAddress_2(struct sockaddr_in const * p_addr, int af, int type, int proto);
-
-int  ReverseLookup(struct sockaddr *sa, int salen, char *namebuf, int namebuflen);
+struct addrinfo *resolve_address_ipv4(struct sockaddr_in const * p_in_addr, int type, int proto, int flags);
 
 #ifdef _cplusplus
 }

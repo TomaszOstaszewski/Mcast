@@ -47,142 +47,137 @@
  */ 
 #define DEFAULT_TTL    8
 
-int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * interfaceAddr, uint8_t nTTL, char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
+static void dump_addrinfo(struct addrinfo const * p_info, const char * file, unsigned int line)
+{
+    debug_outputln("%s %4.4u : %d %d %d %d %s %p", file, line,
+        p_info->ai_flags,
+        p_info->ai_family,
+        p_info->ai_socktype,
+        p_info->ai_protocol,
+        p_info->ai_canonname,
+        p_info->ai_next);
+    if (p_info->ai_addrlen == sizeof(struct sockaddr_in))
+    {
+        char host[NI_MAXHOST];
+        struct sockaddr_in const * p_in_addr = (struct sockaddr_in const *)p_info->ai_addr;
+        FormatAddress(p_info->ai_addr, p_info->ai_addrlen, host, NI_MAXHOST);
+        debug_outputln("%s %4.4u : \t %s %hu", file, line, inet_ntoa(p_in_addr->sin_addr), ntohs(p_in_addr->sin_port));
+        debug_outputln("%s %4.4u : \t %s", file, line, host);
+    }
+}
+
+static int set_reuse_addr(SOCKET s)
+{
+    int optval, rc;
+    optval = 1;
+    rc = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval));
+    if (rc == SOCKET_ERROR)
+    {
+        return 0;
+    }
+    return 1;
+}
+
+static void dump_locally_bound_socket(SOCKET s, const char * file, unsigned int line)
+{
+    int rc;
+    struct sockaddr_in local_bind = { 0 };
+    socklen_t local_data_len = sizeof(local_bind);
+    rc = getsockname(s, (struct sockaddr*)&local_bind, &local_data_len);
+    if (SOCKET_ERROR != rc)
+    {
+        debug_outputln("%s %4.4u : %s:%u", file, line, inet_ntoa(local_bind.sin_addr), ntohs(local_bind.sin_port));
+    }
+    else
+    {
+        debug_outputln("%s %4.4u : %u", file, line, rc);
+    }
+}
+
+static int setup_multicast(char * bindAddr, uint8_t nTTL, char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
 {
 	int rc;
-	p_mcast_conn->multiAddr_ 	= ResolveAddress(p_multicast_addr, p_port, AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP);
+    /* */
+    debug_outputln("%s %4.4u : %s %s", __FILE__, __LINE__, p_multicast_addr, p_port);
+	p_mcast_conn->multiAddr_ = ResolveAddress(p_multicast_addr, p_port, AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP);
 	if (NULL == p_mcast_conn->multiAddr_)
 	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
+		debug_outputln("%s %4.4u : %10.10d", __FILE__, __LINE__, WSAGetLastError());
 		goto cleanup;
 	}
+    dump_addrinfo(p_mcast_conn->multiAddr_, __FILE__, __LINE__);
 	// Resolve the binding address
-	p_mcast_conn->bindAddr_ 	= ResolveAddress(bindAddr, p_port, p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
+	p_mcast_conn->bindAddr_ = ResolveAddress(bindAddr, p_port, p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
 	if (NULL == p_mcast_conn->bindAddr_)
 	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
+		debug_outputln("%s %4.4u : %10.10d", __FILE__, __LINE__, WSAGetLastError());
 		goto cleanup;
 	}
-	// Resolve the multicast interface
-	p_mcast_conn->resolveAddr_	= ResolveAddress(interfaceAddr, "0", p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
-	if (NULL == p_mcast_conn->multiAddr_)
-	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-		goto cleanup;
-	}
-	// 
-	// Create the socket. In Winsock 1 you don't need any special
-	// flags to indicate multicasting.
-	//
-	p_mcast_conn->socket_ 		= socket(p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
+    dump_addrinfo(p_mcast_conn->bindAddr_, __FILE__, __LINE__);
+	// Create the socket. In Winsock 1 you don't need any special flags to indicate multicasting.
+	p_mcast_conn->socket_ = socket(p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
 	if (p_mcast_conn->socket_ == INVALID_SOCKET)
 	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
+		debug_outputln("%s %4.4u : %10.10d", __FILE__, __LINE__, WSAGetLastError());
 		goto cleanup;
 	}
-	//debug_outputln("%s %d : %8.8x", __FILE__, __LINE__, retval);
-	if (bReuseAddr)
-	{
-		int optval;
-		optval = 1;
-		rc = setsockopt(p_mcast_conn->socket_, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval));
-		if (rc == SOCKET_ERROR)
-		{
-			debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-			goto cleanup;
-		}
-	}
+    if (!set_reuse_addr(p_mcast_conn->socket_))
+    {
+        debug_outputln("%s %4.4u : %d", __FILE__, __LINE__, WSAGetLastError());
+        goto cleanup;
+    }
 	rc = bind(p_mcast_conn->socket_, p_mcast_conn->bindAddr_->ai_addr, (int) p_mcast_conn->bindAddr_->ai_addrlen);
 	if (rc == SOCKET_ERROR)
 	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
+		debug_outputln("%s %4.4u : %10.10d", __FILE__, __LINE__, WSAGetLastError());
 		goto cleanup;
 	}
 #if 0
-	{
-		struct sockaddr_in local_bind = { 0 };
-		socklen_t local_data_len = sizeof(local_bind);
-		rc = getsockname(p_mcast_conn->socket_, (struct sockaddr*)&local_bind, &local_data_len);
-		if (SOCKET_ERROR != rc)
-		{
-			debug_outputln("%s %d : %s:%u", __FILE__, __LINE__, inet_ntoa(local_bind.sin_addr), ntohs(local_bind.sin_port));
-		}
-		else
-		{
-			debug_outputln("%s %d : %u", __FILE__, __LINE__, rc);
-		}
-	}
+    dump_locally_bound_socket(p_mcast_conn->socket_, __FILE__, __LINE__);
 #endif
-	// Join the multicast group if specified
-	rc = JoinMulticastGroup(p_mcast_conn->socket_, p_mcast_conn->multiAddr_, p_mcast_conn->resolveAddr_);
+	// Join the multicast group
+	rc = JoinMulticastGroup(p_mcast_conn->socket_, p_mcast_conn->multiAddr_, p_mcast_conn->bindAddr_);
 	if (rc == SOCKET_ERROR)
 	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
+		debug_outputln("%s %4.4u : %10.10d", __FILE__, __LINE__, WSAGetLastError());
 		goto cleanup;
 	}
 	// Set the send (outgoing) interface 
-	rc = SetSendInterface(p_mcast_conn->socket_, p_mcast_conn->resolveAddr_);
+	rc = SetSendInterface(p_mcast_conn->socket_, p_mcast_conn->bindAddr_);
 	if (rc == SOCKET_ERROR)
 	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
+		debug_outputln("%s %4.4u : %10.10d", __FILE__, __LINE__, WSAGetLastError());
 		goto cleanup;
 	}
 	// Set the TTL to something else. The default TTL is one.
 	rc = SetMulticastTtl(p_mcast_conn->socket_, p_mcast_conn->multiAddr_->ai_family, nTTL);
 	if (rc == SOCKET_ERROR)
 	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
+		debug_outputln("%s %4.4u : %10.10d", __FILE__, __LINE__, WSAGetLastError());
 		goto cleanup;
-	}
-	if (bConnect)
-	{
-		rc = connect(p_mcast_conn->socket_, p_mcast_conn->multiAddr_->ai_addr, (int) p_mcast_conn->multiAddr_->ai_addrlen);
-		if (rc == SOCKET_ERROR)
-		{
-			debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-			goto cleanup;
-		}
 	}
 	return 1;
 cleanup:
 	return 0;
 }
 
-int setup_multicast_addr(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * interfaceAddr, uint8_t nTTL, struct sockaddr_in const * p_in_addr, struct mcast_connection * p_mcast_conn)
+static int setup_multicast_addr(char * bindAddr, uint8_t nTTL, struct sockaddr_in const * p_in_addr, struct mcast_connection * p_mcast_conn)
 {
     char port[8];
     int result;
     StringCchPrintf(port, 8, "%d", ntohs(p_in_addr->sin_port));
-    result = setup_multicast(bConnect, bReuseAddr, bindAddr, interfaceAddr, nTTL, inet_ntoa(p_in_addr->sin_addr), port, p_mcast_conn);
+    result = setup_multicast(bindAddr, nTTL, inet_ntoa(p_in_addr->sin_addr), port, p_mcast_conn);
     return result;
-}
-
-int setup_multicast_default(char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
-{
-    return setup_multicast(FALSE, TRUE, NULL, NULL, DEFAULT_TTL, p_multicast_addr, p_port, p_mcast_conn);
 }
 
 int setup_multicast_indirect(struct mcast_settings const * p_settings, struct mcast_connection * p_conn)
 {
-    return setup_multicast_addr(
-            p_settings->bConnect_,
-            p_settings->bReuseAddr_,
-            p_settings->bindAddr_,
-            p_settings->interface_,
-            p_settings->nTTL_,
-            &p_settings->mcast_addr_,
-            p_conn);
+    return setup_multicast_addr(p_settings->bindAddr_, p_settings->nTTL_, &p_settings->mcast_addr_, p_conn);
 }
 
 size_t mcast_sendto_flags(struct mcast_connection * p_conn, void const * p_data, size_t data_size, int flags)
 {
-    return sendto(p_conn->socket_, 
-            (const void *)p_data, 
-            data_size,
-            flags,
-            p_conn->multiAddr_->ai_addr,
-            (int) p_conn->multiAddr_->ai_addrlen
-            );
+    return sendto(p_conn->socket_, (const void *)p_data, data_size, flags, p_conn->multiAddr_->ai_addr, (int) p_conn->multiAddr_->ai_addrlen);
 }
 
 size_t mcast_sendto(struct mcast_connection * p_conn, void const * p_data, size_t data_size)
@@ -190,17 +185,10 @@ size_t mcast_sendto(struct mcast_connection * p_conn, void const * p_data, size_
     return mcast_sendto_flags(p_conn, p_data, data_size, 0);
 }
 
-
 size_t mcast_recvfrom_flags(struct mcast_connection * p_conn, void * p_data, size_t data_size, int flags)
 {
-    return recvfrom(p_conn->socket_, 
-            p_data, 
-            data_size,
-            flags,
-            p_conn->multiAddr_->ai_addr,
-            &p_conn->multiAddr_->ai_addrlen
-            );
-}
+    return recvfrom(p_conn->socket_, p_data, data_size, flags, p_conn->multiAddr_->ai_addr, &p_conn->multiAddr_->ai_addrlen);
+ }
 
 int mcast_is_new_data(struct mcast_connection * p_conn, DWORD dwTimeoutMs)
 {
@@ -233,12 +221,12 @@ size_t mcast_recvfrom(struct mcast_connection * p_conn, void * p_data, size_t da
 
 int close_multicast(struct mcast_connection * p_mcast_conn)
 {
-	if (NULL == p_mcast_conn)
-		return 0;
-	freeaddrinfo(p_mcast_conn->bindAddr_);
-	freeaddrinfo(p_mcast_conn->resolveAddr_);
-	freeaddrinfo(p_mcast_conn->multiAddr_);
-	closesocket(p_mcast_conn->socket_);
-	return 1;
+    if (NULL != p_mcast_conn)
+    {
+        freeaddrinfo(p_mcast_conn->bindAddr_);
+        freeaddrinfo(p_mcast_conn->multiAddr_);
+        closesocket(p_mcast_conn->socket_);
+    }
+    return 1;
 }
 
