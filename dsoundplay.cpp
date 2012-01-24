@@ -234,11 +234,11 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
         buf_desc.p_begin_ = data.data_;
         buf_desc.nMaxOffset_ = p_ds_data->nHalfBufferSize_;
         buf_desc.nCurrentOffset_ = 0;
+        debug_outputln_buffered("%4.4u : %8.8u %8.8u", __LINE__, dwRead, dwWrite);
         /* Check if both write & read cursor is in the 1st buffer and we have not yet filled 2nd buffer */
         if (dwWrite < p_ds_data->nHalfBufferSize_ && dwRead < p_ds_data->nHalfBufferSize_ && FALSE == p_ds_data->buf_2_filled_)
         {
             /* Both read and write cursor in 1st buffer, 2nd buffer not yet filled - fill it now. */
-            //debug_outputln("%s %5.5d : %8.8u %8.8u", __FILE__, __LINE__, dwRead, dwWrite);
             p_ds_data->buf_2_filled_ = TRUE, p_ds_data->buf_1_filled_ = FALSE;
             if (fifo_circular_buffer_get_items_count(p_ds_data->fifo_)>0)
             {
@@ -254,7 +254,6 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
         else if (dwWrite > p_ds_data->nHalfBufferSize_ && dwRead > p_ds_data->nHalfBufferSize_ && FALSE == p_ds_data->buf_1_filled_)
         {
             /* Both read and write cursor in 2nd buffer, 1st buffer not yet filled - fill it now. */
-            //debug_outputln("%s %5.5d : %8.8u %8.8u", __FILE__, __LINE__, dwRead, dwWrite);
             p_ds_data->buf_1_filled_ = TRUE, p_ds_data->buf_2_filled_ = FALSE;
             if (fifo_circular_buffer_get_items_count(p_ds_data->fifo_)>0)
             {
@@ -268,7 +267,8 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
         }
         else
         {
-            /* read cursor in 1st buffer, write cursor in 2nd buffer 
+            /*
+             * read cursor in 1st buffer, write cursor in 2nd buffer 
              * or
              * read cursor in 2nd buffer, write cursor in 1st buffer 
              * in either case - don't do anything. 
