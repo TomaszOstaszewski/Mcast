@@ -56,7 +56,7 @@ struct mcast_sender {
     master_riff_chunk_t * chunk_;
 	/** @brief Pointer to the structure that describes multicast connection */
     struct mcast_connection * conn_;   
-	/** @brief Pointer to the structure that describes sender settings. */
+	/** @brief Copy of the sender settings. */
     struct sender_settings settings_; 
     /*!
      * @brief Current offset from the beginning of the WAV file to the next byte being send.

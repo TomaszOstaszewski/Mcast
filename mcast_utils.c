@@ -12,19 +12,6 @@
 #include "resolve.h"
 #include "debug_helpers.h"
 
-/**
- * @brief
- * This function joins the multicast socket on the specified multicast 
- * group.
- * @details The structures for IPv4 and IPv6 multicast joins are slightly
- * different which requires different handlers. For IPv6 the scope-ID 
- * (interface index) is specified for the local interface whereas for IPv4
- * the actual IPv4 address of the interface is given.
- * @param[in] s socket that shall join mulitcast group
- * @param[in] group multicast group address
- * @param[in] iface interface to be used for multicast communication.
- * @return returns 0 on success, SOCKET_ERROR otherwise
- */
 int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo const *iface)
 {
     struct ip_mreq   mreqv4;
@@ -76,14 +63,6 @@ int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo const *
     return rc;
 }
 
-/**
- * @brief This routine sets the send (outgoing) interface of the socket.
- * @details Again, for v4 the IP address is used to specify the interface while
- * for v6 its the scope-ID.
- * @param s socket to set the interface.
- * @param iface address of the interface.
- * @return returns 0 on success, SOCKET_ERROR otherwise
- */
 int SetSendInterface(SOCKET s, struct addrinfo const *iface)
 {
     char *optval=NULL;
@@ -128,20 +107,14 @@ int SetSendInterface(SOCKET s, struct addrinfo const *iface)
     return rc;
 }
 
-/**
- * @brief This routine sets the multicast TTL value for the socket.
- * @param[in] s - socket for which TTL is to be set.
- * @param[in] af - Address family.
- * @param[in] ttl - TTL value to be set.
- * @return returns 0 on success, SOCKET_ERROR otherwise
- */
-int SetMulticastTtl(SOCKET s, int af, int ttl)
+int SetMulticastTtl(SOCKET s, int af, uint8_t ub_ttl)
 {
     char *optval=NULL;
     int   optlevel = 0,
           option = 0,
           optlen = 0,
           rc;
+    unsigned int ttl = ub_ttl;
 
     rc = NO_ERROR;
     if (af == AF_INET)
@@ -177,14 +150,6 @@ int SetMulticastTtl(SOCKET s, int af, int ttl)
     return rc;
 }
 
-/**
- * @brief This function enabled or disables multicast loopback. 
- * @details If loopback is enabled (and the socket is a member of the destination multicast group) then the
- * data will be placed in the receive queue for the socket such that if a
- * receive is posted on the socket its own data will be read. For this sample
- * it doesn't really matter as if invoked as the sender, no data is read.
- * @return returns 0 on success, SOCKET_ERROR otherwise
- */
 int SetMulticastLoopBack(SOCKET s, int af, int loopval)
 {
     char *optval=NULL;

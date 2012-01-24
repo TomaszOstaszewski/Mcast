@@ -4,11 +4,16 @@
  * @file pcc.h
  * @brief Pre compiled header file.
  * @details This file is used to create a pre compiled header. The whole point of having a pre compiled header
- * is to save on compile time. The pre compiled header therefore contains #include directives on a lot of header
+ * is to save on compile time. The pre compiled header therefore contains a lot of include directives on a lot of header
  * files that:
- * \li include a lot of other header files
- * \li do not change a lot
- * The perfect candidate to put into #include <> into pre compiled header are therefore all the standard library files (stdlib.h, stdint.h and so on), platform specific files (asm/x86.h) and vendor specific files (windows.h and so on).
+ * - include a lot of other header files;
+ * - do not change a lot during the course of the project.
+ *
+ * The perfect candidate to put into into the pre-compiled header are therefore:
+ * - all the standard library files (stdlib.h, stdint.h and so on);
+ * - platform specific files (asm/x86.h); 
+ * - and vendor specific files (windows.h and so on).
+ *
  * @author T.Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.

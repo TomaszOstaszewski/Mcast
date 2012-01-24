@@ -78,7 +78,7 @@ static int set_reuse_addr(SOCKET s)
     return 1;
 }
 
-void dump_locally_bound_socket(SOCKET s, const char * file, unsigned int line)
+static void dump_locally_bound_socket(SOCKET s, const char * file, unsigned int line)
 {
     int rc;
     struct sockaddr_in local_bind = { 0 };
