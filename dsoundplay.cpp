@@ -225,15 +225,15 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
     DWORD dwRead, dwWrite;
     HRESULT hr;
     hr = p_ds_data->p_secondary_sound_buffer_->GetCurrentPosition(&dwRead, &dwWrite);
-    struct data_item data;
-    struct buffer_desc buf_desc;
-    data.data_ = (uint8_t*)alloca(p_ds_data->nHalfBufferSize_);
-    data.count_ = p_ds_data->nHalfBufferSize_;
-    buf_desc.p_begin_ = data.data_;
-    buf_desc.nMaxOffset_ = p_ds_data->nHalfBufferSize_;
-    buf_desc.nCurrentOffset_ = 0;
     if (SUCCEEDED(hr))
     {
+        struct data_item data;
+        struct buffer_desc buf_desc;
+        data.data_ = (uint8_t*)alloca(p_ds_data->nHalfBufferSize_);
+        data.count_ = p_ds_data->nHalfBufferSize_;
+        buf_desc.p_begin_ = data.data_;
+        buf_desc.nMaxOffset_ = p_ds_data->nHalfBufferSize_;
+        buf_desc.nCurrentOffset_ = 0;
         /* Check if both write & read cursor is in the 1st buffer and we have not yet filled 2nd buffer */
         if (dwWrite < p_ds_data->nHalfBufferSize_ && dwRead < p_ds_data->nHalfBufferSize_ && FALSE == p_ds_data->buf_2_filled_)
         {
@@ -267,20 +267,20 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
             hr = fill_buffer(0, p_ds_data->nHalfBufferSize_, p_ds_data->p_secondary_sound_buffer_, &buf_desc);
         }
         else
-		{
-			/* read cursor in 1st buffer, write cursor in 2nd buffer 
-			 * or
-			 * read cursor in 2nd buffer, write cursor in 1st buffer 
-			 * in either case - don't do anything. 
-			 * Rationale:
-			 * 1/ We are to close to buffer boundaries to undertake any action without risk of overwritting buffer already being played.
-			 * 2/ The buffer to be filled with data might have well been filled with data already.
-			 */ 
-		}
+        {
+            /* read cursor in 1st buffer, write cursor in 2nd buffer 
+             * or
+             * read cursor in 2nd buffer, write cursor in 1st buffer 
+             * in either case - don't do anything. 
+             * Rationale:
+             * 1/ We are to close to buffer boundaries to undertake any action without risk of overwritting buffer already being played.
+             * 2/ The buffer to be filled with data might have well been filled with data already.
+             */ 
+        }
     }   
     else
     {
-        //debug_outputln("%s %d : %8.8x", __FILE__, __LINE__, hr);
+        debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);
     }
     return;
 }
