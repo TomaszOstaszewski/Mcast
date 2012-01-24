@@ -170,11 +170,6 @@ static int setup_multicast_addr(char * bindAddr, uint8_t nTTL, struct sockaddr_i
     return result;
 }
 
-int setup_multicast_default(char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
-{
-    return setup_multicast(NULL, DEFAULT_TTL, p_multicast_addr, p_port, p_mcast_conn);
-}
-
 int setup_multicast_indirect(struct mcast_settings const * p_settings, struct mcast_connection * p_conn)
 {
     return setup_multicast_addr(p_settings->bindAddr_, p_settings->nTTL_, &p_settings->mcast_addr_, p_conn);
