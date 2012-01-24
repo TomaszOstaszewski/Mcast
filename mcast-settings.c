@@ -54,7 +54,6 @@ static struct mcast_settings g_default_settings;
 int mcast_settings_get_default(struct mcast_settings * p_target)
 {
 	unsigned long net_addr = inet_addr(DEFAULT_MCASTADDRV4);
-	p_target->bReuseAddr_ = TRUE;
 	memcpy(&p_target->mcast_addr_.sin_addr, &net_addr, sizeof(unsigned long));
 	p_target->mcast_addr_.sin_port = htons(DEFAULT_MCASTPORT);
     return 1;

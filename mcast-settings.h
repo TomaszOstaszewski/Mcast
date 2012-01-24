@@ -38,10 +38,7 @@ extern "C" {
  * @brief Configuration of the multicast connection.
  */
 struct mcast_settings {
-	int bConnect_; /*!< Whether or not call connect() on the socket bound to the multicast group */
-	int bReuseAddr_; /*!< Whether or not reuse address.  */
     char * bindAddr_; /*!< Name of the interface to bind to */
-    char * interface_; /*!< Name of the interface to bind to */
 	int nTTL_; /*!< The 'Time To Live' parameter to set on the socket. */
 	struct sockaddr_in mcast_addr_; /*!< IPv4 address and port of the multicast group */
 };

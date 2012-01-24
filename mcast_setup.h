@@ -49,13 +49,6 @@ struct mcast_connection {
 };
 
 /*!
- * @brief Setup the multicast connection with given parameters.
- * @param[out] p_mcast_conn this memory location will be written with active multicast connection upon successful exit.
- * @return returns non-zero on success, 0 otherwise.
- */
-int setup_multicast_addr(char * bindAddr, uint8_t nTTL, struct sockaddr_in const * p_in_addr, struct mcast_connection * p_mcast_conn);
-
-/*!
  * @brief Wrapper for the setup_multicast function with most of the parameters set to so called "reasonable defaults".
  * @details The so called "reasonable defaults" are:
  * \li bConnect set to FALSE - don't call connect() after joining a multicast group;

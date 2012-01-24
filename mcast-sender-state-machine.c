@@ -57,7 +57,7 @@ struct mcast_sender {
 	/** @brief Pointer to the structure that describes multicast connection */
     struct mcast_connection * conn_;   
 	/** @brief Pointer to the structure that describes sender settings. */
-    struct sender_settings * settings_; 
+    struct sender_settings const * settings_; 
     /*!
      * @brief Current offset from the beginning of the WAV file to the next byte being send.
      */
@@ -156,7 +156,8 @@ static int sender_handle_mcastjoin_internal(struct mcast_sender * p_sender)
         assert(NULL != p_sender->conn_);
         if (NULL != p_sender->conn_)
         {
-            result = setup_multicast_addr(NULL, p_sender->settings_->mcast_settings_.nTTL_, &p_sender->settings_->mcast_settings_.mcast_addr_, p_sender->conn_);
+            result = setup_multicast_indirect(&p_sender->settings_->mcast_settings_, p_sender->conn_);
+            assert(result);
         }
     }
     if (!result)

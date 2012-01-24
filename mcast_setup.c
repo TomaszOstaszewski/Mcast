@@ -161,7 +161,7 @@ cleanup:
 	return 0;
 }
 
-int setup_multicast_addr(char * bindAddr, uint8_t nTTL, struct sockaddr_in const * p_in_addr, struct mcast_connection * p_mcast_conn)
+static int setup_multicast_addr(char * bindAddr, uint8_t nTTL, struct sockaddr_in const * p_in_addr, struct mcast_connection * p_mcast_conn)
 {
     char port[8];
     int result;
