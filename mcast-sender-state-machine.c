@@ -101,26 +101,28 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
         assert(max_chunk_size <= MAX_ETHER_PAYLOAD_SANS_UPD_IP);
         for (;;)
         {
+            int result;
+            uint32_t chunk_size = max_chunk_size;
+            if (p_sender->send_offset_ + chunk_size > max_offset)
+            {
+                chunk_size = max_offset - p_sender->send_offset_;
+            }
+            assert(p_sender->send_offset_ + chunk_size <= max_offset);
+            result = mcast_sendto(p_sender->conn_, p_data_begin + p_sender->send_offset_, chunk_size);
+            if (SOCKET_ERROR != result)
+            {
+                p_sender->send_offset_ += result;
+                assert (p_sender->send_offset_ <= max_offset);
+                if (p_sender->send_offset_ >= max_offset)
+                {
+                    p_sender->send_offset_ = 0;
+                }
+            }
+            send_delay = (chunk_size * 1000)/16000;
             dwResult = WaitForSingleObject(p_sender->hStopEventThread_, send_delay);
             if (WAIT_TIMEOUT == dwResult)
             {
-                int result;
-                uint32_t chunk_size = max_chunk_size;
-                if (p_sender->send_offset_ + chunk_size > max_offset)
-                {
-                    chunk_size = max_offset - p_sender->send_offset_;
-                }
-                assert(p_sender->send_offset_ + chunk_size <= max_offset);
-                result = mcast_sendto(p_sender->conn_, p_data_begin + p_sender->send_offset_, chunk_size);
-                if (SOCKET_ERROR != result)
-                {
-                    p_sender->send_offset_ += result;
-                    assert (p_sender->send_offset_ <= max_offset);
-                    if (p_sender->send_offset_ >= max_offset)
-                    {
-                        p_sender->send_offset_ = 0;
-                    }
-                }
+                continue;
             }
             else if (WAIT_OBJECT_0 == dwResult)
             {
@@ -130,7 +132,7 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
             else 
             {
                 dwResult = -1;
-                debug_outputln("%s %d : %d", __FILE__, __LINE__, dwResult);
+                debug_outputln("%s %4.4u : %d", __FILE__, __LINE__, dwResult);
                 break;
             }
         }
@@ -275,7 +277,7 @@ void sender_handle_mcastjoin(struct mcast_sender * p_sender)
         p_sender->state_ = SENDER_MCAST_JOINED;
         return;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void sender_handle_mcastleave(struct mcast_sender * p_sender)
@@ -286,7 +288,7 @@ void sender_handle_mcastleave(struct mcast_sender * p_sender)
         p_sender->state_ = SENDER_INITIAL;
         return;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void sender_handle_startsending(struct mcast_sender * p_sender)
@@ -297,7 +299,7 @@ void sender_handle_startsending(struct mcast_sender * p_sender)
         p_sender->state_ = SENDER_SENDING;
         return;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void sender_handle_stopsending(struct mcast_sender * p_sender)
@@ -307,6 +309,6 @@ void sender_handle_stopsending(struct mcast_sender * p_sender)
     {
         p_sender->state_ = SENDER_MCAST_JOINED;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
