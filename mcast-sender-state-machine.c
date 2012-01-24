@@ -56,8 +56,8 @@ struct mcast_sender {
     master_riff_chunk_t * chunk_;
 	/** @brief Pointer to the structure that describes multicast connection */
     struct mcast_connection * conn_;   
-	/** @brief Pointer to the structure that describes sender settings. */
-    struct sender_settings * settings_; 
+	/** @brief Copy of the sender settings. */
+    struct sender_settings settings_; 
     /*!
      * @brief Current offset from the beginning of the WAV file to the next byte being send.
      */
@@ -91,13 +91,12 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
     uint32_t send_delay;
     p_sender = (struct mcast_sender *)param;
     assert(p_sender);
-    assert(p_sender->settings_);
-    send_delay = p_sender->settings_->send_delay_;
-    p_master_riff = p_sender->settings_->chunk_;
+    send_delay = p_sender->settings_.send_delay_;
+    p_master_riff = p_sender->settings_.chunk_;
     assert(p_master_riff);
     {   
         uint32_t max_offset = p_master_riff->format_chunk_.subchunk_.subchunk_size_;
-        uint32_t max_chunk_size = p_sender->settings_->chunk_size_;
+        uint32_t max_chunk_size = p_sender->settings_.chunk_size_;
         int8_t const * const p_data_begin = p_master_riff->format_chunk_.subchunk_.samples8_;
         assert(max_chunk_size <= MAX_ETHER_PAYLOAD_SANS_UPD_IP);
         for (;;)
@@ -156,7 +155,8 @@ static int sender_handle_mcastjoin_internal(struct mcast_sender * p_sender)
         assert(NULL != p_sender->conn_);
         if (NULL != p_sender->conn_)
         {
-            result = setup_multicast_addr(FALSE, TRUE, NULL, NULL, p_sender->settings_->mcast_settings_.nTTL_, &p_sender->settings_->mcast_settings_.mcast_addr_, p_sender->conn_);
+            result = setup_multicast_indirect(&p_sender->settings_.mcast_settings_, p_sender->conn_);
+            assert(result);
         }
     }
     if (!result)
@@ -253,7 +253,7 @@ struct mcast_sender * sender_create(struct sender_settings * p_settings)
 {
     struct mcast_sender * p_sender = (struct mcast_sender *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_sender));
     p_sender->chunk_ = p_settings->chunk_;
-    p_sender->settings_ = p_settings;
+    sender_settings_copy(&p_sender->settings_, p_settings);
     return p_sender;
 }
 
