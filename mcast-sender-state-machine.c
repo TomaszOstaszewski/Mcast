@@ -156,7 +156,7 @@ static int sender_handle_mcastjoin_internal(struct mcast_sender * p_sender)
         assert(NULL != p_sender->conn_);
         if (NULL != p_sender->conn_)
         {
-            result = setup_multicast_addr(NULL, NULL, p_sender->settings_->mcast_settings_.nTTL_, &p_sender->settings_->mcast_settings_.mcast_addr_, p_sender->conn_);
+            result = setup_multicast_addr(NULL, p_sender->settings_->mcast_settings_.nTTL_, &p_sender->settings_->mcast_settings_.mcast_addr_, p_sender->conn_);
         }
     }
     if (!result)

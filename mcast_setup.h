@@ -44,7 +44,6 @@ struct mcast_settings;
  */
 struct mcast_connection {
 	struct addrinfo * bindAddr_; /*!< */
-	struct addrinfo * resolveAddr_; /*!< */
 	struct addrinfo * multiAddr_; /*!< */
 	SOCKET socket_; /*!< */
 };
@@ -54,7 +53,7 @@ struct mcast_connection {
  * @param[out] p_mcast_conn this memory location will be written with active multicast connection upon successful exit.
  * @return returns non-zero on success, 0 otherwise.
  */
-int setup_multicast_addr(char * bindAddr, char * interfaceAddr, uint8_t nTTL, struct sockaddr_in const * p_in_addr, struct mcast_connection * p_mcast_conn);
+int setup_multicast_addr(char * bindAddr, uint8_t nTTL, struct sockaddr_in const * p_in_addr, struct mcast_connection * p_mcast_conn);
 
 /*!
  * @brief Wrapper for the setup_multicast function with most of the parameters set to so called "reasonable defaults".
@@ -62,7 +61,6 @@ int setup_multicast_addr(char * bindAddr, char * interfaceAddr, uint8_t nTTL, st
  * \li bConnect set to FALSE - don't call connect() after joining a multicast group;
  * \li bReuseAddr set to TRUE so the address can be reused immediatelly without relaying on Windows to free that after some period of time;
  * \li bindAddr set to NULL to bind to any address
- * \li interfaceAddr set to NULL to bind to any interface
  * \li nTTL set to value 8
  * @param[in] p_multicast_addr IPv4 of the multicast group to connect, i.e. "224.5.6.7"
  * @param[in] p_port  port number on which data will be send/received.
