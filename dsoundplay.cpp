@@ -396,7 +396,7 @@ extern "C" void dsoundplayer_destroy(DSOUNDPLAY handle)
 extern "C" int dsoundplayer_play(DSOUNDPLAY handle) 
 {
     struct dsound_data * p_ds_data = (struct dsound_data*)handle;
-	struct play_settings const * p_set = &p_ds_data->play_settings;
+	struct play_settings const * p_set = &p_ds_data->play_settings_;
     LPDIRECTSOUNDBUFFER8 lpdsbStatic = p_ds_data->p_secondary_sound_buffer_;
     p_ds_data->timer_ = timeSetEvent(
 		p_set->timer_delay_, 

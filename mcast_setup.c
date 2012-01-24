@@ -47,15 +47,35 @@
  */ 
 #define DEFAULT_TTL    8
 
+static void dump_addrinfo(struct addrinfo const * p_info)
+{
+    debug_outputln("%s %4.4u : %d %d %d %d %s %p", __FILE__, __LINE__,
+        p_info->ai_flags,
+        p_info->ai_family,
+        p_info->ai_socktype,
+        p_info->ai_protocol,
+        p_info->ai_canonname,
+        p_info->ai_next);
+    if (p_info->ai_addrlen == sizeof(struct sockaddr_in))
+    {
+        struct sockaddr_in const * p_in_addr = (struct sockaddr_in const *)p_info->ai_addr;
+        debug_outputln("%s %4.4u : \t %s %hu", __FILE__, __LINE__, inet_ntoa(p_in_addr->sin_addr), ntohs(p_in_addr->sin_port));
+    }
+}
+
 int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * interfaceAddr, uint8_t nTTL, char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
 {
 	int rc;
+    /* */
+    debug_outputln("%s %4.4u : %s %s", __FILE__, __LINE__, p_multicast_addr, p_port);
 	p_mcast_conn->multiAddr_ 	= ResolveAddress(p_multicast_addr, p_port, AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP);
 	if (NULL == p_mcast_conn->multiAddr_)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
+    dump_addrinfo(p_mcast_conn->multiAddr_);
+    debug_outputln("%s %4.4u : %p", __FILE__, __LINE__, bindAddr);
 	// Resolve the binding address
 	p_mcast_conn->bindAddr_ 	= ResolveAddress(bindAddr, p_port, p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
 	if (NULL == p_mcast_conn->bindAddr_)
@@ -63,6 +83,8 @@ int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * inte
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
+    dump_addrinfo(p_mcast_conn->bindAddr_);
+    debug_outputln("%s %4.4u : %p", __FILE__, __LINE__, interfaceAddr);
 	// Resolve the multicast interface
 	p_mcast_conn->resolveAddr_	= ResolveAddress(interfaceAddr, "0", p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
 	if (NULL == p_mcast_conn->multiAddr_)
@@ -70,6 +92,7 @@ int setup_multicast(BOOL bConnect, BOOL bReuseAddr, char * bindAddr, char * inte
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
+    dump_addrinfo(p_mcast_conn->resolveAddr_);
 	// 
 	// Create the socket. In Winsock 1 you don't need any special
 	// flags to indicate multicasting.

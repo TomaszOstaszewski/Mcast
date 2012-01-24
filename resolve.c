@@ -74,53 +74,37 @@ static struct addrinfo *sResolveAddress(char *addr, char *port, int af, int type
 
 struct addrinfo *ResolveAddress(char *addr, char *port, int af, int type, int proto)
 {
-    return sResolveAddress(addr, port, af, type, port, (addr) ? 0 : AI_PASSIVE);
+    int flags = 0;
+    if (NULL != addr)
+        flags = AI_PASSIVE;
+    return sResolveAddress(addr, port, af, type, proto, flags);
+}
+
+struct addrinfo *ResolveAddressWithFlags(char *addr, char *port, int af, int type, int proto, int flags)
+{
+    return sResolveAddress(addr, port, af, type, proto, flags);
 }
 
 struct addrinfo *resolve_address_ipv4(struct sockaddr_in const * p_in_addr, int type, int proto, int flags)
 {
-    char    host[NI_MAXHOST],
+    HRESULT hr;
+    TCHAR   host[NI_MAXHOST],
             port[NI_MAXSERV];
-    struct addrinfo hints;
-    struct addrinfo *res = NULL;
-    int rc;
     unsigned long ipv4addr = ntohl(p_in_addr->sin_addr.s_addr);
     ipv4addr = ntohl(p_in_addr->sin_addr.s_addr);
-    sprintf(host, "%hhu.%hhu.%hhu.%hhu", 
+    hr = StringCchPrintf(host, NI_MAXHOST, _T("%hhu.%hhu.%hhu.%hhu"), 
             (unsigned char )((ipv4addr>>24) & 0xff),
             (unsigned char )((ipv4addr>>16) & 0xff),
             (unsigned char )((ipv4addr>>8) & 0xff),
             (unsigned char )((ipv4addr) & 0xff)); 
-    sprintf(port, "%hu", ntohs(p_in_addr->sin_port));
-    return sResolveAddress(host, port, AF_INET, type, proto, flags);
-}
-
-/**
- * @brief Common routines for resolving addresses and hostnames
- * @details This routine takes a SOCKADDR and does a reverse 
- * lookup for the name corresponding to that address.
- * @param[in] sa address of the SOCKADDR for which the lookup is to be made.
- * @param[in] salen length of the structure given as sa parameter
- * @param[in] buf buffer to which address found will be written.
- * @param[in] buflen lenght of the buffer given as buf parameter
- * @return returns 0 on success, <>0 otherwise.
- */
-int ReverseLookup(SOCKADDR *sa, int salen, char *buf, int buflen)
-{
-    char    host[NI_MAXHOST];
-    int     hostlen=NI_MAXHOST,
-            rc;
-    /* Validate parameters */
-    if ((sa == NULL) || (buf == NULL))
-        return WSAEFAULT;
-
-    rc = getnameinfo(sa, salen, host, hostlen, NULL, 0, 0);
-    if (rc != 0)
+    if (SUCCEEDED(hr))
     {
-        debug_outputln("%s %u : %d", __FILE__, __LINE__, rc);
-        return rc;
+        hr = StringCchPrintf(port, NI_MAXSERV, _T("%hu"), ntohs(p_in_addr->sin_port));
+        if (SUCCEEDED(hr))
+        {
+            return sResolveAddress(host, port, AF_INET, type, proto, flags);
+        }
     }
-    StringCchPrintf(buf, buflen, "%s", host);
-    return NO_ERROR;
+    return NULL;
 }
 
