@@ -51,19 +51,10 @@ struct mcast_connection {
 
 /*!
  * @brief Setup the multicast connection with given parameters.
- * @param[in] p_multicast_addr IPv4 of the multicast group to connect, i.e. "224.5.6.7"
- * @param[in] p_port  port number on which data will be send/received.
  * @param[out] p_mcast_conn this memory location will be written with active multicast connection upon successful exit.
  * @return returns non-zero on success, 0 otherwise.
  */
-int setup_multicast(BOOL bConnect, char * bindAddr, char * interfaceAddr, uint8_t nTTL, char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn);
-
-/*!
- * @brief Setup the multicast connection with given parameters.
- * @param[out] p_mcast_conn this memory location will be written with active multicast connection upon successful exit.
- * @return returns non-zero on success, 0 otherwise.
- */
-int setup_multicast_addr(BOOL bConnect, char * bindAddr, char * interfaceAddr, uint8_t nTTL, struct sockaddr_in const * p_in_addr, struct mcast_connection * p_mcast_conn);
+int setup_multicast_addr(char * bindAddr, char * interfaceAddr, uint8_t nTTL, struct sockaddr_in const * p_in_addr, struct mcast_connection * p_mcast_conn);
 
 /*!
  * @brief Wrapper for the setup_multicast function with most of the parameters set to so called "reasonable defaults".
