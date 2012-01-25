@@ -33,6 +33,22 @@
 #include "input-buffer.h"
 #include "play-settings.h"
 
+#define NUMBER_OF_BUFFERS (2)
+
+/*!
+ * @brief Indicates that the buffer is being played and can be filled.
+ * @details If a buffer is marked with <b>BUFFER_PLAYED</b>, it can be filled again with new data, as soon as the DirectSound
+ * player is done with that buffer.
+ */
+#define BUFFER_PLAYED (0x00000000)
+
+/*!
+ * @brief Indicates that the buffer is filled and can be played.
+ * @details To be frank, even if a buffer is not marked as <b>BUFFER_FILLED</b>, it will be played.
+ * The marker <b>BUFFER_FILLED</b> is there not to fill the same buffer again with new data until old data is played.
+ */
+#define BUFFER_FILLED (0xffffffff)
+
 /*!
  * @brief The sound player structure. 
  * @details Gathers all the variables needed to successfully play chunks of PCM
@@ -46,7 +62,8 @@ struct dsound_data {
     MMRESULT timer_;                                        /*!< Multimedia timer that feeds the data to the buffers. */
     BOOL buf_1_filled_;                                     /*!< Flag indicating that a buffer 1 has been filled. */
     BOOL buf_2_filled_;                                     /*!< Flag indicating that a buffer 2 has been filled. */
-    size_t                  nHalfBufferSize_;               /*!< Size of a single buffer. */
+    DWORD   buffer_markers_[NUMBER_OF_BUFFERS];
+    size_t                  nSingleBufferSize_;               /*!< Size of a single buffer. */
     struct fifo_circular_buffer * fifo_;	/*!< A fifo queue - from that queue we fetch the data and feed to the buffers.*/
     struct play_settings play_settings_;	/*!< Settings for our player (how many bytes per buffer, timer frequency).*/
 };
@@ -263,53 +280,38 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
     {
         struct data_item data;
         struct buffer_desc buf_desc;
-        data.data_ = (uint8_t*)alloca(p_ds_data->nHalfBufferSize_);
-        data.count_ = p_ds_data->nHalfBufferSize_;
+        int read_buf_index, write_buf_index;
+        data.data_ = (uint8_t*)alloca(p_ds_data->nSingleBufferSize_);
+        data.count_ = p_ds_data->nSingleBufferSize_;
         buf_desc.p_begin_ = data.data_;
-        buf_desc.nMaxOffset_ = p_ds_data->nHalfBufferSize_;
+        buf_desc.nMaxOffset_ = p_ds_data->nSingleBufferSize_;
         buf_desc.nCurrentOffset_ = 0;
-        debug_outputln_buffered("%4.4u : %8.8u %8.8u", __LINE__, dwRead, dwWrite);
-        /* Check if both write & read cursor is in the 1st buffer and we have not yet filled 2nd buffer */
-        if (dwWrite < p_ds_data->nHalfBufferSize_ && dwRead < p_ds_data->nHalfBufferSize_ && FALSE == p_ds_data->buf_2_filled_)
+        read_buf_index = dwRead / ((2*p_ds_data->nSingleBufferSize_)/NUMBER_OF_BUFFERS);
+        write_buf_index = dwWrite / ((2*p_ds_data->nSingleBufferSize_)/NUMBER_OF_BUFFERS);
+        /* Check if both write & read cursor point to the same buffer */
+        if (read_buf_index == write_buf_index)
         {
-            /* Both read and write cursor in 1st buffer, 2nd buffer not yet filled - fill it now. */
-            p_ds_data->buf_2_filled_ = TRUE, p_ds_data->buf_1_filled_ = FALSE;
-            if (fifo_circular_buffer_get_items_count(p_ds_data->fifo_)>0)
+            int next_buf_index = (read_buf_index + 1) % NUMBER_OF_BUFFERS;
+            /* 0 means - buffer not yet filled */
+            if (0 == p_ds_data->buffer_markers_[next_buf_index])
             {
-                fifo_circular_buffer_fetch_item(p_ds_data->fifo_, &data);
+                debug_outputln("%4.4u : %d %d", __LINE__, read_buf_index, next_buf_index);
+                if (fifo_circular_buffer_get_items_count(p_ds_data->fifo_)>0)
+                {
+                    fifo_circular_buffer_fetch_item(p_ds_data->fifo_, &data);
+                }
+                else
+                {
+                    memset(data.data_, 0, sizeof(uint8_t)*data.count_);
+                }
+                hr = fill_buffer(next_buf_index * (p_ds_data->nSingleBufferSize_), p_ds_data->nSingleBufferSize_, p_ds_data->p_secondary_sound_buffer_, &buf_desc);
+                p_ds_data->buffer_markers_[next_buf_index] = -1;
             }
-            else
-            {
-                memset(data.data_, 0, sizeof(uint8_t)*data.count_);
-            }
-            hr = fill_buffer(p_ds_data->nHalfBufferSize_, p_ds_data->nHalfBufferSize_, p_ds_data->p_secondary_sound_buffer_, &buf_desc);
-        }
-        /* Check if both write & read cursor is in the 2nd buffer and we have not yet filled 1st buffer */
-        else if (dwWrite > p_ds_data->nHalfBufferSize_ && dwRead > p_ds_data->nHalfBufferSize_ && FALSE == p_ds_data->buf_1_filled_)
-        {
-            /* Both read and write cursor in 2nd buffer, 1st buffer not yet filled - fill it now. */
-            p_ds_data->buf_1_filled_ = TRUE, p_ds_data->buf_2_filled_ = FALSE;
-            if (fifo_circular_buffer_get_items_count(p_ds_data->fifo_)>0)
-            {
-                fifo_circular_buffer_fetch_item(p_ds_data->fifo_, &data);
-            }
-            else
-            {
-                memset(data.data_, 0, sizeof(uint8_t)*data.count_);
-            }
-            hr = fill_buffer(0, p_ds_data->nHalfBufferSize_, p_ds_data->p_secondary_sound_buffer_, &buf_desc);
+            p_ds_data->buffer_markers_[read_buf_index] = 0;
         }
         else
         {
-            /*
-             * read cursor in 1st buffer, write cursor in 2nd buffer 
-             * or
-             * read cursor in 2nd buffer, write cursor in 1st buffer 
-             * in either case - don't do anything. 
-             * Rationale:
-             * 1/ We are to close to buffer boundaries to undertake any action without risk of overwritting buffer already being played.
-             * 2/ The buffer to be filled with data might have well been filled with data already.
-             */ 
+            //debug_outputln("%4.4u : %d %d", __LINE__, read_buf_index, write_buf_index);
         }
     }   
     else
@@ -378,8 +380,8 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound
         goto error;
     }
     CopyMemory(&p_ds_data->wfe_, p_WFE, sizeof(WAVEFORMATEX));
-    p_ds_data->nHalfBufferSize_ = p_ds_data->play_settings_.play_buffer_size_;
-    hr = create_buffers(p_ds_data->p_direct_sound_8_, &p_ds_data->p_primary_sound_buffer_, &p_ds_data->p_secondary_sound_buffer_, &p_ds_data->wfe_, p_ds_data->nHalfBufferSize_);
+    p_ds_data->nSingleBufferSize_ = p_ds_data->play_settings_.play_buffer_size_;
+    hr = create_buffers(p_ds_data->p_direct_sound_8_, &p_ds_data->p_primary_sound_buffer_, &p_ds_data->p_secondary_sound_buffer_, &p_ds_data->wfe_, p_ds_data->nSingleBufferSize_);
     if (FAILED(hr))
     {
         debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
