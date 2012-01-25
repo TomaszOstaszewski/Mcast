@@ -36,7 +36,7 @@
 /*!
  * @brief Number of chunks in the DirectSound secondary buffer.
  */
-#define NUMBER_OF_BUFFERS (2)
+#define NUMBER_OF_BUFFERS (4)
 
 /*!
  * @brief Indicates that a chunk is being played and can be filled after playing is done.
@@ -244,13 +244,79 @@ error:
     return hr;
 }
 
+/*!
+ * @brief Sets up the DirectSound for playback
+ * @details Example code:
+ * @code
+ * HRESULT hr;
+ * struct dsound_data * p_retval = (struct dsound_data*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dsound_data));
+ * if (NULL != p_retval)
+ * {
+ *     hr = init_ds_data(hWnd, p_WFE, p_retval);
+ *     if (SUCCEEDED(hr))
+ *     {
+ *         return (DSOUNDPLAY)(p_retval);
+ *     }
+ * }
+ * debug_outputln("%s %5.5d", __FILE__, __LINE__);
+ * HeapFree(GetProcessHeap(), 0, p_retval);
+ * return NULL;
+ * @endcode
+ * @param[in] hwnd handle to the window that goes into the call of IDirectSound::SetCooperationLevel. Can be NULL, in which case either
+ * a foreground window or the desktop window will be used. See <a href="http://msdn.microsoft.com/en-us/library/ms898135.aspx">this link</a> for more information.
+ * @param[in] p_WFE pointer to the WAVEFORMATEX structure, describing the data to be played.
+ * @param[out] p_ds_data refernce to the structure, whose members will be filled with DirectSound interface pointers.
+ * @retrun returns the status of the operation, test it with SUCCEEDED() or FAILED() macros. 
+ */
+static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound_data * p_ds_data)
+{
+    HRESULT hr;
+    hr = DirectSoundCreate8(&DSDEVID_DefaultVoicePlayback, &p_ds_data->p_direct_sound_8_, NULL);
+    if (FAILED(hr))
+    {
+        debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
+        goto error;
+    }
+    if (NULL == hwnd)
+    {
+        hwnd = GetForegroundWindow();
+    }
+    if (NULL == hwnd)
+    {
+        hwnd = GetDesktopWindow();
+    }
+    hr = p_ds_data->p_direct_sound_8_->SetCooperativeLevel(hwnd, DSSCL_PRIORITY);
+    if (FAILED(hr))
+    {
+        debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
+        goto error;
+    }
+    CopyMemory(&p_ds_data->wfe_, p_WFE, sizeof(WAVEFORMATEX));
+    p_ds_data->nSingleBufferSize_ = p_ds_data->play_settings_.play_buffer_size_;
+    hr = create_buffers(p_ds_data->p_direct_sound_8_, &p_ds_data->p_primary_sound_buffer_, &p_ds_data->p_secondary_sound_buffer_, &p_ds_data->wfe_, p_ds_data->nSingleBufferSize_);
+    if (FAILED(hr))
+    {
+        debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
+        goto error;
+    }
+    return hr;
+error:
+    if (NULL != p_ds_data->p_direct_sound_8_)
+    {
+        p_ds_data->p_direct_sound_8_->Release();
+        p_ds_data->p_direct_sound_8_ = NULL;
+    }
+    return hr;
+}
+
+
 /**
- * @brief 
- * @param[in] dwOffset 
- * @param[in] req_size
- * @param[in] p_buffer - 
- * @param[in] p_input_buffer_desc
- * @return
+ * @brief Copy the data from "userspace" to the place from which they will be played on the speakers.
+ * @param[in] dwOffset the offset, from the beginning of the buffer to the first byte of the buffer to be filled. 
+ * @param[in] req_size number of bytes to fill the buffer with.
+ * @param[in] p_buffer buffer to be filled. 
+ * @param[in] p_input_buffer_desc from this source we will fetch the data
+ * @return returns S_OK on success, any other result indicates a failure.
  */
 static HRESULT fill_buffer(DWORD dwOffset, DWORD req_size, LPDIRECTSOUNDBUFFER8 p_buffer, struct buffer_desc * p_input_buffer_desc)
 {
@@ -290,11 +356,7 @@ static HRESULT fill_buffer(DWORD dwOffset, DWORD req_size, LPDIRECTSOUNDBUFFER8 
                 p_input_buffer_desc->nCurrentOffset_ = 0;
             }
         }
-        hr = p_buffer->Unlock(
-                lpvWrite1,   // Address of lock start.
-                dwLength1,   // Size of lock.
-                lpvWrite2,   // Wraparound 
-                dwLength2);  // Wraparound size 
+        hr = p_buffer->Unlock(lpvWrite1, dwLength1, lpvWrite2, dwLength2);
     }
     return hr;
 }
@@ -360,71 +422,6 @@ static void CALLBACK sTimerCallback(UINT uTimerID, UINT uMsg, DWORD dwUser,
 {
     struct dsound_data * p_ds_data = (struct dsound_data *)dwUser;
     play_data_chunk(p_ds_data);
-}
-
-/*!
- * @brief Sets up the DirectSound for playback
- * @details Example code:
- * @code
- * HRESULT hr;
- * struct dsound_data * p_retval = (struct dsound_data*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dsound_data));
- * if (NULL != p_retval)
- * {
- *     hr = init_ds_data(hWnd, p_WFE, p_retval);
- *     if (SUCCEEDED(hr))
- *     {
- *         return (DSOUNDPLAY)(p_retval);
- *     }
- * }
- * debug_outputln("%s %5.5d", __FILE__, __LINE__);
- * HeapFree(GetProcessHeap(), 0, p_retval);
- * return NULL;
- * @endcode
- * @param[in] hwnd handle to the window that goes into the call of IDirectSound::SetCooperationLevel. Can be NULL, in which case either
- * a foreground window or the desktop window will be used. See <a href="http://msdn.microsoft.com/en-us/library/ms898135.aspx">this link</a> for more information.
- * @param[in] p_WFE pointer to the WAVEFORMATEX structure, describing the data to be played.
- * @param[out] p_ds_data refernce to the structure, whose members will be filled with DirectSound interface pointers.
- * @retrun returns the status of the operation, test it with SUCCEEDED() or FAILED() macros. 
- */
-static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound_data * p_ds_data)
-{
-    HRESULT hr;
-    hr = DirectSoundCreate8(&DSDEVID_DefaultVoicePlayback, &p_ds_data->p_direct_sound_8_, NULL);
-    if (FAILED(hr))
-    {
-        debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
-        goto error;
-    }
-    if (NULL == hwnd)
-    {
-        hwnd = GetForegroundWindow();
-    }
-    if (NULL == hwnd)
-    {
-        hwnd = GetDesktopWindow();
-    }
-    hr = p_ds_data->p_direct_sound_8_->SetCooperativeLevel(hwnd, DSSCL_PRIORITY);
-    if (FAILED(hr))
-    {
-        debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
-        goto error;
-    }
-    CopyMemory(&p_ds_data->wfe_, p_WFE, sizeof(WAVEFORMATEX));
-    p_ds_data->nSingleBufferSize_ = p_ds_data->play_settings_.play_buffer_size_;
-    hr = create_buffers(p_ds_data->p_direct_sound_8_, &p_ds_data->p_primary_sound_buffer_, &p_ds_data->p_secondary_sound_buffer_, &p_ds_data->wfe_, p_ds_data->nSingleBufferSize_);
-    if (FAILED(hr))
-    {
-        debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
-        goto error;
-    }
-    return hr;
-error:
-    if (NULL != p_ds_data->p_direct_sound_8_)
-    {
-        p_ds_data->p_direct_sound_8_->Release();
-        p_ds_data->p_direct_sound_8_ = NULL;
-    }
-    return hr;
 }
 
 extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, 
