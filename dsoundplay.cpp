@@ -141,7 +141,7 @@ static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb)
     {
         size_t index;
         
-        debug_outputln("%s %5.5d : %8.8x %8.8u %8.8u %8.8u"
+        debug_outputln("%s %4.4u : %8.8x %8.8u %8.8u %8.8u"
                 ,__FILE__, __LINE__
                 ,caps.dwFlags
                 ,caps.dwBufferBytes
@@ -152,14 +152,14 @@ static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb)
         for (index = 0; index <sizeof(flags_to_descs)/sizeof(flags_to_descs[0]); ++index)
         {
             if (caps.dwFlags & flags_to_descs[index].flag_)
-                debug_outputln("%s %5.5d : %s"
+                debug_outputln("%s %4.4u : %s"
                     ,__FILE__, __LINE__
                     ,flags_to_descs[index].desc_);
          }
     }
     else
     {
-        debug_outputln("%s %5.5d : %8.8x", __FILE__, __LINE__, hr);    
+        debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);    
     }
     return hr;
 }
@@ -181,7 +181,7 @@ static HRESULT create_buffers(LPDIRECTSOUND8 p_direct_sound_8, LPDIRECTSOUNDBUFF
     LPDIRECTSOUNDBUFFER lpDSB = NULL;
     if (NULL == pp_primary_buffer || NULL == pp_secondary_buffer || NULL != *pp_primary_buffer || NULL != *pp_secondary_buffer)
     {
-        debug_outputln("%s %5.5d : %p %p %p %p", __FILE__, __LINE__, pp_primary_buffer, pp_secondary_buffer, *pp_primary_buffer, *pp_secondary_buffer);
+        debug_outputln("%s %4.4u : %p %p %p %p", __FILE__, __LINE__, pp_primary_buffer, pp_secondary_buffer, *pp_primary_buffer, *pp_secondary_buffer);
         return E_INVALIDARG;
     }
     ZeroMemory(&bufferDesc, sizeof(bufferDesc));
@@ -192,13 +192,13 @@ static HRESULT create_buffers(LPDIRECTSOUND8 p_direct_sound_8, LPDIRECTSOUNDBUFF
     hr = p_direct_sound_8->CreateSoundBuffer(&bufferDesc, pp_primary_buffer, NULL);
     if (FAILED(hr))
     {
-        debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
+        debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
         goto error;
     }
     hr = (*pp_primary_buffer)->SetFormat(p_wfe);
     if (FAILED(hr))
     {
-        debug_outputln("%s %5.5d : %8.8x", __FILE__, __LINE__, hr);
+        debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);
         goto error;
     }
     get_buffer_caps(*pp_primary_buffer);
@@ -209,13 +209,13 @@ static HRESULT create_buffers(LPDIRECTSOUND8 p_direct_sound_8, LPDIRECTSOUNDBUFF
     hr = p_direct_sound_8->CreateSoundBuffer(&bufferDesc, &lpDSB, NULL);
     if (FAILED(hr))
     {
-        debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
+        debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
         goto error;
     }
     hr = lpDSB->QueryInterface(IID_IDirectSoundBuffer8, (LPVOID*)pp_secondary_buffer);
     if (FAILED(hr))
     {
-        debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
+        debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
         goto error;
     }
     get_buffer_caps(*pp_secondary_buffer);
@@ -258,7 +258,7 @@ error:
  *         return (DSOUNDPLAY)(p_retval);
  *     }
  * }
- * debug_outputln("%s %5.5d", __FILE__, __LINE__);
+ * debug_outputln("%s %4.4u", __FILE__, __LINE__);
  * HeapFree(GetProcessHeap(), 0, p_retval);
  * return NULL;
  * @endcode
@@ -274,7 +274,7 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound
     hr = DirectSoundCreate8(&DSDEVID_DefaultVoicePlayback, &p_ds_data->p_direct_sound_8_, NULL);
     if (FAILED(hr))
     {
-        debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
+        debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
         goto error;
     }
     if (NULL == hwnd)
@@ -288,7 +288,7 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound
     hr = p_ds_data->p_direct_sound_8_->SetCooperativeLevel(hwnd, DSSCL_PRIORITY);
     if (FAILED(hr))
     {
-        debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
+        debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
         goto error;
     }
     CopyMemory(&p_ds_data->wfe_, p_WFE, sizeof(WAVEFORMATEX));
@@ -296,7 +296,7 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound
     hr = create_buffers(p_ds_data->p_direct_sound_8_, &p_ds_data->p_primary_sound_buffer_, &p_ds_data->p_secondary_sound_buffer_, &p_ds_data->wfe_, p_ds_data->nSingleBufferSize_);
     if (FAILED(hr))
     {
-        debug_outputln("%s %5.5d : %x", __FILE__, __LINE__, hr);
+        debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
         goto error;
     }
     return hr;
@@ -331,32 +331,29 @@ static HRESULT fill_buffer(DWORD dwOffset, DWORD req_size, LPDIRECTSOUNDBUFFER8 
             (LPVOID*)&lpvWrite2,    // Address of wraparound not needed. 
             &dwLength2,             // Size of wraparound not needed.
             0);                     // Flag.
-    if (SUCCEEDED(hr))
+    if (SUCCEEDED(hr) && NULL == lpvWrite2)
     {
-        if (NULL != lpvWrite2 || 0 != dwLength2)
+        struct buffer_desc output_desc;
+        output_desc.p_begin_    = (unsigned char *)lpvWrite1;
+        output_desc.nMaxOffset_ = dwLength1;
+        output_desc.nCurrentOffset_ = 0;
+        copy_buffer(&output_desc, p_input_buffer_desc, dwLength1);
+        /* If output buffer was not filled completely, fill rest with zeros */
+        if (output_desc.nCurrentOffset_ < output_desc.nMaxOffset_)
         {
-            debug_outputln("%s %5.5d : %p %u", __FILE__, __LINE__, lpvWrite2, dwLength2);
+            ZeroMemory(output_desc.p_begin_ + output_desc.nCurrentOffset_, output_desc.nMaxOffset_ - output_desc.nCurrentOffset_ + 1);
+            p_input_buffer_desc->nCurrentOffset_ = 0;
         }
-        else
+        /* If input buffer exhausted, wrap it around */
+        if (p_input_buffer_desc->nCurrentOffset_ == p_input_buffer_desc->nMaxOffset_)
         {
-            struct buffer_desc output_desc;
-            output_desc.p_begin_    = (unsigned char *)lpvWrite1;
-            output_desc.nMaxOffset_ = dwLength1;
-            output_desc.nCurrentOffset_ = 0;
-            copy_buffer(&output_desc, p_input_buffer_desc, dwLength1);
-            /* If output buffer was not filled completely, fill rest with zeros */
-            if (output_desc.nCurrentOffset_ < output_desc.nMaxOffset_)
-            {
-                ZeroMemory(output_desc.p_begin_ + output_desc.nCurrentOffset_, output_desc.nMaxOffset_ - output_desc.nCurrentOffset_ + 1);
-                p_input_buffer_desc->nCurrentOffset_ = 0;
-            }
-            /* If input buffer exhausted, wrap it around */
-            if (p_input_buffer_desc->nCurrentOffset_ == p_input_buffer_desc->nMaxOffset_)
-            {
-                p_input_buffer_desc->nCurrentOffset_ = 0;
-            }
+            p_input_buffer_desc->nCurrentOffset_ = 0;
         }
         hr = p_buffer->Unlock(lpvWrite1, dwLength1, lpvWrite2, dwLength2);
+    }
+    else
+    {
+        debug_outputln("%s %4.4u : %8.8x %p %u", __FILE__, __LINE__, hr, lpvWrite2, dwLength2);
     }
     return hr;
 }
@@ -476,11 +473,11 @@ extern "C" int dsoundplayer_play(DSOUNDPLAY handle)
             {
                 return 1;
             }
-            debug_outputln("%s %5.5d : %8.8x", __FILE__, __LINE__, hr);
+            debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);
         }
-        debug_outputln("%s %5.5d : %8.8x", __FILE__, __LINE__, hr);
+        debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
     return 0;
 }
 
