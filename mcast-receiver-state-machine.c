@@ -270,7 +270,7 @@ static int handle_play_internal(HWND hMainWnd, struct mcast_receiver * p_receive
     assert(NULL != p_receiver->fifo_);
     if (NULL == p_receiver->player_ && NULL != p_receiver->fifo_)
     {
-        p_receiver->player_ = dsoundplayer_create(hMainWnd, &p_receiver->settings_.wfex_, p_receiver->fifo_, &p_receiver->settings_.play_settings_);
+        p_receiver->player_ = dsoundplayer_create(hMainWnd, &p_receiver->settings_, p_receiver->fifo_);
         assert(NULL != p_receiver->player_);
         if (NULL != p_receiver->player_)
         {

@@ -33,15 +33,43 @@
 #include "play-settings.h"
 
 /*!
- * @brief Default size, in bytes, of the play buffer to be used in DirectSound. 
+ * @brief Default size, in bytes, of a single play chunk.
  */
-#define DEFAULT_PLAY_BUFFER_SIZE (4096)
+#define MAX_PLAY_CHUNK_SIZE (16384)
+
+/*!
+ * @brief Default size, in bytes, of a single play chunk.
+ */
+#define MIN_PLAY_CHUNK_SIZE (512)
+
+/*!
+ * @brief Default size, in bytes, of a single play chunk.
+ */
+#define DEFAULT_PLAY_CHUNK_SIZE (1024)
+
+/*!
+ * @brief Default number of play chunk.s
+ * @details Total buffer occupied by PCM data used for replaying it will be : number_of_chunks * size_of_single_chunk
+ */
+#define MAX_NUMBER_OF_CHUNKS (16)
+
+/*!
+ * @brief Default number of play chunk.s
+ * @details Total buffer occupied by PCM data used for replaying it will be : number_of_chunks * size_of_single_chunk
+ */
+#define MIN_NUMBER_OF_CHUNKS (2)
+
+/*!
+ * @brief Default number of play chunk.s
+ * @details Total buffer occupied by PCM data used for replaying it will be : number_of_chunks * size_of_single_chunk
+ */
+#define DEFAULT_NUMBER_OF_CHUNKS (10)
 
 /*!
  * @brief Default timeout, in milliseconds, for multimedia play timer.
  * @details Each time the timeout expires, the DirectSound fill-buffer-and-play function will be invoked.
  */
-#define DEFAULT_TIMER_DELAY (5)
+#define DEFAULT_TIMER_DELAY (10)
 
 /*!
  * @brief Timer resolution for multimedia play timer.
@@ -52,7 +80,8 @@ int play_settings_get_default(struct play_settings * p_settings)
 {
     p_settings->timer_delay_ = DEFAULT_TIMER_DELAY;
     p_settings->timer_resolution_ = DEFAULT_TIMER_RESOLUTION;
-    p_settings->play_buffer_size_ = DEFAULT_PLAY_BUFFER_SIZE;
+    p_settings->play_buffer_size_ = DEFAULT_PLAY_CHUNK_SIZE;
+    p_settings->play_chunks_count_ = DEFAULT_NUMBER_OF_CHUNKS;
 	return 1;
 }
 
@@ -60,9 +89,11 @@ int play_settings_validate(struct play_settings const * p_settings)
 {
 	if (p_settings->timer_delay_ < 1 || p_settings->timer_delay_ > 1000)
 		return 0;	
-	if (p_settings->play_buffer_size_ < 1024 || p_settings->play_buffer_size_ > 16384)
+	if (p_settings->play_buffer_size_ < MIN_PLAY_CHUNK_SIZE || p_settings->play_buffer_size_ > MAX_PLAY_CHUNK_SIZE)
 		return 0;	
-	return 1;
+	if (p_settings->play_chunks_count_ < MIN_NUMBER_OF_CHUNKS || p_settings->play_chunks_count_ > MAX_NUMBER_OF_CHUNKS)
+		return 0;	
+    return 1;
 }
 
 void play_settings_copy(struct play_settings * p_dest, struct play_settings const * p_source)

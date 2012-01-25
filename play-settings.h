@@ -47,9 +47,17 @@ struct play_settings {
      */
 	UINT 	timer_resolution_;
     /*!
-  	 * @brief Default size, in bytes, of the play buffer to be used in DirectSound. 
+  	 * @brief Default size, in bytes, of a single play chunk to be used in DirectSound. 
+     * @details 
+     * The DirectSound play buffer will be a single buffer, divided to \ref play_chunks_count_ equal chunks, each of \ref play_buffer_size_ bytes long.
  	 */
 	UINT	play_buffer_size_;
+    /*!
+  	 * @brief Default number of play chunks.
+     * @details 
+     * The DirectSound play buffer will be a single buffer, divided to \ref play_chunks_count_ equal chunks, each of \ref play_buffer_size_ bytes long.
+ 	 */
+	UINT	play_chunks_count_;
 };
 
 /*!
