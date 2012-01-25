@@ -49,21 +49,16 @@
 
 static void dump_addrinfo(struct addrinfo const * p_info, const char * file, unsigned int line)
 {
-    debug_outputln("%s %4.4u : %d %d %d %d %s %p", file, line,
+    char host[NI_MAXHOST] = { 0 };
+    FormatAddress(p_info->ai_addr, p_info->ai_addrlen, host, NI_MAXHOST);
+    debug_outputln("%s %4.4u : %d %d %d %d %s %s %p", file, line,
         p_info->ai_flags,
         p_info->ai_family,
         p_info->ai_socktype,
         p_info->ai_protocol,
         p_info->ai_canonname,
+        host,
         p_info->ai_next);
-    if (p_info->ai_addrlen == sizeof(struct sockaddr_in))
-    {
-        char host[NI_MAXHOST];
-        struct sockaddr_in const * p_in_addr = (struct sockaddr_in const *)p_info->ai_addr;
-        FormatAddress(p_info->ai_addr, p_info->ai_addrlen, host, NI_MAXHOST);
-        debug_outputln("%s %4.4u : \t %s %hu", file, line, inet_ntoa(p_in_addr->sin_addr), ntohs(p_in_addr->sin_port));
-        debug_outputln("%s %4.4u : \t %s", file, line, host);
-    }
 }
 
 static int set_reuse_addr(SOCKET s)

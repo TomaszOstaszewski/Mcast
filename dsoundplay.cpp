@@ -1,6 +1,7 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*!
  * @file dsoundplay.cpp
+ * @brief DirectSound WAV playing file.
  * @author T. Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
@@ -23,7 +24,6 @@
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
  * @date 30-Nov-2011
- * @brief DirectSound WAV playing file.
  */
 #include "pcc.h"
 #include "debug_helpers.h"
@@ -33,24 +33,28 @@
 #include "input-buffer.h"
 #include "play-settings.h"
 
+/*!
+ * @brief Number of chunks in the DirectSound secondary buffer.
+ */
 #define NUMBER_OF_BUFFERS (2)
 
 /*!
- * @brief Indicates that the buffer is being played and can be filled.
- * @details If a buffer is marked with <b>BUFFER_PLAYED</b>, it can be filled again with new data, as soon as the DirectSound
+ * @brief Indicates that a chunk is being played and can be filled after playing is done.
+ * @details If a chunk is marked with <b>BUFFER_PLAYED</b>, it can be filled again with new data, as soon as the DirectSound
  * player is done with that buffer.
  */
 #define BUFFER_PLAYED (0x00000000)
 
 /*!
- * @brief Indicates that the buffer is filled and can be played.
- * @details To be frank, even if a buffer is not marked as <b>BUFFER_FILLED</b>, it will be played.
- * The marker <b>BUFFER_FILLED</b> is there not to fill the same buffer again with new data until old data is played.
+ * @brief Indicates that a chunk is filled and can be played.
+ * @details To be frank, even if a chunk is not marked as <b>BUFFER_FILLED</b>, it will be played.
+ * 
+ * The real purpose of having the <b>BUFFER_FILLED</b> is the to avoid the situation, when we fill the same chunk over and over again.
  */
 #define BUFFER_FILLED (0xffffffff)
 
 /*!
- * @brief The sound player structure. 
+ * @brief The sound player descriptor. 
  * @details Gathers all the variables needed to successfully play chunks of PCM
  * data using DirectSound.
  */
@@ -60,17 +64,48 @@ struct dsound_data {
     LPDIRECTSOUNDBUFFER     p_primary_sound_buffer_;        /*!< The DirectSound primary buffer. */
     LPDIRECTSOUNDBUFFER8    p_secondary_sound_buffer_;      /*!< The DirectSound secondary buffer. */
     MMRESULT timer_;                                        /*!< Multimedia timer that feeds the data to the buffers. */
-    DWORD   buffer_markers_[NUMBER_OF_BUFFERS];             /*!< Array of markers whether a buffer has been filled or not. */
+    DWORD   buffer_markers_[NUMBER_OF_BUFFERS];             /*!< Array of markers whether a buffer has been filled or played. */
     size_t                  nSingleBufferSize_;               /*!< Size of a single buffer. */
     struct fifo_circular_buffer * fifo_;	/*!< A fifo queue - from that queue we fetch the data and feed to the buffers.*/
     struct play_settings play_settings_;	/*!< Settings for our player (how many bytes per buffer, timer frequency).*/
 };
 
+/*!
+ * @brief Macro that creates a DirectSound buffer descriptor structures.
+ * @details This is here to make the creation of a table of structures a bit easier. 
+ * Instead of writting:
+ * @code
+ * static struct flag_2_desc {
+ *  DWORD flag_;
+ *  LPCTSTR desc_;
+ * } flags_to_descs[] = {
+ *  { DSBCAPS_PRIMARYBUFFER, "DSBCAPS_PRIMARYBUFFER" },
+ * };
+ * @endcode
+ * one writes:
+ * @code
+ * static struct flag_2_desc {
+ *     DWORD flag_;
+ *     LPCTSTR desc_;
+ * } flags_to_descs[] = {
+ *     MAKE_FLAG_2_DESC(DSBCAPS_PRIMARYBUFFER),
+ * };
+ * @endcode
+ */
 #define MAKE_FLAG_2_DESC(x) { x, #x }
-static struct flag_2_desc {
-    DWORD flag_;
-    LPCTSTR desc_;
-} flags_to_descs[] = {
+
+/*!
+ * @brief Maps DWORD flag to its textual counterpart.
+ */
+struct dword_2_desc {
+    DWORD flag_; /*!< A flag value.*/
+    LPCTSTR desc_; /*!< Flag's textual description. */
+};
+ 
+/*!
+ * @brief Description of the DirectSound buffer flags.
+ */
+static struct dword_2_desc flags_to_descs[] = {
     MAKE_FLAG_2_DESC(DSBCAPS_PRIMARYBUFFER),
     MAKE_FLAG_2_DESC(DSBCAPS_STATIC),
     MAKE_FLAG_2_DESC(DSBCAPS_LOCHARDWARE),
@@ -130,18 +165,16 @@ static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb)
 }
 
 /**
- * @brief Creates the buffer
- * @param[in] dwOffset 
- * @param[in] req_size
- * @param[in] p_buffer - 
- * @param[in] p_input_buffer_desc
+ * @brief Creates the primary buffer and the secondary buffers.
+ * @param[in] p_direct_sound_8 pointer to the IDirectSound8 interface. This interface is a factory for creating both the primary buffer and the secondary buffers.
+ * @param[out] pp_primary_buffer pointer to the memory location which will be written with the primary buffer interface pointer.
+ * @param[out] pp_secondary_buffer pointer to the memory location which will be written with the secondary buffer interface pointer. 
+ * @param[in] p_wfe pointer to the WAVEFORMATEX structure. This parameter defines the buffer format (number of samples per second, how many bytes per sample and so on).
+ * @param[in] single_buffer_size size of the single play buffer
  * @return
  */
-static HRESULT create_buffers(LPDIRECTSOUND8 p_direct_sound_8, 
-        LPDIRECTSOUNDBUFFER * pp_primary_buffer, 
-        LPDIRECTSOUNDBUFFER8 * pp_secondary_buffer, 
-        WAVEFORMATEX * p_wfe, 
-        size_t half_buffer_size)
+static HRESULT create_buffers(LPDIRECTSOUND8 p_direct_sound_8, LPDIRECTSOUNDBUFFER * pp_primary_buffer, LPDIRECTSOUNDBUFFER8 * pp_secondary_buffer, 
+        WAVEFORMATEX * p_wfe, size_t single_buffer_size)
 {
     HRESULT hr;
     DSBUFFERDESC bufferDesc;
@@ -170,8 +203,8 @@ static HRESULT create_buffers(LPDIRECTSOUND8 p_direct_sound_8,
     }
     get_buffer_caps(*pp_primary_buffer);
     /* Secondary buffer */
-    bufferDesc.dwFlags = DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLPAN | DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLFREQUENCY | DSBCAPS_GLOBALFOCUS | DSBCAPS_CTRLPOSITIONNOTIFY;
-    bufferDesc.dwBufferBytes = 2*half_buffer_size; /* double buffering - one buffer being played, whereas the other is being filled in */
+    bufferDesc.dwFlags = DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLPAN | DSBCAPS_CTRLFREQUENCY | DSBCAPS_GLOBALFOCUS | DSBCAPS_CTRLPOSITIONNOTIFY;
+    bufferDesc.dwBufferBytes = NUMBER_OF_BUFFERS*single_buffer_size; /* double buffering - one buffer being played, whereas the other is being filled in */
     bufferDesc.lpwfxFormat = p_wfe;
     hr = p_direct_sound_8->CreateSoundBuffer(&bufferDesc, &lpDSB, NULL);
     if (FAILED(hr))
@@ -267,7 +300,8 @@ static HRESULT fill_buffer(DWORD dwOffset, DWORD req_size, LPDIRECTSOUNDBUFFER8 
 }
 
 /*!
- * @brief
+ * @brief Fills the secondary buffer with audio samples.
+ * @param[in] p_ds_data pointer to the player descriptor.
  */
 static void play_data_chunk(struct dsound_data * p_ds_data) 
 {
@@ -284,16 +318,16 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
         buf_desc.p_begin_ = data.data_;
         buf_desc.nMaxOffset_ = p_ds_data->nSingleBufferSize_;
         buf_desc.nCurrentOffset_ = 0;
-        read_buf_index = dwRead / ((2*p_ds_data->nSingleBufferSize_)/NUMBER_OF_BUFFERS);
-        write_buf_index = dwWrite / ((2*p_ds_data->nSingleBufferSize_)/NUMBER_OF_BUFFERS);
+        read_buf_index = dwRead / p_ds_data->nSingleBufferSize_;
+        write_buf_index = dwWrite / p_ds_data->nSingleBufferSize_;
         /* Check if both write & read cursor point to the same buffer */
         if (read_buf_index == write_buf_index)
         {
             int next_buf_index = (read_buf_index + 1) % NUMBER_OF_BUFFERS;
-            /* 0 means - buffer not yet filled */
-            if (0 == p_ds_data->buffer_markers_[next_buf_index])
+            assert(next_buf_index < NUMBER_OF_BUFFERS); /* 0 means - buffer not yet filled */
+            assert(read_buf_index < NUMBER_OF_BUFFERS);
+            if (BUFFER_PLAYED == p_ds_data->buffer_markers_[next_buf_index])
             {
-                debug_outputln("%4.4u : %d %d", __LINE__, read_buf_index, next_buf_index);
                 if (fifo_circular_buffer_get_items_count(p_ds_data->fifo_)>0)
                 {
                     fifo_circular_buffer_fetch_item(p_ds_data->fifo_, &data);
@@ -303,13 +337,9 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
                     memset(data.data_, 0, sizeof(uint8_t)*data.count_);
                 }
                 hr = fill_buffer(next_buf_index * (p_ds_data->nSingleBufferSize_), p_ds_data->nSingleBufferSize_, p_ds_data->p_secondary_sound_buffer_, &buf_desc);
-                p_ds_data->buffer_markers_[next_buf_index] = -1;
+                p_ds_data->buffer_markers_[next_buf_index] = BUFFER_FILLED;
             }
-            p_ds_data->buffer_markers_[read_buf_index] = 0;
-        }
-        else
-        {
-            //debug_outputln("%4.4u : %d %d", __LINE__, read_buf_index, write_buf_index);
+            p_ds_data->buffer_markers_[read_buf_index] = BUFFER_PLAYED;
         }
     }   
     else
@@ -320,7 +350,9 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
 }
 
 /*!
- * @brief
+ * @brief A player timer callback.
+ * @details This callback fires once a while and checks if there is new data to be played.
+ * if so, this new data is placed in the secondary buffer and then automagically played.
  */
 static void CALLBACK sTimerCallback(UINT uTimerID, UINT uMsg, DWORD dwUser, 
         DWORD dw1 /* reserved - do not use */, 
