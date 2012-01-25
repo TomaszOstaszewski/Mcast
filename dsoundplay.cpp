@@ -2,6 +2,45 @@
 /*!
  * @file dsoundplay.cpp
  * @brief DirectSound WAV playing file.
+ * @details To begin with, let's start with the general idea of DirectSound playback. 
+ * Let's ignore for the moment other important DirectSound topics and focus on a main subject. 
+ * The main subject is that DirectSound uses an array of bytes for playback. That's it. There's nothing more to it. The whole issue of the playback
+ * is to alter the contents of that array so the playback goes smoothly.
+
+ * For the moment let's assume, that we have this buffer and it's 8192 bytes long. Then we tell the DirectSound subsystem to playback the data from this buffer.
+ * The DirectSound will consequently ready bytes form that buffer and feed them to the sound card. This is a sequential process, i.e. not the entire 
+ * buffer will be consumed at time. Instead, we may query DirectSound which part of the buffer is currently accessed by the sound card hardware. 
+ * This part, to which the hardware has an access, is off-limits for us. However, with the rest of the buffer we may do as we please. 
+ * This query is called a GetCurrentPosition() in DirectSound lingo, and the outputs are so called cursors positions. There are 2 cursors, the read cursor and 
+ * the write cursor. What is there from read to write cursor, is off-limits. What is there from write to read cursor - we may change. The gab between
+ * the read and write is the guard period. This guard period shall give us sufficient time to fill the remaining part of the buffer before the time will come
+ * for us to play it.
+ *
+ * So imagine that we have a 10ms timer ticking, and with each timer tick we check the cursors. Here's an example output:
+ * \code
+ *   0ms Read:    0 bytes, Write:  480 bytes
+ *
+ *  10ms Read:  380 bytes, Write:  860 bytes 
+ *
+ *  20ms Read:  760 bytes, Write: 1240 bytes 
+ *
+ *  ...
+ *
+ * 210ms Read: 7980 bytes, Write:  268 bytes
+ * \endcode
+ *
+ * As can be easily seen, cursors wrap around. Therefore, a small buffer, of couple kB long, can be used to play much larger files, provided we alter the contents
+ * of the buffer fast enough.
+ *
+ * What we may change, is the area from the write cursor to the read cursor. The area from read to write cursor, the guard period, should not be changed. 
+ * The are is about 480 bytes long on my PC. Assuming 8000 Hz sampling rate and 2 bytes per sample, this yields 30 milliseconds to fill the next chunk of the buffer.
+ * Even given the medicore realtime capabilities of the Windows platform, this timespan usually suffices to successfully complete this task.
+ *
+ * With clever buffer organization, one can buy himself much more time, trading it for space. Let's assume that the 8192 bytes long buffer is divided into 2 chunks of 4096 bytes each.
+ * We we notice that both the read and write currsor are in the range from 0 to 4095 bytes inclusive, then we fill entire 2nd chunk starting from 4096 up to 8191.
+ * If both cursors move to range from 4096 to 8191 inclusive, we fill entire 1st chunk starting from 0 up to 4095.
+ * Given the same 8000 samples per second and 2 bytes per sample it gives us about 256 milliseconds time to fill next chunk. This is more than enough for even low end machine.
+ *
  * @author T. Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
@@ -31,7 +70,7 @@
 #include "wave_utils.h"
 #include "fifo-circular-buffer.h"
 #include "input-buffer.h"
-#include "play-settings.h"
+#include "receiver-settings.h"
 
 /*!
  * @brief Number of chunks in the DirectSound secondary buffer.
@@ -421,10 +460,8 @@ static void CALLBACK sTimerCallback(UINT uTimerID, UINT uMsg, DWORD dwUser,
     play_data_chunk(p_ds_data);
 }
 
-extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, 
-	WAVEFORMATEX const * p_WFE, 
-	struct fifo_circular_buffer * fifo, 
-	struct play_settings const * play_settings)
+//extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, WAVEFORMATEX const * p_WFE, struct fifo_circular_buffer * fifo, struct play_settings const * play_settings)
+extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings const * p_settings, struct fifo_circular_buffer * fifo)
 {
     struct dsound_data * p_retval = 
 		(struct dsound_data*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dsound_data));
@@ -432,8 +469,8 @@ extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd,
     {
         HRESULT hr;
         p_retval->fifo_ = fifo;
-        play_settings_copy(&p_retval->play_settings_, play_settings);
-        hr = init_ds_data(hWnd, p_WFE, p_retval);
+        play_settings_copy(&p_retval->play_settings_, &p_settings->play_settings_);
+        hr = init_ds_data(hWnd, &p_settings->wfex_, p_retval);
         if (SUCCEEDED(hr))
         {
             return (DSOUNDPLAY)(p_retval);

@@ -98,7 +98,7 @@ $(OUTDIR_OBJ)\receiver-settings-dlg.obj: receiver-settings-dlg.c pcc.h receiver-
 $(OUTDIR_OBJ)\wave_utils.obj: wave_utils.c pcc.h $(OUTDIR_OBJ)
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
-$(OUTDIR_OBJ)\dsoundplay.obj: dsoundplay.cpp fifo-circular-buffer.h input-buffer.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcpp.pch
+$(OUTDIR_OBJ)\dsoundplay.obj: dsoundplay.cpp fifo-circular-buffer.h input-buffer.h receiver-settings.h play-settings.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcpp.pch
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcpp.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\message-loop.obj: message-loop.c message-loop.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
