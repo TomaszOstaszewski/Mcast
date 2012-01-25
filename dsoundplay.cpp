@@ -187,7 +187,6 @@ static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb)
                 ,caps.dwUnlockTransferRate
                 ,caps.dwPlayCpuOverhead
                 );    
-        
         for (index = 0; index <sizeof(flags_to_descs)/sizeof(flags_to_descs[0]); ++index)
         {
             if (caps.dwFlags & flags_to_descs[index].flag_)
@@ -359,18 +358,17 @@ error:
  */
 static HRESULT fill_buffer(DWORD dwOffset, DWORD req_size, LPDIRECTSOUNDBUFFER8 p_buffer, struct buffer_desc * p_input_buffer_desc)
 {
-    uint8_t *lpvWrite1, *lpvWrite2;
-    DWORD dwLength1, dwLength2;
+    LPVOID lpvWrite1;
+    DWORD dwLength1;
     HRESULT hr;
-    hr = p_buffer->Lock(
-            dwOffset,               // Offset at which to start lock.
+    hr = p_buffer->Lock(dwOffset, // Offset at which to start lock.
             req_size,               // Size of lock;
             (LPVOID*)&lpvWrite1,    // Gets address of first part of lock.
             &dwLength1,             // Gets size of first part of lock.
-            (LPVOID*)&lpvWrite2,    // Address of wraparound not needed. 
-            &dwLength2,             // Size of wraparound not needed.
+            NULL, /* Second part not needed as we will never wrap around - we lock equal buffer chunks */
+            NULL,
             0);                     // Flag.
-    if (SUCCEEDED(hr) && NULL == lpvWrite2)
+    if (SUCCEEDED(hr))
     {
         struct buffer_desc output_desc;
         output_desc.p_begin_    = (unsigned char *)lpvWrite1;
@@ -388,11 +386,11 @@ static HRESULT fill_buffer(DWORD dwOffset, DWORD req_size, LPDIRECTSOUNDBUFFER8 
         {
             p_input_buffer_desc->nCurrentOffset_ = 0;
         }
-        hr = p_buffer->Unlock(lpvWrite1, dwLength1, lpvWrite2, dwLength2);
+        hr = p_buffer->Unlock(lpvWrite1, dwLength1, NULL, 0);
     }
     else
     {
-        debug_outputln("%s %4.4u : %8.8x %p %u", __FILE__, __LINE__, hr, lpvWrite2, dwLength2);
+        debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);
     }
     return hr;
 }
@@ -460,7 +458,6 @@ static void CALLBACK sTimerCallback(UINT uTimerID, UINT uMsg, DWORD dwUser,
     play_data_chunk(p_ds_data);
 }
 
-//extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, WAVEFORMATEX const * p_WFE, struct fifo_circular_buffer * fifo, struct play_settings const * play_settings)
 extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings const * p_settings, struct fifo_circular_buffer * fifo)
 {
     struct dsound_data * p_retval = 
