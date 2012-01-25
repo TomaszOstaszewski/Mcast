@@ -60,9 +60,7 @@ struct dsound_data {
     LPDIRECTSOUNDBUFFER     p_primary_sound_buffer_;        /*!< The DirectSound primary buffer. */
     LPDIRECTSOUNDBUFFER8    p_secondary_sound_buffer_;      /*!< The DirectSound secondary buffer. */
     MMRESULT timer_;                                        /*!< Multimedia timer that feeds the data to the buffers. */
-    BOOL buf_1_filled_;                                     /*!< Flag indicating that a buffer 1 has been filled. */
-    BOOL buf_2_filled_;                                     /*!< Flag indicating that a buffer 2 has been filled. */
-    DWORD   buffer_markers_[NUMBER_OF_BUFFERS];
+    DWORD   buffer_markers_[NUMBER_OF_BUFFERS];             /*!< Array of markers whether a buffer has been filled or not. */
     size_t                  nSingleBufferSize_;               /*!< Size of a single buffer. */
     struct fifo_circular_buffer * fifo_;	/*!< A fifo queue - from that queue we fetch the data and feed to the buffers.*/
     struct play_settings play_settings_;	/*!< Settings for our player (how many bytes per buffer, timer frequency).*/
@@ -468,8 +466,6 @@ extern "C" int dsoundplayer_stop(DSOUNDPLAY handle)
     LPDIRECTSOUNDBUFFER8 lpdsbStatic = p_ds_data->p_secondary_sound_buffer_;
     HRESULT hr = lpdsbStatic->Stop();
     MMRESULT res = timeKillEvent(p_ds_data->timer_);
-    p_ds_data->buf_1_filled_ = FALSE;
-    p_ds_data->buf_2_filled_ = FALSE;
     if (SUCCEEDED(hr) && TIMERR_NOERROR == res)
         result = 1;
     return result;
