@@ -90,10 +90,10 @@ int main(int argc, char ** argv)
 	_int64 total, avg, freq;
 	size_t idx;
     /* Create the performance counter object */
-	counter = pref_counter_create();
+	counter = perf_counter_create();
     assert(counter);
     /* Get the timer frequency - it will be needed to calculate elapsed wall time of the profiled code segment. */
-    freq = pref_counter_get_freq(counter);
+    freq = perf_counter_get_freq(counter);
 	for (idx = 0; idx<sizeof(func_table)/sizeof(func_table[0]); ++idx)	
 	{
         /* The performance counter will measure from the start to the end 
@@ -101,17 +101,17 @@ int main(int argc, char ** argv)
          * and to display them.
          */
         /* Mark the start. */
-        pref_counter_mark_before(counter);
+        perf_counter_mark_before(counter);
         func_table[idx].y_j0 = _j0(func_table[idx].x_);
         func_table[idx].y_j1 = _j1(func_table[idx].x_);
         printf("_j0(%2.2f) = %+4.4f _j0(%2.2f) = %+4.4f\n", func_table[idx].x_, func_table[idx].y_j0, func_table[idx].x_, func_table[idx].y_j1);
         /* Mark the end. */
-	    pref_counter_mark_after(counter);
+	    perf_counter_mark_after(counter);
 	}
     /* Get total time and average it takes to execute the code segment between calls to perf_counter_mark_before and perf_counter_mark_end */
-	pref_counter_get_duration(counter, &total, &avg);
+	perf_counter_get_duration(counter, &total, &avg);
     /* Destroy the performance counter object */
-	pref_counter_destroy(counter);
+	perf_counter_destroy(counter);
     /* Display results */
     printf("Time it took to execute: total = %I64d, average = %I64d\n", total, avg);
     printf("Freq = %I64d\n", freq);

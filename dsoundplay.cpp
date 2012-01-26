@@ -71,6 +71,7 @@
 #include "fifo-circular-buffer.h"
 #include "input-buffer.h"
 #include "receiver-settings.h"
+#include "perf-counter-itf.h"
 
 /*!
  * @brief Indicates that a chunk is being played and can be filled after playing is done.
@@ -98,6 +99,8 @@
  * data using DirectSound.
  */
 struct dsound_data {
+    struct perf_counter * counter1_;
+    _int64 total, avg, freq;
     WAVEFORMATEX wfe_;
     LPDIRECTSOUND8          p_direct_sound_8_;              /*!< The DirectSound Object. */
     LPDIRECTSOUNDBUFFER     p_primary_sound_buffer_;        /*!< The DirectSound primary buffer. */
@@ -460,7 +463,11 @@ static void CALLBACK sTimerCallback(UINT uTimerID, UINT uMsg, DWORD dwUser,
         DWORD dw2 /* reserved * - do not use */) 
 {
     struct dsound_data * p_ds_data = (struct dsound_data *)dwUser;
+    perf_counter_mark_before(p_ds_data->counter1_);
     play_data_chunk(p_ds_data);
+    perf_counter_mark_after(p_ds_data->counter1_);
+    perf_counter_get_duration(p_ds_data->counter1_, &p_ds_data->total, &p_ds_data->avg);
+    debug_outputln_buffered(" %I64d, %I64d", (1000000*p_ds_data->total)/p_ds_data->freq, (1000000*p_ds_data->avg)/p_ds_data->freq);
 }
 
 extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings const * p_settings, struct fifo_circular_buffer * fifo)
@@ -473,6 +480,8 @@ extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings co
         {
             HRESULT hr;
             p_retval->fifo_ = fifo;
+            p_retval->counter1_ = perf_counter_create();
+            p_retval->freq = perf_counter_get_freq(p_retval->counter1_);
             p_retval->number_of_chunks_ = p_settings->play_settings_.play_chunks_count_;
             play_settings_copy(&p_retval->play_settings_, &p_settings->play_settings_);
             hr = init_ds_data(hWnd, &p_settings->wfex_, p_retval);
@@ -490,6 +499,7 @@ extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings co
 extern "C" void dsoundplayer_destroy(DSOUNDPLAY handle) 
 {
     struct dsound_data * p_ds_data = (struct dsound_data*)handle;
+    perf_counter_destroy(p_ds_data->counter1_);
     p_ds_data->p_secondary_sound_buffer_->Release();
     p_ds_data->p_primary_sound_buffer_->Release();
     p_ds_data->p_direct_sound_8_->Release();
