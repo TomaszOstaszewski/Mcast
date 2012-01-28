@@ -91,12 +91,11 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
     uint32_t send_delay;
     p_sender = (struct mcast_sender *)param;
     assert(p_sender);
-    send_delay = p_sender->settings_.send_delay_;
     p_master_riff = p_sender->settings_.chunk_;
     assert(p_master_riff);
     {   
         uint32_t max_offset = p_master_riff->format_chunk_.subchunk_.subchunk_size_;
-        uint32_t max_chunk_size = p_sender->settings_.chunk_size_;
+        uint32_t max_chunk_size = sender_settings_get_chunk_size_bytes(&p_sender->settings_);
         int8_t const * const p_data_begin = p_master_riff->format_chunk_.subchunk_.samples8_;
         assert(max_chunk_size <= MAX_ETHER_PAYLOAD_SANS_UPD_IP);
         for (;;)

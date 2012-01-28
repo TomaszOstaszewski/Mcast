@@ -35,6 +35,11 @@
 #include "sender-res.h"
 
 /*!
+ * @brief Maximum number of digits in the dialogs edit controls.
+ */
+#define TEXT_LIMIT (4)
+
+/*!
  * @brief A copy of the sender settings object that this dialog operates on.
  * @details If the user blesses the dialog with an OK button, and all the data
  * validates OK, then this copy becomes the settings object returned to the caller.
@@ -42,25 +47,21 @@
 static struct sender_settings g_settings;
 
 /*!
- * @brief Handle to the packet delay edit control.
+ * @brief Handle to the packet length edit control.
+ * @details This control shows the amount of audio time contained in one packet. The unit is bytes.
  */
-static HWND g_packet_delay_edit;
+static HWND g_packet_length_ms_edit_;
 
 /*!
  * @brief Handle to the packet length edit control.
  * @details This control shows the amount of audio time contained in one packet. The unit is bytes.
  */
-static HWND g_packet_length_edit;
-
-/*!
- * @brief Handle to the packet delay spin control.
- */
-static HWND g_packet_delay_spin;
+static HWND g_packet_length_bytes_edit_;
 
 /*!
  * @brief Handle to the packet length spin control.
  */
-static HWND g_packet_length_spin;
+static HWND g_packet_length_ms_spin_;
 /*!
  * @brief Handle to the packet length edit control.
  * @details This control shows the amount of audio time contained in one packet. The unit is milliseconds.
@@ -74,35 +75,15 @@ static HWND g_packet_lenght_ms_edit;
 static HWND g_btok;
 
 /*!
- * @brief Maximum number of digits in the dialogs edit controls.
- */
-#define TEXT_LIMIT (4)
-
-/*!
  * @brief Buffer that holds a number typed into one of the edit controls.
  */
 static TCHAR text_buffer[TEXT_LIMIT+1];
 
-/*!
- * @brief Default number of samples per second.
- */
-#define SAMPLES_PER_SEC (8000.0)
-
-/*!
- * @brief Default number of bytes per sample.
- */
-#define BYTES_PER_SAMPLE (2.0)
-
-/*!
- * @brief Number of milliseconds in 1 second.
- */
-#define MILLISECOND_IN_SEC (1000.0)
-
 static void update_calculated_controls(struct sender_settings const * p_settings)
 {
-    double length_in_ms = (MILLISECOND_IN_SEC * p_settings->chunk_size_/BYTES_PER_SAMPLE)/SAMPLES_PER_SEC;
-    StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%2.2f", length_in_ms);
-    SetWindowText(g_packet_lenght_ms_edit, text_buffer);
+    uint32_t length_in_bytes = sender_settings_get_chunk_size_bytes(p_settings);
+    StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%4u", length_in_bytes);
+    SetWindowText(g_packet_length_bytes_edit_, text_buffer);
 }
 
 /*!
@@ -112,12 +93,9 @@ static void update_calculated_controls(struct sender_settings const * p_settings
  */
 static void data_to_controls(struct sender_settings const * p_settings)
 {
-    /*! \todo Remove this nasty magic numbers with variables, whose values are taken form the WAV file being send */
+    StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%u", p_settings->chunk_size_ms_);
+    SetWindowText(g_packet_length_ms_edit_, text_buffer);
     update_calculated_controls(p_settings);
-    StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%u", p_settings->send_delay_);
-    SetWindowText(g_packet_delay_edit, text_buffer);
-    StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%u", p_settings->chunk_size_);
-    SetWindowText(g_packet_length_edit, text_buffer);
 }
 
 /*!
@@ -133,25 +111,14 @@ static void data_to_controls(struct sender_settings const * p_settings)
 static int controls_to_data(struct sender_settings * p_settings)
 {
     int result;
-    unsigned int packet_delay, packet_length;
+    unsigned int packet_length_ms;
     memset(text_buffer, 0, sizeof(text_buffer));
     *((WORD *)text_buffer) = TEXT_LIMIT;
-    SendMessage(g_packet_delay_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
-    result = sscanf(text_buffer, "%u", &packet_delay);
-    if (result<=0)
+    SendMessage(g_packet_length_ms_edit_, EM_GETLINE, 0, (LPARAM)text_buffer); 
+    result = sscanf(text_buffer, "%u", &packet_length_ms);
+    if (result<=0 || packet_length_ms > USHRT_MAX)
         goto error;
-    if (packet_delay > USHRT_MAX)
-        goto error;
-    memset(text_buffer, 0, sizeof(text_buffer));
-    *((WORD *)text_buffer) = TEXT_LIMIT;
-    SendMessage(g_packet_length_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
-    result = sscanf(text_buffer, "%u", &packet_length);
-    if (result<=0)
-        goto error;
-    if (packet_length > USHRT_MAX)
-        goto error;
-    p_settings->send_delay_ = packet_delay;
-    p_settings->chunk_size_ = packet_length;
+    p_settings->chunk_size_ms_ = packet_length_ms;
     return 1;
 error:
     return 0;
@@ -165,24 +132,17 @@ error:
  */
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
-    g_packet_delay_edit = GetDlgItem(hwnd, IDC_PACKET_DELAY_EDIT);
-    assert(g_packet_delay_edit);
-    g_packet_length_edit = GetDlgItem(hwnd, IDC_PACKET_LENGTH_EDIT);
-    assert(g_packet_length_edit);
-    g_packet_delay_spin = GetDlgItem(hwnd, IDC_PACKET_DELAY_SPIN);
-    assert(g_packet_delay_spin);
-    g_packet_length_spin = GetDlgItem(hwnd, IDC_PACKET_LENGTH_SPIN);
-    assert(g_packet_length_spin);
-    g_packet_lenght_ms_edit = GetDlgItem(hwnd, IDC_PACKET_LENGTH_MS_EDIT);
-    assert(g_packet_lenght_ms_edit);
+    g_packet_length_ms_edit_ = GetDlgItem(hwnd, IDC_PACKET_LENGTH_MS_EDIT);
+    assert(g_packet_length_ms_edit_);
+    g_packet_length_bytes_edit_ = GetDlgItem(hwnd, IDC_PACKET_LENGTH_BYTES_EDIT);
+    assert(g_packet_length_bytes_edit_);
+    g_packet_length_ms_spin_ = GetDlgItem(hwnd, IDC_PACKET_LENGTH_MS_SPIN);
+    assert(g_packet_length_ms_spin_);
     g_btok = GetDlgItem(hwnd, IDOK);
     assert(g_btok);
-    SendMessage(g_packet_delay_spin, UDM_SETBUDDY, (WPARAM)g_packet_delay_edit, (LPARAM)0);
-    SendMessage(g_packet_length_spin, UDM_SETBUDDY, (WPARAM)g_packet_length_edit, (LPARAM)0);
-    SendMessage(g_packet_delay_spin, UDM_SETPOS, (WPARAM)0, (LPARAM)0);
-    SendMessage(g_packet_length_spin, UDM_SETPOS, (WPARAM)0, (LPARAM)0);
-    SendMessage(g_packet_delay_edit, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
-    SendMessage(g_packet_length_edit, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    SendMessage(g_packet_length_ms_spin_, UDM_SETBUDDY, (WPARAM)g_packet_length_ms_edit_, (LPARAM)0);
+    SendMessage(g_packet_length_ms_spin_, UDM_SETPOS, (WPARAM)0, (LPARAM)0);
+    SendMessage(g_packet_length_ms_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     data_to_controls(&g_settings);
     return FALSE;
 }
@@ -215,11 +175,8 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                     sender_settings_copy(&copy_for_spins, &g_settings);
                     switch (p_notify_header->idFrom)
                     {
-                        case IDC_PACKET_LENGTH_SPIN:
-                            copy_for_spins.chunk_size_ -= p_up_down->iDelta;
-                            break;
-                        case IDC_PACKET_DELAY_SPIN:
-                            copy_for_spins.send_delay_ -= p_up_down->iDelta;
+                        case IDC_PACKET_LENGTH_MS_SPIN:
+                            copy_for_spins.chunk_size_ms_ -= p_up_down->iDelta;
                             break;
                         default:
                             break;
@@ -238,8 +195,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                 case IDC_MCAST_SETTINGS:
                     get_settings_from_dialog(hDlg, &g_settings.mcast_settings_);
                     break;
-                case IDC_PACKET_DELAY_EDIT:
-                case IDC_PACKET_LENGTH_EDIT:
+                case IDC_PACKET_LENGTH_MS_EDIT:
                     if (EN_CHANGE == HIWORD(wParam))
                     {
                         sender_settings_copy(&copy_for_edits, &g_settings);
