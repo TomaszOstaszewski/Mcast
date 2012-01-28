@@ -104,9 +104,20 @@ void sender_settings_copy(struct sender_settings * p_dest, struct sender_setting
  */
 void sender_settings_swap(struct sender_settings * p_left, struct sender_settings * p_right);
 
-uint32_t sender_settings_get_chunk_size_bytes(struct sender_settings const * p_left);
+/*!
+ * @brief Returns how many bytes it would take to fit the sample that length is described inside the settings object.
+ * @param[in] p_settings pointer to the settings object.
+ * @return returns number of bytes it takes to fit the sample that length is described inside the settings object.
+ */
+uint32_t sender_settings_get_chunk_size_bytes(struct sender_settings const * p_settings);
 
-uint32_t sender_settings_convert_bytes_to_ms(struct sender_settings const * p_left, uint16_t bytes);
+/*!
+ * @brief Converts bytes taken by the sample buffers to the time it takes to play this buffer.
+ * @param[in] p_settings pointer to the settings object.
+ * @param[in] bytes size of the samples buffer, in  bytes.
+ * @return returns number of milliseconds it takes to play the buffer of bytes long, given the settings present in p_settings. 
+ */
+uint32_t sender_settings_convert_bytes_to_ms(struct sender_settings const * p_settings, uint16_t bytes);
 
 #if defined __cplusplus
 }
