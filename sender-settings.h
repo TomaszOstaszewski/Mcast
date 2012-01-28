@@ -106,6 +106,8 @@ void sender_settings_swap(struct sender_settings * p_left, struct sender_setting
 
 uint32_t sender_settings_get_chunk_size_bytes(struct sender_settings const * p_left);
 
+uint32_t sender_settings_convert_bytes_to_ms(struct sender_settings const * p_left, uint16_t bytes);
+
 #if defined __cplusplus
 }
 #endif

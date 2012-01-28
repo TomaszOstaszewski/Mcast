@@ -63,6 +63,11 @@ static uint32_t chunk_size_ms_to_bytes(uint16_t ms)
     return (ms*DEFAULT_SAMPLE_RATE*DEFAULT_BYTES_PER_SAMPLE)/1000;
 }
 
+static uint32_t chunk_size_bytes_to_ms(uint16_t bytes)
+{
+    return (1000*bytes)/(DEFAULT_SAMPLE_RATE*DEFAULT_BYTES_PER_SAMPLE);
+}
+
 int get_default_settings(struct sender_settings * p_settings)
 {
 	int result;
@@ -108,5 +113,10 @@ void sender_settings_swap(struct sender_settings * p_left, struct sender_setting
 uint32_t sender_settings_get_chunk_size_bytes(struct sender_settings const * p_this)
 {
     return chunk_size_ms_to_bytes(p_this->chunk_size_ms_);
+}
+
+uint32_t sender_settings_convert_bytes_to_ms(struct sender_settings const * p_left, uint16_t bytes)
+{
+    return chunk_size_bytes_to_ms(bytes);
 }
 
