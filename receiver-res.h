@@ -18,6 +18,8 @@
 #define ID_RECEIVER_SETTINGS                    1007
 #define IDC_PLAY_BUFFER_SIZE_SPIN               1008
 #define IDC_WAV_BITS_PER_SAMPLE                 1009
+#define IDC_PLAY_CHUNKS_EDIT                    1010
+#define IDC_PLAY_CHUNKS_SPIN                    1011
 #define IDS_APPTITLE_RECEIVER                   40000
 #define ID_RECEIVER_STARTRCV                    40000
 #define IDT_TIMER_1                             40001

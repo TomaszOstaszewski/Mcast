@@ -88,29 +88,31 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
     DWORD dwResult;
     struct mcast_sender * p_sender;
     struct master_riff_chunk * p_master_riff;
-    uint32_t send_delay;
+
     p_sender = (struct mcast_sender *)param;
     assert(p_sender);
-    send_delay = p_sender->settings_.send_delay_;
     p_master_riff = p_sender->settings_.chunk_;
     assert(p_master_riff);
     {   
+        uint32_t send_delay;
         uint32_t max_offset = p_master_riff->format_chunk_.subchunk_.subchunk_size_;
-        uint32_t max_chunk_size = p_sender->settings_.chunk_size_;
+        uint32_t max_chunk_size = sender_settings_get_chunk_size_bytes(&p_sender->settings_);
         int8_t const * const p_data_begin = p_master_riff->format_chunk_.subchunk_.samples8_;
         assert(max_chunk_size <= MAX_ETHER_PAYLOAD_SANS_UPD_IP);
         for (;;)
         {
+            int result;
+            uint32_t chunk_size = max_chunk_size;
+            if (p_sender->send_offset_ + chunk_size > max_offset)
+            {
+                chunk_size = max_offset - p_sender->send_offset_;
+            }
+            assert(p_sender->send_offset_ + chunk_size <= max_offset);
+            send_delay = sender_settings_convert_bytes_to_ms(&p_sender->settings_, chunk_size);
+            /* We wait here to emulate the time it takes to gather the samples. */
             dwResult = WaitForSingleObject(p_sender->hStopEventThread_, send_delay);
             if (WAIT_TIMEOUT == dwResult)
             {
-                int result;
-                uint32_t chunk_size = max_chunk_size;
-                if (p_sender->send_offset_ + chunk_size > max_offset)
-                {
-                    chunk_size = max_offset - p_sender->send_offset_;
-                }
-                assert(p_sender->send_offset_ + chunk_size <= max_offset);
                 result = mcast_sendto(p_sender->conn_, p_data_begin + p_sender->send_offset_, chunk_size);
                 if (SOCKET_ERROR != result)
                 {
@@ -121,6 +123,7 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
                         p_sender->send_offset_ = 0;
                     }
                 }
+                continue;
             }
             else if (WAIT_OBJECT_0 == dwResult)
             {
@@ -130,7 +133,7 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
             else 
             {
                 dwResult = -1;
-                debug_outputln("%s %d : %d", __FILE__, __LINE__, dwResult);
+                debug_outputln("%s %4.4u : %d", __FILE__, __LINE__, dwResult);
                 break;
             }
         }
@@ -275,7 +278,7 @@ void sender_handle_mcastjoin(struct mcast_sender * p_sender)
         p_sender->state_ = SENDER_MCAST_JOINED;
         return;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void sender_handle_mcastleave(struct mcast_sender * p_sender)
@@ -286,7 +289,7 @@ void sender_handle_mcastleave(struct mcast_sender * p_sender)
         p_sender->state_ = SENDER_INITIAL;
         return;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void sender_handle_startsending(struct mcast_sender * p_sender)
@@ -297,7 +300,7 @@ void sender_handle_startsending(struct mcast_sender * p_sender)
         p_sender->state_ = SENDER_SENDING;
         return;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void sender_handle_stopsending(struct mcast_sender * p_sender)
@@ -307,6 +310,6 @@ void sender_handle_stopsending(struct mcast_sender * p_sender)
     {
         p_sender->state_ = SENDER_MCAST_JOINED;
     }
-    debug_outputln("%s %5.5d", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 

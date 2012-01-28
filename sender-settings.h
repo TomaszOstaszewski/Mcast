@@ -45,8 +45,11 @@ struct master_riff_chunk;
  */
 struct sender_settings {
 	struct mcast_settings mcast_settings_; /*!< Describes the multicast connection settings. */
-	uint16_t chunk_size_; /*!< Describes how many bytes to send in one chunk. */
-	uint16_t send_delay_; /*!< Describes how many milliseconds to wait between sending one chunk and another. */
+    /*!
+     * @brief Describes how much data to send in one chunk. 
+     * @details This member contains how many milliseconds of WAV file will be send in a single packet. 
+     */
+	uint16_t chunk_size_ms_;
 	struct master_riff_chunk * chunk_; /*!< Describes which WAV file to send. */
 };
 
@@ -100,6 +103,10 @@ void sender_settings_copy(struct sender_settings * p_dest, struct sender_setting
  * @attention The return value is negation of this you would get from calling memcpy().
  */
 void sender_settings_swap(struct sender_settings * p_left, struct sender_settings * p_right);
+
+uint32_t sender_settings_get_chunk_size_bytes(struct sender_settings const * p_left);
+
+uint32_t sender_settings_convert_bytes_to_ms(struct sender_settings const * p_left, uint16_t bytes);
 
 #if defined __cplusplus
 }
