@@ -34,7 +34,7 @@
 /*!
  * @brief Default number of bytes in the audio packet.
  */
-#define DEFAULT_WAV_CHUNK_SIZE    (1024+256+128)
+#define DEFAULT_WAV_CHUNK_SIZE_MS (64)
 
 /*!
  * @brief Default sample rate.
@@ -45,23 +45,6 @@
  * @brief Default bytes per sample.
  */
 #define DEFAULT_BYTES_PER_SAMPLE (2)
-
-/*!
- * @brief Default timespan, in milliseconds, between moments the subsequent audio packets are being send.
- */
-#define DEFAULT_CHUNK_SEND_TIMEOUT_MS ((int)((1000.0*DEFAULT_WAV_CHUNK_SIZE)/(DEFAULT_SAMPLE_RATE*DEFAULT_BYTES_PER_SAMPLE)))
-
-/*!
- * @brief Lower boundary on time it takes to send next audio packet after the previous one has been sent.
- * @details This value is arbitrary.
- */
-#define MIN_PACKET_DELAY (1)
-
-/*!
- * @brief Upper boundary on time it takes to send next audio packet after the previous one has been sent.
- * @details This value is arbitrary.
- */
-#define MAX_PACKET_DELAY (1000)
 
 /*!
  * @brief Defines the minimum payload length. 
@@ -75,6 +58,16 @@
  */
 #define MAX_PACKET_LENGTH (1500-20-8)
 
+static uint32_t chunk_size_ms_to_bytes(uint16_t ms)
+{
+    return (ms*DEFAULT_SAMPLE_RATE*DEFAULT_BYTES_PER_SAMPLE)/1000;
+}
+
+static uint32_t chunk_size_bytes_to_ms(uint16_t bytes)
+{
+    return (1000*bytes)/(DEFAULT_SAMPLE_RATE*DEFAULT_BYTES_PER_SAMPLE);
+}
+
 int get_default_settings(struct sender_settings * p_settings)
 {
 	int result;
@@ -82,8 +75,7 @@ int get_default_settings(struct sender_settings * p_settings)
 	assert(result);
 	if (result) 
 	{
-		p_settings->send_delay_ = DEFAULT_CHUNK_SEND_TIMEOUT_MS;
-		p_settings->chunk_size_ = DEFAULT_WAV_CHUNK_SIZE;
+		p_settings->chunk_size_ms_ = DEFAULT_WAV_CHUNK_SIZE_MS;
 		result = mcast_settings_get_default(&p_settings->mcast_settings_);
         assert(result);
 	}
@@ -92,9 +84,8 @@ int get_default_settings(struct sender_settings * p_settings)
 
 int sender_settings_validate(struct sender_settings const * p_settings)
 {
-	if (p_settings->send_delay_ < MIN_PACKET_DELAY || p_settings->send_delay_ > MAX_PACKET_DELAY)
-		return 0;
-	if (p_settings->chunk_size_ < MIN_PACKET_LENGTH || p_settings->chunk_size_ > MAX_PACKET_LENGTH)
+    uint32_t chunk_size_bytes = chunk_size_ms_to_bytes(p_settings->chunk_size_ms_);
+	if (chunk_size_bytes < MIN_PACKET_LENGTH || chunk_size_bytes > MAX_PACKET_LENGTH)
 		return 0;
 	return 1;
 }
@@ -117,5 +108,15 @@ void sender_settings_swap(struct sender_settings * p_left, struct sender_setting
 	CopyMemory(&tmp, p_left, sizeof(struct sender_settings));
 	CopyMemory(p_left, p_right, sizeof(struct sender_settings));
 	CopyMemory(p_right, &tmp, sizeof(struct sender_settings));
+}
+
+uint32_t sender_settings_get_chunk_size_bytes(struct sender_settings const * p_this)
+{
+    return chunk_size_ms_to_bytes(p_this->chunk_size_ms_);
+}
+
+uint32_t sender_settings_convert_bytes_to_ms(struct sender_settings const * p_left, uint16_t bytes)
+{
+    return chunk_size_bytes_to_ms(bytes);
 }
 

@@ -67,6 +67,14 @@ struct receiver_settings_dlg_controls
      */
     HWND mmtimer_spin_;
     /*!
+     * @brief Handle to the # of chunks edit control.
+     */
+    HWND num_of_chunks_edit_;
+    /*!
+     * @brief Handle to the # of chunks spin control.
+     */
+    HWND num_of_chunks_spin_;
+    /*!
      * @brief Handle to the WAV sample rate combo box.
      */
     HWND sample_rate_combo_;
@@ -146,6 +154,8 @@ static void data_to_controls(struct receiver_settings const * p_settings, struct
     SetWindowText(p_controls->play_buffer_size_edit_, p_controls->text_buffer);
     StringCchPrintf(p_controls->text_buffer, TEXT_LIMIT+1, "%hu", p_settings->play_settings_.timer_delay_);
     SetWindowText(p_controls->mmtimer_edit_, p_controls->text_buffer);
+    StringCchPrintf(p_controls->text_buffer, TEXT_LIMIT+1, "%u", p_settings->play_settings_.play_chunks_count_);
+    SetWindowText(p_controls->num_of_chunks_edit_, p_controls->text_buffer);
     /* Find the sample rate that matches the combo box items */
     for (idx = 0; idx < sizeof(sample_rate_values)/sizeof(sample_rate_values[0]); ++idx)
     {
@@ -177,7 +187,7 @@ static void data_to_controls(struct receiver_settings const * p_settings, struct
 static int edit_controls_to_data(struct receiver_settings * p_settings, struct receiver_settings_dlg_controls * p_controls)
 {
     int result;
-    unsigned int poll_sleep_time, play_buffer_size, timer_delay;
+    unsigned int poll_sleep_time, play_buffer_size, timer_delay, play_chunks_count;
     /* Get values from edit controls */
     memset(p_controls->text_buffer, 0, sizeof(p_controls->text_buffer));
     *((WORD *)p_controls->text_buffer) = TEXT_LIMIT;
@@ -197,10 +207,16 @@ static int edit_controls_to_data(struct receiver_settings * p_settings, struct r
     result = sscanf(p_controls->text_buffer, "%u", &timer_delay);
     if (result<=0 || timer_delay > USHRT_MAX)
         goto error;
-    /* Get a value from sample rate combo control */
+    memset(p_controls->text_buffer, 0, sizeof(p_controls->text_buffer));
+    *((WORD *)p_controls->text_buffer) = TEXT_LIMIT;
+    SendMessage(p_controls->num_of_chunks_edit_, EM_GETLINE, 0, (LPARAM)p_controls->text_buffer); 
+    result = sscanf(p_controls->text_buffer, "%u", &play_chunks_count);
+    if (result<=0 || timer_delay > USHRT_MAX)
+        goto error;
     p_settings->play_settings_.timer_delay_ = timer_delay;
     p_settings->play_settings_.play_buffer_size_ = play_buffer_size;
     p_settings->poll_sleep_time_ = poll_sleep_time;
+    p_settings->play_settings_.play_chunks_count_ = play_chunks_count;
     return 1;
 error:
     return 0;
@@ -284,6 +300,10 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(p_controls->bits_per_sample_combo_);
     p_controls->btok_ = GetDlgItem(hwnd, IDOK);
     assert(p_controls->btok_);
+    p_controls->num_of_chunks_edit_ = GetDlgItem(hwnd, IDC_PLAY_CHUNKS_EDIT);
+    assert(p_controls->num_of_chunks_edit_);
+    p_controls->num_of_chunks_spin_ = GetDlgItem(hwnd, IDC_PLAY_CHUNKS_SPIN);
+    assert(p_controls->num_of_chunks_spin_);
 
     SendMessage(p_controls->poll_sleep_time_spin_, UDM_SETBUDDY, (WPARAM)p_controls->poll_sleep_time_edit_, (LPARAM)0);
     SendMessage(p_controls->play_buffer_size_spin_, UDM_SETBUDDY, (WPARAM)p_controls->play_buffer_size_edit_, (LPARAM)0);
@@ -291,6 +311,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     SendMessage(p_controls->mmtimer_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     SendMessage(p_controls->poll_sleep_time_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     SendMessage(p_controls->play_buffer_size_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    SendMessage(p_controls->num_of_chunks_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     fill_combo(p_controls->sample_rate_combo_, sample_rate_values, sizeof(sample_rate_values)/sizeof(sample_rate_values[0]));
     fill_combo(p_controls->bits_per_sample_combo_, bits_per_sample_values, sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]));
     data_to_controls(&g_settings, &g_controls);
@@ -334,6 +355,8 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                         case IDC_MMTIMER_SPIN:
                             copy_for_spins.play_settings_.timer_delay_ -= p_up_down->iDelta;
                             break;
+                        case IDC_PLAY_CHUNKS_SPIN:
+                            copy_for_spins.play_settings_.play_chunks_count_ -= p_up_down->iDelta;
                         default:
                             break;
                     }
@@ -354,6 +377,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                 case IDC_POLL_SLEEP_TIME_EDIT:
                 case IDC_PLAY_BUFFER_SIZE_EDIT:
                 case IDC_MMTIMER_EDIT_CTRL:
+                case IDC_PLAY_CHUNKS_EDIT:
                     switch (HIWORD(wParam))
                     {
                         case EN_CHANGE:

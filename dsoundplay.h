@@ -2,6 +2,14 @@
 
 /**
  * @file dsoundplay.h
+ * @brief A DirectSound player interface.
+ * @details This interface abstracts a bit the end user from the gory details of DirectX or rather DirectSound to be more precise.
+ * 
+ * Instead of concentrating how to do COM programming, how to fill play primary buffers while filling the secondary buffer, and other chores.
+ * The client of this interface user has to do one thing and one thing only. 
+ * For the duration of the playbak, she or he shall keep the FIFO queue packed with data. 
+ * What this player does is constantly poll FIFO queue for data to play. 
+ * So if only client of this interface keeps the instance of the FIFO queue, the one used to create this player, packed with PCM data, the PCM data playback will be done nice and smoothly.
  * @author T.Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
@@ -24,8 +32,6 @@
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
  * @date 04-Jan-2012
- * @brief A DirectSound player interface.
- * @details This interface abstracts a bit the end user from the gory details of DirectX or rather DirectSound to be more precise. Instead of concentrating how to do COM programming, how to fill play primary buffers while filling the secondary buffer, and other chores, the end user has to do one thing only. She or he shall keep the FIFO queue packed with data. What this player does is constantly poll FIFO queue for data to play. So if only client of this interface keeps the instance of the FIFO queue, the one used to create this player, packed with PCM data, the PCM data playback will be done nice and smoothly.
  */
 #if !defined DSOUNDPLAY_8F4A9172_53C7_4FD8_83DC_8A3DE09800FA
 #define DSOUNDPLAY_8F4A9172_53C7_4FD8_83DC_8A3DE09800FA
@@ -56,12 +62,11 @@ typedef struct tagDSOUNDPLAY * DSOUNDPLAY;
  * @brief Creates a DirectSound player.
  * @param[in] hWnd handle to the player window. This is to use specific cooperation functions. Can be NULL, in this case
  * the foreground window or the desktop window will be used.
- * @param[in] p_WFE pointer to the structure that describes waveform to be played.
- * @param[in] g_fifo pointer to the fifo queue to be used by player. The player will fetch waveform data from that buffer.
- * @param[in] play_settings pointer to the structure that describes player settings.
+ * @param[in] p_settings pointer to the receiver's settings object.
+ * @param[in] p_fifo pointer to the fifo queue to be used by player. The player will fetch waveform data from that buffer.
  * @return returns the handle to the DirectSound player.
  */
-DSOUNDPLAY dsoundplayer_create(HWND hWnd, WAVEFORMATEX const * p_WFE, struct fifo_circular_buffer * g_fifo, struct play_settings const * play_settings);
+DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings const * p_settings, struct fifo_circular_buffer * p_fifo);
 
 /*!
  * @brief Destroys the DirectSound player.

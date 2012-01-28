@@ -6,8 +6,8 @@
  * @details Those wrappers are here to avoid writting the same boilerplate code again and again. Here's a short
  * instruction on how to use this functions:
  * \li Create a performance counter object.
- * \li In the piece of code you want to query performance of - call pref_counter_mark_before() before the timed piece of code execution and then pref_counter_mark_after() after the piece of code.
- * \li After this code has been executed enough number of times, call pref_counter_get_average_duration() to get average time (in clock ticks) it took to execute the code.
+ * \li In the piece of code you want to query performance of - call perf_counter_mark_before() before the timed piece of code execution and then perf_counter_mark_after() after the piece of code.
+ * \li After this code has been executed enough number of times, call perf_counter_get_average_duration() to get average time (in clock ticks) it took to execute the code.
  * @author T.Ostaszewski
  * @date 04-Jan-2012
  * @par License
@@ -46,28 +46,28 @@ struct perf_counter;
 /*!
  * @brief Creates a performance measurement object.
  * @return On success, returns a handle to the performance measurement object. On failure, returns NULL.
- * @sa pref_counter_destroy
+ * @sa perf_counter_destroy
  */
-struct perf_counter * pref_counter_create(void);
+struct perf_counter * perf_counter_create(void);
 
 /*!
  * @brief Destroys a performance measurement object.
  * @param[in] p_counter a handle to the performance measurement object, obtained via call to perf_counter_create.
- * @sa pref_counter_create
+ * @sa perf_counter_create
  */
-void pref_counter_destroy(struct perf_counter * p_counter);
+void perf_counter_destroy(struct perf_counter * p_counter);
 
 /*!
  * @brief Marks the beginning of the measurement of the profiled code segment.
  * @param[in] p_counter handle to the performence measurement object, obtained via call to perf_counter_create().
  */
-void pref_counter_mark_before(struct perf_counter * p_counter);
+void perf_counter_mark_before(struct perf_counter * p_counter);
 
 /*!
  * @brief Marks the end beginning of the measurement of the profiled code segment.
  * @param[in] p_counter handle to the performence measurement object, obtained via call to perf_counter_create().
  */
-void pref_counter_mark_after(struct perf_counter * p_counter);
+void perf_counter_mark_after(struct perf_counter * p_counter);
 
 /*!
  * @brief Gets the total and average duration it takes to execute a profiled code segment.
@@ -80,15 +80,15 @@ void pref_counter_mark_after(struct perf_counter * p_counter);
  * via call to perf_counter_get_freq().
  * @sa perf_counter_get_freq
  */
-int pref_counter_get_duration(struct perf_counter * p_counter, _int64 * p_total, _int64 * p_avg);
+int perf_counter_get_duration(struct perf_counter * p_counter, _int64 * p_total, _int64 * p_avg);
 
 /*!
  * @brief Returns the frequency of the timer used for performance measurement.
  * @param[in] p_counter handle to the performence measurement object, obtained via call to perf_counter_create().
  * @return returns the frequency of the timer used for performance measurement.
- * @sa pref_counter_get_duration
+ * @sa perf_counter_get_duration
  */
-_int64 pref_counter_get_freq(struct perf_counter * p_counter);
+_int64 perf_counter_get_freq(struct perf_counter * p_counter);
 
 #if defined __cplusplus
 }
