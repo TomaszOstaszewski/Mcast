@@ -33,6 +33,16 @@
 #include "play-settings.h"
 
 /*!
+ * @brief Maximum acceptable multimedia timer timespan.
+ */
+#define MAX_TIMER_DELAY (500)
+
+/*!
+ * @brief Mimimum acceptable multimedia timer timespan.
+ */
+#define MIN_TIMER_DELAY (5)
+
+/*!
  * @brief Default size, in bytes, of a single play chunk.
  */
 #define MAX_PLAY_CHUNK_SIZE (16384)
@@ -63,7 +73,7 @@
  * @brief Default number of play chunk.s
  * @details Total buffer occupied by PCM data used for replaying it will be : number_of_chunks * size_of_single_chunk
  */
-#define DEFAULT_NUMBER_OF_CHUNKS (10)
+#define DEFAULT_NUMBER_OF_CHUNKS (4)
 
 /*!
  * @brief Default timeout, in milliseconds, for multimedia play timer.
@@ -87,7 +97,7 @@ int play_settings_get_default(struct play_settings * p_settings)
 
 int play_settings_validate(struct play_settings const * p_settings)
 {
-	if (p_settings->timer_delay_ < 1 || p_settings->timer_delay_ > 1000)
+	if (p_settings->timer_delay_ < MIN_TIMER_DELAY || p_settings->timer_delay_ > MAX_TIMER_DELAY)
 		return 0;	
 	if (p_settings->play_buffer_size_ < MIN_PLAY_CHUNK_SIZE || p_settings->play_buffer_size_ > MAX_PLAY_CHUNK_SIZE)
 		return 0;	

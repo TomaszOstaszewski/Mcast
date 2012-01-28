@@ -35,74 +35,91 @@
 #include "sender-res.h"
 
 /*!
- * @brief A copy of the sender settings object that this dialog operates on.
- * @details If the user blesses the dialog with an OK button, and all the data
- * validates OK, then this copy becomes the settings object returned to the caller.
- */
-static struct sender_settings g_settings;
-
-/*!
- * @brief Handle to the packet delay edit control.
- */
-static HWND g_packet_delay_edit;
-
-/*!
- * @brief Handle to the packet length edit control.
- * @details This control shows the amount of audio time contained in one packet. The unit is bytes.
- */
-static HWND g_packet_length_edit;
-
-/*!
- * @brief Handle to the packet delay spin control.
- */
-static HWND g_packet_delay_spin;
-
-/*!
- * @brief Handle to the packet length spin control.
- */
-static HWND g_packet_length_spin;
-/*!
- * @brief Handle to the packet length edit control.
- * @details This control shows the amount of audio time contained in one packet. The unit is milliseconds.
- */
-static HWND g_packet_lenght_ms_edit;
-
-/*!
- * @brief Handle to the OK button.
- * @details This control is enabled or disabled depending on the outcome of dialog data validation.
- */
-static HWND g_btok;
-
-/*!
  * @brief Maximum number of digits in the dialogs edit controls.
  */
 #define TEXT_LIMIT (4)
 
 /*!
- * @brief Buffer that holds a number typed into one of the edit controls.
+ * @brief A container for UI controls and variables, which are displayed by those UI controls.
  */
-static TCHAR text_buffer[TEXT_LIMIT+1];
-
-/*!
- * @brief Default number of samples per second.
- */
-#define SAMPLES_PER_SEC (8000.0)
-
-/*!
- * @brief Default number of bytes per sample.
- */
-#define BYTES_PER_SAMPLE (2.0)
-
-/*!
- * @brief Number of milliseconds in 1 second.
- */
-#define MILLISECOND_IN_SEC (1000.0)
-
-static void update_calculated_controls(struct sender_settings const * p_settings)
+struct ui_controls 
 {
-    double length_in_ms = (MILLISECOND_IN_SEC * p_settings->chunk_size_/BYTES_PER_SAMPLE)/SAMPLES_PER_SEC;
-    StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%2.2f", length_in_ms);
-    SetWindowText(g_packet_lenght_ms_edit, text_buffer);
+    /*!
+     * @brief Handle to the dialog window holding the controls.
+     */
+    HWND hDlg_;
+
+    /*!
+     * @brief Handle to the packet length edit control.
+     * @details This control shows the amount of audio time contained in one packet. The unit is bytes.
+     */
+    HWND packet_length_ms_edit_;
+
+    /*!
+     * @brief Handle to the packet length edit control.
+     * @details This control shows the amount of audio time contained in one packet. The unit is bytes.
+     */
+    HWND packet_length_bytes_edit_;
+
+    /*!
+     * @brief Handle to the packet length spin control.
+     */
+    HWND packet_length_ms_spin_;
+
+    /*!
+     * @brief Handle to the OK button.
+     * @details This control is enabled or disabled depending on the outcome of dialog data validation.
+     */
+    HWND btok_;
+
+    /*!
+     * @brief A master copy of the sender settings object that this dialog operates on.
+     * @details If the user blesses the dialog with an OK button, and all the data
+     * validates OK, then this copy becomes the settings object returned to the caller.
+     */
+    struct sender_settings g_settings;
+
+    /*!
+     * @brief Another copy of the master settings.
+     * @details When the spin control changes the settings, we first make a copy of it prior
+     * incorporating the changes from the control into the master copy.
+     * This goes like that:
+     * - the spin control notifies us that the settings will be changed;
+     * - we make a copy of the master settings into this member variable;
+     * - we than incorporate the changes form the spin control into this member variable;
+     * - if the settings are valid, i.e. they are well within design bounds, we override the
+     *   master copy with the contents of this variable;
+     * - otherwise, we discard the copy
+     */
+    struct sender_settings copy_for_spins_;
+
+    /*!
+     * @brief Another copy of the master settings.
+     * @details When the edit control changes the settings, we first make a copy of it prior
+     * incorporating the changes from the control into the master copy.
+     * This goes like that:
+     * - the edit control notifies us that the settings will be changed;
+     * - we make a copy of the master settings into this member variable;
+     * - we than incorporate the changes form the spin control into this member variable;
+     * - if the settings are valid, i.e. they are well within design bounds, we override the
+     *   master copy with the contents of this variable;
+     * - otherwise, we discard the copy
+     */
+    struct sender_settings copy_for_edits_;
+
+    /*!
+     * @brief Buffer that holds a number typed into one of the edit controls.
+     */
+    TCHAR text_buffer[TEXT_LIMIT+1];
+};
+
+static struct ui_controls * g_controls;
+
+static void update_calculated_controls(struct ui_controls * p_controls, struct sender_settings const * p_settings)
+{
+    uint32_t length_in_bytes = sender_settings_get_chunk_size_bytes(p_settings);
+    StringCchPrintf(p_controls->text_buffer, TEXT_LIMIT+1, "%4u", length_in_bytes);
+    SetWindowText(p_controls->packet_length_bytes_edit_, p_controls->text_buffer);
 }
 
 /*!
@@ -110,14 +127,11 @@ static void update_calculated_controls(struct sender_settings const * p_settings
  * @details Takes values from the settings object and presents them on the UI
  * @param[in] p_settings points to data to be transferred to the controls.
  */
-static void data_to_controls(struct sender_settings const * p_settings)
+static void data_to_controls(struct ui_controls * p_controls, struct sender_settings const * p_settings)
 {
-    /*! \todo Remove this nasty magic numbers with variables, whose values are taken form the WAV file being send */
-    update_calculated_controls(p_settings);
-    StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%u", p_settings->send_delay_);
-    SetWindowText(g_packet_delay_edit, text_buffer);
-    StringCchPrintf(text_buffer, TEXT_LIMIT+1, "%u", p_settings->chunk_size_);
-    SetWindowText(g_packet_length_edit, text_buffer);
+    StringCchPrintf(p_controls->text_buffer, TEXT_LIMIT+1, "%u", p_settings->chunk_size_ms_);
+    SetWindowText(p_controls->packet_length_ms_edit_, p_controls->text_buffer);
+    update_calculated_controls(p_controls, p_settings);
 }
 
 /*!
@@ -130,28 +144,17 @@ static void data_to_controls(struct sender_settings const * p_settings)
  * @return returns a non-zero value on success, 0 if failure has occured. The failure is usually attributed to the fact
  * that data from controls cannot fit into representation offered by the target object.
  */
-static int controls_to_data(struct sender_settings * p_settings)
+static int controls_to_data(struct ui_controls * p_controls, struct sender_settings * p_settings)
 {
     int result;
-    unsigned int packet_delay, packet_length;
-    memset(text_buffer, 0, sizeof(text_buffer));
-    *((WORD *)text_buffer) = TEXT_LIMIT;
-    SendMessage(g_packet_delay_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
-    result = sscanf(text_buffer, "%u", &packet_delay);
-    if (result<=0)
+    unsigned int packet_length_ms;
+    memset(p_controls->text_buffer, 0, sizeof(p_controls->text_buffer));
+    *((WORD *)p_controls->text_buffer) = TEXT_LIMIT;
+    SendMessage(p_controls->packet_length_ms_edit_, EM_GETLINE, 0, (LPARAM)p_controls->text_buffer); 
+    result = sscanf(p_controls->text_buffer, "%u", &packet_length_ms);
+    if (result<=0 || packet_length_ms > USHRT_MAX)
         goto error;
-    if (packet_delay > USHRT_MAX)
-        goto error;
-    memset(text_buffer, 0, sizeof(text_buffer));
-    *((WORD *)text_buffer) = TEXT_LIMIT;
-    SendMessage(g_packet_length_edit, EM_GETLINE, 0, (LPARAM)text_buffer); 
-    result = sscanf(text_buffer, "%u", &packet_length);
-    if (result<=0)
-        goto error;
-    if (packet_length > USHRT_MAX)
-        goto error;
-    p_settings->send_delay_ = packet_delay;
-    p_settings->chunk_size_ = packet_length;
+    p_settings->chunk_size_ms_ = packet_length_ms;
     return 1;
 error:
     return 0;
@@ -165,25 +168,20 @@ error:
  */
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
-    g_packet_delay_edit = GetDlgItem(hwnd, IDC_PACKET_DELAY_EDIT);
-    assert(g_packet_delay_edit);
-    g_packet_length_edit = GetDlgItem(hwnd, IDC_PACKET_LENGTH_EDIT);
-    assert(g_packet_length_edit);
-    g_packet_delay_spin = GetDlgItem(hwnd, IDC_PACKET_DELAY_SPIN);
-    assert(g_packet_delay_spin);
-    g_packet_length_spin = GetDlgItem(hwnd, IDC_PACKET_LENGTH_SPIN);
-    assert(g_packet_length_spin);
-    g_packet_lenght_ms_edit = GetDlgItem(hwnd, IDC_PACKET_LENGTH_MS_EDIT);
-    assert(g_packet_lenght_ms_edit);
-    g_btok = GetDlgItem(hwnd, IDOK);
-    assert(g_btok);
-    SendMessage(g_packet_delay_spin, UDM_SETBUDDY, (WPARAM)g_packet_delay_edit, (LPARAM)0);
-    SendMessage(g_packet_length_spin, UDM_SETBUDDY, (WPARAM)g_packet_length_edit, (LPARAM)0);
-    SendMessage(g_packet_delay_spin, UDM_SETPOS, (WPARAM)0, (LPARAM)0);
-    SendMessage(g_packet_length_spin, UDM_SETPOS, (WPARAM)0, (LPARAM)0);
-    SendMessage(g_packet_delay_edit, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
-    SendMessage(g_packet_length_edit, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
-    data_to_controls(&g_settings);
+    struct ui_controls * p_controls = (struct ui_controls *)lParam;
+    g_controls = p_controls;
+    p_controls->packet_length_ms_edit_ = GetDlgItem(hwnd, IDC_PACKET_LENGTH_MS_EDIT);
+    assert(p_controls->packet_length_ms_edit_);
+    p_controls->packet_length_bytes_edit_ = GetDlgItem(hwnd, IDC_PACKET_LENGTH_BYTES_EDIT);
+    assert(p_controls->packet_length_bytes_edit_);
+    p_controls->packet_length_ms_spin_ = GetDlgItem(hwnd, IDC_PACKET_LENGTH_MS_SPIN);
+    assert(p_controls->packet_length_ms_spin_);
+    p_controls->btok_ = GetDlgItem(hwnd, IDOK);
+    assert(p_controls->btok_);
+    SendMessage(p_controls->packet_length_ms_spin_, UDM_SETBUDDY, (WPARAM)p_controls->packet_length_ms_edit_, (LPARAM)0);
+    SendMessage(p_controls->packet_length_ms_spin_, UDM_SETPOS, (WPARAM)0, (LPARAM)0);
+    SendMessage(p_controls->packet_length_ms_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    data_to_controls(p_controls, &p_controls->g_settings);
     return FALSE;
 }
 
@@ -200,8 +198,6 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 {
     NMHDR * p_notify_header;
     NMUPDOWN * p_up_down;
-    static struct sender_settings copy_for_spins;
-    static struct sender_settings copy_for_edits;
     switch (uMessage)
     {
         case WM_INITDIALOG:
@@ -212,21 +208,18 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
             switch (p_notify_header->code)
             {
                 case UDN_DELTAPOS:
-                    sender_settings_copy(&copy_for_spins, &g_settings);
+                    sender_settings_copy(&g_controls->copy_for_spins_, &g_controls->g_settings);
                     switch (p_notify_header->idFrom)
                     {
-                        case IDC_PACKET_LENGTH_SPIN:
-                            copy_for_spins.chunk_size_ -= p_up_down->iDelta;
-                            break;
-                        case IDC_PACKET_DELAY_SPIN:
-                            copy_for_spins.send_delay_ -= p_up_down->iDelta;
+                        case IDC_PACKET_LENGTH_MS_SPIN:
+                            g_controls->copy_for_spins_.chunk_size_ms_ -= p_up_down->iDelta;
                             break;
                         default:
                             break;
                     }
                     /* If copy and master settings are different, and a copy fits the bounds, update the controls with copy contents */
-                    if (!sender_settings_compare(&copy_for_spins, &g_settings) &&  sender_settings_validate(&copy_for_spins))
-                        data_to_controls(&copy_for_spins);
+                    if (!sender_settings_compare(&g_controls->copy_for_spins_, &g_controls->g_settings) &&  sender_settings_validate(&g_controls->copy_for_spins_))
+                        data_to_controls(g_controls, &g_controls->copy_for_spins_);
                     break;
                 default:
                     break;
@@ -236,22 +229,21 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
             switch(LOWORD(wParam))
             {
                 case IDC_MCAST_SETTINGS:
-                    get_settings_from_dialog(hDlg, &g_settings.mcast_settings_);
+                    get_settings_from_dialog(hDlg, &g_controls->g_settings.mcast_settings_);
                     break;
-                case IDC_PACKET_DELAY_EDIT:
-                case IDC_PACKET_LENGTH_EDIT:
+                case IDC_PACKET_LENGTH_MS_EDIT:
                     if (EN_CHANGE == HIWORD(wParam))
                     {
-                        sender_settings_copy(&copy_for_edits, &g_settings);
-                        if (controls_to_data(&copy_for_edits) && sender_settings_validate(&copy_for_edits)) 
+                        sender_settings_copy(&g_controls->copy_for_edits_, &g_controls->g_settings);
+                        if (controls_to_data(g_controls, &g_controls->copy_for_edits_) && sender_settings_validate(&g_controls->copy_for_edits_)) 
                         {
-                            sender_settings_copy(&g_settings, &copy_for_edits);
-                            EnableWindow(g_btok, TRUE);
-                            update_calculated_controls(&copy_for_edits);
+                            sender_settings_copy(&g_controls->g_settings, &g_controls->copy_for_edits_);
+                            EnableWindow(g_controls->btok_, TRUE);
+                            update_calculated_controls(g_controls, &g_controls->copy_for_edits_);
                         }
                         else
                         {
-                            EnableWindow(g_btok, FALSE);
+                            EnableWindow(g_controls->btok_, FALSE);
                         }
                     }
                     break;
@@ -268,11 +260,12 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 
 int sender_settings_from_dialog(HWND hWndParent, struct sender_settings * p_settings)
 {
-    sender_settings_copy(&g_settings, p_settings);
+    struct ui_controls controls;
+    sender_settings_copy(&controls.g_settings, p_settings);
     /* NULL hInst means = read dialog template from this application's resource file */
-    if (IDOK == DialogBox(NULL, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), hWndParent, McastSettingsProc))
+    if (IDOK == DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), hWndParent, McastSettingsProc, (LPARAM)&controls))
     {
-        sender_settings_copy(p_settings, &g_settings);
+        sender_settings_copy(p_settings, &controls.g_settings);
         return 1;
     }
     return 0;

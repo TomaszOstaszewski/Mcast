@@ -71,11 +71,7 @@
 #include "fifo-circular-buffer.h"
 #include "input-buffer.h"
 #include "receiver-settings.h"
-
-/*!
- * @brief Number of chunks in the DirectSound secondary buffer.
- */
-#define NUMBER_OF_BUFFERS (4)
+#include "perf-counter-itf.h"
 
 /*!
  * @brief Indicates that a chunk is being played and can be filled after playing is done.
@@ -93,20 +89,28 @@
 #define BUFFER_FILLED (0xffffffff)
 
 /*!
+ * @brief Maximum supported number of buffer chunks.
+ */
+#define MAX_CHUNKS_COUNT (16)
+
+/*!
  * @brief The sound player descriptor. 
  * @details Gathers all the variables needed to successfully play chunks of PCM
  * data using DirectSound.
  */
 struct dsound_data {
+    struct perf_counter * counter1_;
+    _int64 total, avg, freq;
     WAVEFORMATEX wfe_;
     LPDIRECTSOUND8          p_direct_sound_8_;              /*!< The DirectSound Object. */
     LPDIRECTSOUNDBUFFER     p_primary_sound_buffer_;        /*!< The DirectSound primary buffer. */
     LPDIRECTSOUNDBUFFER8    p_secondary_sound_buffer_;      /*!< The DirectSound secondary buffer. */
     MMRESULT timer_;                                        /*!< Multimedia timer that feeds the data to the buffers. */
-    DWORD   buffer_markers_[NUMBER_OF_BUFFERS];             /*!< Array of markers whether a buffer has been filled or played. */
     size_t                  nSingleBufferSize_;               /*!< Size of a single buffer. */
     struct fifo_circular_buffer * fifo_;	/*!< A fifo queue - from that queue we fetch the data and feed to the buffers.*/
     struct play_settings play_settings_;	/*!< Settings for our player (how many bytes per buffer, timer frequency).*/
+    size_t                  number_of_chunks_; 
+    DWORD   buffer_markers_[MAX_CHUNKS_COUNT];             /*!< Array of markers whether a buffer has been filled or played. */
 };
 
 /*!
@@ -160,7 +164,10 @@ static struct dword_2_desc flags_to_descs[] = {
     MAKE_FLAG_2_DESC(DSBCAPS_GETCURRENTPOSITION2),
     MAKE_FLAG_2_DESC(DSBCAPS_MUTE3DATMAXDISTANCE),
     MAKE_FLAG_2_DESC(DSBCAPS_LOCDEFER),
-    { 0x00080000, "DSBCAPS_TRUEPLAYPOSITION" },
+    /* For that one we don't have a define unless we compile under Vista */
+#if _WIN32_WINNT >= 0x0600
+    { DSBCAPS_TRUEPLAYPOSITION, "DSBCAPS_TRUEPLAYPOSITION" },
+#endif
 };
 
 /**
@@ -187,7 +194,6 @@ static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb)
                 ,caps.dwUnlockTransferRate
                 ,caps.dwPlayCpuOverhead
                 );    
-        
         for (index = 0; index <sizeof(flags_to_descs)/sizeof(flags_to_descs[0]); ++index)
         {
             if (caps.dwFlags & flags_to_descs[index].flag_)
@@ -213,7 +219,7 @@ static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb)
  * @return
  */
 static HRESULT create_buffers(LPDIRECTSOUND8 p_direct_sound_8, LPDIRECTSOUNDBUFFER * pp_primary_buffer, LPDIRECTSOUNDBUFFER8 * pp_secondary_buffer, 
-        WAVEFORMATEX * p_wfe, size_t single_buffer_size)
+        WAVEFORMATEX * p_wfe, size_t single_buffer_size, uint16_t num_of_chunks)
 {
     HRESULT hr;
     DSBUFFERDESC bufferDesc;
@@ -243,7 +249,7 @@ static HRESULT create_buffers(LPDIRECTSOUND8 p_direct_sound_8, LPDIRECTSOUNDBUFF
     get_buffer_caps(*pp_primary_buffer);
     /* Secondary buffer */
     bufferDesc.dwFlags = DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLPAN | DSBCAPS_CTRLFREQUENCY | DSBCAPS_GLOBALFOCUS | DSBCAPS_CTRLPOSITIONNOTIFY;
-    bufferDesc.dwBufferBytes = NUMBER_OF_BUFFERS*single_buffer_size; /* double buffering - one buffer being played, whereas the other is being filled in */
+    bufferDesc.dwBufferBytes = num_of_chunks*single_buffer_size; /* double buffering - one buffer being played, whereas the other is being filled in */
     bufferDesc.lpwfxFormat = p_wfe;
     hr = p_direct_sound_8->CreateSoundBuffer(&bufferDesc, &lpDSB, NULL);
     if (FAILED(hr))
@@ -332,7 +338,8 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound
     }
     CopyMemory(&p_ds_data->wfe_, p_WFE, sizeof(WAVEFORMATEX));
     p_ds_data->nSingleBufferSize_ = p_ds_data->play_settings_.play_buffer_size_;
-    hr = create_buffers(p_ds_data->p_direct_sound_8_, &p_ds_data->p_primary_sound_buffer_, &p_ds_data->p_secondary_sound_buffer_, &p_ds_data->wfe_, p_ds_data->nSingleBufferSize_);
+    hr = create_buffers(p_ds_data->p_direct_sound_8_, &p_ds_data->p_primary_sound_buffer_, &p_ds_data->p_secondary_sound_buffer_, &p_ds_data->wfe_, p_ds_data->nSingleBufferSize_,
+        p_ds_data->number_of_chunks_);
     if (FAILED(hr))
     {
         debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
@@ -359,18 +366,17 @@ error:
  */
 static HRESULT fill_buffer(DWORD dwOffset, DWORD req_size, LPDIRECTSOUNDBUFFER8 p_buffer, struct buffer_desc * p_input_buffer_desc)
 {
-    uint8_t *lpvWrite1, *lpvWrite2;
-    DWORD dwLength1, dwLength2;
+    LPVOID lpvWrite1;
+    DWORD dwLength1;
     HRESULT hr;
-    hr = p_buffer->Lock(
-            dwOffset,               // Offset at which to start lock.
+    hr = p_buffer->Lock(dwOffset, // Offset at which to start lock.
             req_size,               // Size of lock;
             (LPVOID*)&lpvWrite1,    // Gets address of first part of lock.
             &dwLength1,             // Gets size of first part of lock.
-            (LPVOID*)&lpvWrite2,    // Address of wraparound not needed. 
-            &dwLength2,             // Size of wraparound not needed.
+            NULL, /* Second part not needed as we will never wrap around - we lock equal buffer chunks */
+            NULL,
             0);                     // Flag.
-    if (SUCCEEDED(hr) && NULL == lpvWrite2)
+    if (SUCCEEDED(hr))
     {
         struct buffer_desc output_desc;
         output_desc.p_begin_    = (unsigned char *)lpvWrite1;
@@ -388,11 +394,11 @@ static HRESULT fill_buffer(DWORD dwOffset, DWORD req_size, LPDIRECTSOUNDBUFFER8 
         {
             p_input_buffer_desc->nCurrentOffset_ = 0;
         }
-        hr = p_buffer->Unlock(lpvWrite1, dwLength1, lpvWrite2, dwLength2);
+        hr = p_buffer->Unlock(lpvWrite1, dwLength1, NULL, 0);
     }
     else
     {
-        debug_outputln("%s %4.4u : %8.8x %p %u", __FILE__, __LINE__, hr, lpvWrite2, dwLength2);
+        debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);
     }
     return hr;
 }
@@ -410,7 +416,7 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
     {
         struct data_item data;
         struct buffer_desc buf_desc;
-        int read_buf_index, write_buf_index;
+        unsigned int read_buf_index, write_buf_index;
         data.data_ = (uint8_t*)alloca(p_ds_data->nSingleBufferSize_);
         data.count_ = p_ds_data->nSingleBufferSize_;
         buf_desc.p_begin_ = data.data_;
@@ -421,9 +427,9 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
         /* Check if both write & read cursor point to the same buffer */
         if (read_buf_index == write_buf_index)
         {
-            int next_buf_index = (read_buf_index + 1) % NUMBER_OF_BUFFERS;
-            assert(next_buf_index < NUMBER_OF_BUFFERS); /* 0 means - buffer not yet filled */
-            assert(read_buf_index < NUMBER_OF_BUFFERS);
+            unsigned int next_buf_index = (read_buf_index + 1) % p_ds_data->number_of_chunks_;
+            assert(next_buf_index < p_ds_data->number_of_chunks_);
+            assert(read_buf_index < p_ds_data->number_of_chunks_);
             if (BUFFER_PLAYED == p_ds_data->buffer_markers_[next_buf_index])
             {
                 if (fifo_circular_buffer_get_items_count(p_ds_data->fifo_)>0)
@@ -457,26 +463,35 @@ static void CALLBACK sTimerCallback(UINT uTimerID, UINT uMsg, DWORD dwUser,
         DWORD dw2 /* reserved * - do not use */) 
 {
     struct dsound_data * p_ds_data = (struct dsound_data *)dwUser;
+    perf_counter_mark_before(p_ds_data->counter1_);
     play_data_chunk(p_ds_data);
+    perf_counter_mark_after(p_ds_data->counter1_);
+    perf_counter_get_duration(p_ds_data->counter1_, &p_ds_data->total, &p_ds_data->avg);
+    debug_outputln_buffered(" %I64d, %I64d", (1000000*p_ds_data->total)/p_ds_data->freq, (1000000*p_ds_data->avg)/p_ds_data->freq);
 }
 
-//extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, WAVEFORMATEX const * p_WFE, struct fifo_circular_buffer * fifo, struct play_settings const * play_settings)
 extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings const * p_settings, struct fifo_circular_buffer * fifo)
 {
-    struct dsound_data * p_retval = 
-		(struct dsound_data*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dsound_data));
-    if (NULL != p_retval)
+    if (p_settings->play_settings_.play_chunks_count_ <= MAX_CHUNKS_COUNT)
     {
-        HRESULT hr;
-        p_retval->fifo_ = fifo;
-        play_settings_copy(&p_retval->play_settings_, &p_settings->play_settings_);
-        hr = init_ds_data(hWnd, &p_settings->wfex_, p_retval);
-        if (SUCCEEDED(hr))
+        struct dsound_data * p_retval = 
+            (struct dsound_data*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dsound_data));
+        if (NULL != p_retval)
         {
-            return (DSOUNDPLAY)(p_retval);
+            HRESULT hr;
+            p_retval->fifo_ = fifo;
+            p_retval->counter1_ = perf_counter_create();
+            p_retval->freq = perf_counter_get_freq(p_retval->counter1_);
+            p_retval->number_of_chunks_ = p_settings->play_settings_.play_chunks_count_;
+            play_settings_copy(&p_retval->play_settings_, &p_settings->play_settings_);
+            hr = init_ds_data(hWnd, &p_settings->wfex_, p_retval);
+            if (SUCCEEDED(hr))
+            {
+                return (DSOUNDPLAY)(p_retval);
+            }
+            HeapFree(GetProcessHeap(), 0, p_retval);
+            p_retval = NULL;
         }
-        HeapFree(GetProcessHeap(), 0, p_retval);
-        p_retval = NULL;
     }
     return NULL;
 }
@@ -484,6 +499,7 @@ extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings co
 extern "C" void dsoundplayer_destroy(DSOUNDPLAY handle) 
 {
     struct dsound_data * p_ds_data = (struct dsound_data*)handle;
+    perf_counter_destroy(p_ds_data->counter1_);
     p_ds_data->p_secondary_sound_buffer_->Release();
     p_ds_data->p_primary_sound_buffer_->Release();
     p_ds_data->p_direct_sound_8_->Release();

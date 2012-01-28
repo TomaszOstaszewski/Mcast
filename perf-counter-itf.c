@@ -33,7 +33,7 @@
 /*!
  * @brief The exponent of the maximum number of items to be stored in the counter.
  */
-#define MAX_PERF_ITEMS_LOG (6)
+#define MAX_PERF_ITEMS_LOG (7)
 
 /*!
  * @brief The maximum number of items of items to be stored in the counter. This needs to be a power of 2.
@@ -69,7 +69,7 @@ struct perf_counter {
     struct perf_data_item perf_table_[MAX_PERF_ITEMS]; /*!< Holds the performance measurements. */ 
 };
 
-struct perf_counter * pref_counter_create(void)
+struct perf_counter * perf_counter_create(void)
 {
     struct perf_counter * p_counter = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct perf_counter));
     if (NULL != p_counter)
@@ -83,24 +83,24 @@ struct perf_counter * pref_counter_create(void)
     return p_counter;
 }
 
-void pref_counter_destroy(struct perf_counter * p_perf_data)
+void perf_counter_destroy(struct perf_counter * p_perf_data)
 {
     HeapFree(GetProcessHeap(), 0, p_perf_data);
 }
 
-_int64 pref_counter_get_freq(struct perf_counter * p_counter)
+_int64 perf_counter_get_freq(struct perf_counter * p_counter)
 {
     return p_counter->freq_;
 }
 
-void pref_counter_mark_before(struct perf_counter * p_counter)
+void perf_counter_mark_before(struct perf_counter * p_counter)
 {
     size_t item_idx = p_counter->items_count_ & (MAX_PERF_ITEMS-1);
     assert(item_idx < MAX_PERF_ITEMS);
     QueryPerformanceCounter((LARGE_INTEGER*)&p_counter->perf_table_[item_idx].before_);
 }
 
-void pref_counter_mark_after(struct perf_counter * p_counter)
+void perf_counter_mark_after(struct perf_counter * p_counter)
 {
     size_t item_idx = p_counter->items_count_ & (MAX_PERF_ITEMS-1);
     assert(item_idx < MAX_PERF_ITEMS);
@@ -108,7 +108,7 @@ void pref_counter_mark_after(struct perf_counter * p_counter)
     ++p_counter->items_count_;
 }
 
-int pref_counter_get_duration(struct perf_counter * p_counter, _int64 * p_total, _int64 * p_avg)
+int perf_counter_get_duration(struct perf_counter * p_counter, _int64 * p_total, _int64 * p_avg)
 {
     size_t idx;
     size_t items_count = p_counter->items_count_;
