@@ -84,6 +84,8 @@ INPUT =\
 about-dialog.c \
 about-dialog.h \
 debug_helpers.c \
+dialog-utils.c \
+dialog-utils.h \
 debug_helpers.h \
 dsoundplay.cpp \
 dsoundplay.h \
