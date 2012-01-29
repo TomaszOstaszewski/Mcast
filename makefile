@@ -38,7 +38,7 @@ $(OUTDIR_PCC)\pcc.pch: pcc.c pcc.h $(OUTDIR_PCC) $(OUTDIR_OBJ)
 $(OUTDIR_PCC)\pcpp.pch: pcpp.cpp pcc.h $(OUTDIR_PCC) $(OUTDIR_OBJ)
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yc /Fp$(OUTDIR_PCC)\pcpp.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
-$(OUTDIR_OBJ)\sender.res: sender.rc sender-res.h sender.exe.manifest $(OUTDIR_OBJ)
+$(OUTDIR_OBJ)\sender.res: sender.rc sender-res.h sender.exe.manifest play.wav $(OUTDIR_OBJ)
 	$(rc) $(rcflags) $(rcvars) /fo $@ %s
 
 $(OUTDIR_OBJ)\receiver.res: receiver.rc receiver-res.h receiver.exe.manifest $(OUTDIR_OBJ)

@@ -96,7 +96,9 @@ int init_master_riff(master_riff_chunk_t ** pp_chunk, HINSTANCE hModule, LPCTSTR
         {
             *pp_chunk = (master_riff_chunk_t *)LockResource(globRes);
             if (NULL != *pp_chunk)
+            {
                 result = 1;
+            }
         }
         else
         {

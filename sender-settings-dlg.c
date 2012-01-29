@@ -162,6 +162,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
     struct ui_controls * p_controls = (struct ui_controls *)lParam;
     g_controls = p_controls;
+    p_controls->hDlg_ = hwnd;
     p_controls->packet_length_ms_edit_ = GetDlgItem(hwnd, IDC_PACKET_LENGTH_MS_EDIT);
     assert(p_controls->packet_length_ms_edit_);
     p_controls->packet_length_bytes_edit_ = GetDlgItem(hwnd, IDC_PACKET_LENGTH_BYTES_EDIT);
