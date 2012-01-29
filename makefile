@@ -5,7 +5,7 @@ OUTDIR_OBJ=$(OUTDIR)\obj
 OUTDIR_PCC=$(OUTDIR)\pcc
 #----- OUTDIR_OBJ is defined in WIN32.MAK This is the name of the destination directory-------
         
-all: $(OUTDIR)\ex-perf-counter.exe $(OUTDIR)\ut-fifo-circular-buffer.exe $(OUTDIR)\ut-input-buffer.exe $(OUTDIR)\sender.exe $(OUTDIR)\receiver.exe
+all: $(OUTDIR)\ex-perf-counter.exe $(OUTDIR)\ut-fifo-circular-buffer.exe $(OUTDIR)\ut-input-buffer.exe $(OUTDIR)\ut-abstract-tone.exe $(OUTDIR)\sender.exe $(OUTDIR)\receiver.exe
 	@echo $(OUTDIR)\ut-fifo-circular-buffer.exe
 	@echo $(OUTDIR)\ut-input-buffer.exe
 	
@@ -46,6 +46,9 @@ $(OUTDIR_OBJ)\receiver.res: receiver.rc receiver-res.h receiver.exe.manifest $(O
 
 $(OUTDIR_OBJ)\common-dialogs.res: common-dialogs.rc common-dialogs-res.h $(OUTDIR_OBJ)
 	$(rc) $(rcflags) $(rcvars) /fo $@ %s
+
+$(OUTDIR_OBJ)\abstract-tone.obj: abstract-tone.c abstract-tone.h $(OUTDIR_PCC)\pcc.pch
+    $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\about-dialog.obj: about-dialog.c about-dialog.h $(OUTDIR_PCC)\pcc.pch
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
@@ -131,7 +134,14 @@ $(OUTDIR_OBJ)\dialog-utils.obj: dialog-utils.c dialog-utils.h $(OUTDIR_OBJ) $(OU
     @if exist "$(OUTDIR_OBJ)\$(@B).S" del /Q /F "$(OUTDIR_OBJ)\$(@B).S"
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
 
+$(OUTDIR_OBJ)\ut-abstract-tone.obj: ut-abstract-tone.c abstract-tone.h sender-res.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
+    $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
+
 # Tests
+$(OUTDIR)\ut-abstract-tone.exe: $(OUTDIR_OBJ)\ut-abstract-tone.obj $(OUTDIR_OBJ)\abstract-tone.obj $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\wave_utils.obj $(OUTDIR_OBJ)\sender.res 
+	@ECHO $@
+	$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map /PDB:$(OUTDIR_OBJ)\$(@B).pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
+	
 $(OUTDIR)\ut-fifo-circular-buffer.exe: $(OUTDIR_OBJ)\fifo-circular-buffer.obj $(OUTDIR_OBJ)\ut-fifo-circular-buffer.obj $(OUTDIR_OBJ)\timeofday.obj
 	@ECHO $@
 	$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map /PDB:$(OUTDIR_OBJ)\$(@B).pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
@@ -149,7 +159,7 @@ $(OUTDIR)\receiver.exe: $(OUTDIR_OBJ)\receiver.res $(OUTDIR_OBJ)\common-dialogs.
 	@ECHO $@
 	$(link) $(ldebug) $(guiflags) /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib Version.lib
 
-$(OUTDIR)\sender.exe: $(OUTDIR_OBJ)\sender.res $(OUTDIR_OBJ)\common-dialogs.res $(OUTDIR_OBJ)\timeofday.obj $(OUTDIR_OBJ)\mcast_utils.obj $(OUTDIR_OBJ)\resolve.obj $(OUTDIR_OBJ)\mcast_setup.obj $(OUTDIR_OBJ)\mcast-sender-dlg.obj $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\message-loop.obj $(OUTDIR_OBJ)\wave_utils.obj $(OUTDIR_OBJ)\mcast-sender-state-machine.obj $(OUTDIR_OBJ)\sender-settings-dlg.obj $(OUTDIR_OBJ)\sender-settings.obj $(OUTDIR_OBJ)\mcast-settings.obj  $(OUTDIR_OBJ)\mcast-settings-dlg.obj $(OUTDIR_OBJ)\about-dialog.obj $(OUTDIR_OBJ)\perf-counter-itf.obj $(OUTDIR_OBJ)\dialog-utils.obj
+$(OUTDIR)\sender.exe: $(OUTDIR_OBJ)\sender.res $(OUTDIR_OBJ)\common-dialogs.res $(OUTDIR_OBJ)\timeofday.obj $(OUTDIR_OBJ)\mcast_utils.obj $(OUTDIR_OBJ)\resolve.obj $(OUTDIR_OBJ)\mcast_setup.obj $(OUTDIR_OBJ)\mcast-sender-dlg.obj $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\message-loop.obj $(OUTDIR_OBJ)\wave_utils.obj $(OUTDIR_OBJ)\mcast-sender-state-machine.obj $(OUTDIR_OBJ)\sender-settings-dlg.obj $(OUTDIR_OBJ)\sender-settings.obj $(OUTDIR_OBJ)\mcast-settings.obj  $(OUTDIR_OBJ)\mcast-settings-dlg.obj $(OUTDIR_OBJ)\about-dialog.obj $(OUTDIR_OBJ)\perf-counter-itf.obj $(OUTDIR_OBJ)\dialog-utils.obj $(OUTDIR_OBJ)\abstract-tone.obj
 	@ECHO $@
 	$(link) $(ldebug) $(guiflags) /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib Version.lib
 
