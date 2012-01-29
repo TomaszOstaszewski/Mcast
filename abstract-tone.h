@@ -64,20 +64,19 @@ struct abstract_tone * create_tone(tone_type_t eType, LPCTSTR psz_tone_name);
 void destroy_tone(struct abstract_tone * p_tone);
 
 /*!
- * @brief 
+ * @brief Returns the PCMWAVEFORMAT structure for the tone.
  * @details 
- * @param[in]
- * @param[in,out]
+ * @param[in] p_tone
  * @return 
  */
 PCMWAVEFORMAT * get_wave_format(struct abstract_tone * p_tone);
 
 /*!
- * @brief 
+ * @brief Returns the pointer to tone data.
  * @details 
- * @param[in]
- * @param[in,out]
- * @return 
+ * @param[in] p_tone Tone for which data is to be returned.
+ * @param[in,out] p_data_size Pointer to the caller allocated memory, which will be written with size of the array returned as function value.
+ * @return Pointer to the first byte of the tone data.
  */
 void * get_wave_data(struct abstract_tone * p_tone, size_t * p_data_size);
 
