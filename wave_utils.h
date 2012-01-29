@@ -68,19 +68,34 @@
  * <b>22 56 00 00 88 58 01 00 04 00 10 00 64 61 74 61 00 08 00 00 00 00 00 00 </b>
  * <b>24 17 1e f3 3c 13 3c 14 16 f9 18 f9 34 e7 23 a6 3c f2 24 f2 11 ce 1a 0d </b>
  * </pre>
- * 
- * <p> Here is the interpretation of these bytes as a WAVE soundfile:
- * 
- * 
+ * <p>Here is the interpretation of these bytes as a WAVE soundfile:<br/>
+ * <b>52 49 46 46</b> The 'RIFF' bytes.<br/>
+ * <b>24 08 00 00</b> The chunk size in little endian. This chunk is 0x00000824 or 4044 bytes long.<br/>
+ * <b>57 41 56 45</b> The 'WAVE' bytes.<br/>
+ * <b>66 6d 74 20</b> The 'fmt ' bytes.<br/>
+ * <b>10 00 00 00</b> Subchunk size in little endian, here it is 0x00000010 or 16 in decimal
+ * <b>01 00</b> Audio format, here 0x0001 i.e. PCM.<br/>
+ * <b>02 00</b> Number of channels, here 0x0002 i.e. stereo sound.<br/>
+ * <b>22 56 00 00</b> Sample rate, 0x00005622 or 22050 samples per second.<br/>
+ * <b>88 58 01 00</b> Byte rate, number of bytes per second, here 0x00015888 or 88200 bytes per second.<br>
+ * <b>04 00</b> Block align, here 0x0004 = 4 decimal.<br/>
+ * <b>10 00</b> Bits per sample, here 0x0010 = 16 bits per sample.<br/>
+ * <b>64 61 74 61</b> The 'data' bytes. Start of data subchunk.<br/>
+ * <b>00 08 00 00</b> Subchunk size, 0x00000800, or 2048 decimal.<br/>
+ * <b>00 00 </b> Right channel sample 1.<br/>
+ * <b>00 00 </b> Left channel sample 1.<br/>
+ * <b>24 17</b> Rigth channel sample 2.<br/>
+ * <b>1e f3</b> Left channel sample 2.<br/>
+ * <b>3c 13</b> Right channel sample 3.<br/>
+ * <b>3c 14</b> Left channel sample 3.<br/>
+ * <b>16 f9</b> Right channel sample 4.<br/>
+ * <b>18 f9</b> Left channel sample 4.<br/>
+ * <b>...</b> And so on.
  * <h3> Notes: </h3>
- * 
  * <ul>
- * 
  * <li> The default byte ordering assumed for WAVE data files is little-endian.
- *  Files written using the big-endian byte ordering scheme have the identifier 
- *  RIFX instead of RIFF.
+ * Files written using the big-endian byte ordering scheme have the identifier RIFX instead of RIFF.
  * <li> The sample data must end on an even byte boundary. Whatever that means.
- * 
  * <li> 8-bit samples are stored as unsigned bytes, ranging from 0 to 255. 
  *      16-bit samples are stored as 2's-complement signed integers, 
  *      ranging from -32768 to 32767.
@@ -237,9 +252,13 @@ typedef struct master_riff_chunk {
 } master_riff_chunk_t;
 
 /*!
- * @brief Helper function, dumps the WAVEFORMATEX to the debug view window.
+ * @brief Helper function, dumps the WAVEFORMATEX into the provided buffer.
+ * @param[in,out] psz_buffer the buffer into which the structure will be dumped.
+ * @param[in] buffer_size size of the buffer given as the psz_buffer parameter.
+ * @param[in] p_wfe pointer to the WAVEFORMATEX structure to be dumped.
+ * @return returns non-zero on success, 0 otherwise.
  */
-void dump_waveformatex(WAVEFORMATEX const * p_wfe);
+int dump_waveformatex(TCHAR * psz_buffer, size_t buffer_size, WAVEFORMATEX const * p_wfe);
 
 /*!
  * @brief Copies the waveformatex structure into a valid WAVEFORMATEX structure.

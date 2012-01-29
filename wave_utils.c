@@ -57,17 +57,17 @@ static const char * wFormatTag2String(WORD wFormatTag)
 	return "NULL";
 }
 
-void dump_waveformatex(WAVEFORMATEX const * p_wfe)
+int dump_waveformatex(TCHAR * psz_buffer, size_t buffer_size, WAVEFORMATEX const * p_wfe)
 {
-	debug_outputln("%s %d : {%hx, %s} %d %d %d %d %d %d", __FILE__, __LINE__, 
-			p_wfe->wFormatTag, wFormatTag2String(p_wfe->wFormatTag),
-			p_wfe->nChannels,
-			p_wfe->nSamplesPerSec,
-			p_wfe->nAvgBytesPerSec,
-			p_wfe->nBlockAlign,
-			p_wfe->wBitsPerSample,
-			p_wfe->cbSize
-			);
+    HRESULT hr;
+    hr = StringCchPrintf(psz_buffer, buffer_size, "{%hx, %s}"
+            " %d %d %d %d"
+            " %d %d", 
+            p_wfe->wFormatTag, wFormatTag2String(p_wfe->wFormatTag),
+            p_wfe->nChannels, p_wfe->nSamplesPerSec, p_wfe->nAvgBytesPerSec, p_wfe->nBlockAlign, 
+            p_wfe->wBitsPerSample, p_wfe->cbSize
+            );
+    return SUCCEEDED(hr);
 }
 
 void copy_waveformatex_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, const struct waveformatex * p_source)

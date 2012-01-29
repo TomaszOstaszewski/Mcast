@@ -28,7 +28,6 @@
 #define MCAST_SENDER_BF6FAC88_2286_488B_9256_997E81B13E49
 
 #include <windows.h>
-#include "wave_utils.h"
 
 struct sender_settings; 
 struct mcast_sender;
