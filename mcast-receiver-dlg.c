@@ -53,6 +53,7 @@
  */
 struct reciever_dialog {
     HINSTANCE hInst_;
+    HWND hDlg_; /*!< Handle to the dialog window. */
     HWND hSettingsBtn; /*!< Handle to the 'Settings' button. */
     HWND hJoinMcastBtn; /*!< Handle to the 'Join Multicast' button. */
     HWND hLeaveMcast; /*!< Handle to the 'Join Multicast' button. */
@@ -66,8 +67,12 @@ struct reciever_dialog {
     struct receiver_settings settings_;
     struct mcast_receiver * receiver_;
     TCHAR buffer_bytes_edit[BUFFER_BYTES_EDIT_TEXT_LIMIT]; /*!< Buffer that holds string to be displayed in the 'buffer bytes' control. */
-} g_controls;
+};
 
+/*!
+ * @brief Pointer to the dialog data structure. This one is used by windows message handlers.
+ * @todo Use the GWL_USERDATA slot rather than this global.
+ */
 static struct reciever_dialog * g_dialog;
 
 /*!
@@ -75,11 +80,11 @@ static struct reciever_dialog * g_dialog;
  */
 #define UI_UPDATE_TIMER_MS (500)
 
-static void update_fifo_receiver_bytes_edit_control(struct reciever_dialog * p_controls)
+static void update_fifo_receiver_bytes_edit_control(struct reciever_dialog * p_dlg)
 {
-    uint32_t fifo_bytes = fifo_circular_buffer_get_items_count(receiver_get_fifo(g_dialog->receiver_));
-    StringCchPrintf(p_controls->buffer_bytes_edit, BUFFER_BYTES_EDIT_TEXT_LIMIT, "%u", fifo_bytes);
-    SetWindowText(p_controls->hBufferBytesEdit, p_controls->buffer_bytes_edit);
+    uint32_t fifo_bytes = fifo_circular_buffer_get_items_count(receiver_get_fifo(p_dlg->receiver_));
+    StringCchPrintf(p_dlg->buffer_bytes_edit, BUFFER_BYTES_EDIT_TEXT_LIMIT, "%u", fifo_bytes);
+    SetWindowText(p_dlg->hBufferBytesEdit, p_dlg->buffer_bytes_edit);
 }
 
 /**
@@ -99,7 +104,7 @@ static void UpdateUI(struct reciever_dialog * p_dlg)
     /* Enable/disable controls only if state changes. */
     if (prev_state != new_state)
     {
-        switch (curr_state)
+        switch (new_state)
         {
             case RECEIVER_INITIAL:
                 EnableMenuItem(p_dlg->hMainMenu, ID_RECEIVER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
@@ -237,6 +242,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     {
         p_dialog->receiver_ = receiver_create(&p_dialog->settings_);
         assert(p_dialog->receiver_);
+        p_dialog->hDlg_ = hwnd;
         p_dialog->hSettingsBtn = GetDlgItem(hwnd, ID_RECEIVER_SETTINGS);    
         p_dialog->hJoinMcastBtn = GetDlgItem(hwnd, ID_RECEIVER_JOINMCAST);  
         p_dialog->hPlay = GetDlgItem(hwnd, ID_RECEIVER_PLAY);    
