@@ -21,6 +21,7 @@
 #define IDC_PACKET_LENGTH_MS_EDIT               40022
 #define IDC_PACKET_LENGTH_BYTES_EDIT            40023
 #define IDC_PACKET_LENGTH_MS_SPIN               40024
-#define IDC_TEST_TONE_CHECKBOX                  40024
-#define IDC_TONE_COMBO                          40026
 #define IDC_TONE_SELECTION_STATIC               40027
+#define ID_TEST_TONE                            40028
+#define ID_OPEN_WAV                             40030
+#define IDC_WAV_PREVIEW                         40031

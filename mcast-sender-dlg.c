@@ -38,34 +38,26 @@
 /*!
  * @brief Describes all the 'interesting' UI controls of the sender's main dialog.
  */
-struct sender_ui_controls {
+struct sender_dialog {
+    HWND hDlg_; /*!< Handle to the main dialog */
     HWND hSettingsBtn; /*!< Handle to the 'Settings' button. */
     HWND hJoinMcastBtn; /*!< Handle to the 'Join Multicast' button. */
     HWND hLeaveMcast; /*!< Handle to the 'Join Multicast' button. */
     HWND hStartSendingBtn; /*!< Handle to the 'Start sending' button. */
     HWND hStopSendingBtn; /*!< Handle to the 'Stop sending' button. */
     HWND hTestToneCheck; /*!< Handle to the 'Test tone' check button. */
-    HWND hWavSelCombo; /*!< Handle to the 'WAV selection' combo. */
+    HWND hOpenWav; /*!< Handle to the 'Open WAV ...' box. */
     HMENU hMainMenu; /*!< Handle to the main menu. */
+    struct mcast_sender * sender_; /*!< The sender object. This sends out the data on the multicast group. */
+    struct sender_settings settings_; /*!< The sender settings object. Here are multicast group settings stored, and how many bytes to send with each packet. */
+    BOOL bPlayWav_; /*!< Whether or not to play the selected WAV or the test tone */
+    HINSTANCE hInst_; /*!< @brief Global Application instance.  Required for various Windows related stuff. */
 };
 
 /**
- * @brief Global Application instance.
- * @details Required for various Windows related stuff.
+ * @brief A pointer to the sender dialog object. This pointer is used in all the dialog routines.
  */
-HINSTANCE   g_hInst;
-
-/**
- * @brief Pointer to the sender object. 
- */
-static struct mcast_sender * g_sender;
-
-/**
- * @brief The sender settings object.
- */
-static struct sender_settings g_settings;
-
-static struct sender_ui_controls * g_sender_dlg;
+static struct sender_dialog * g_sender_dlg;
 
 /**
  * @brief Handles the user interface widgets update.
@@ -74,72 +66,55 @@ static struct sender_ui_controls * g_sender_dlg;
  * @param hDlg handle to the main dialog window, holding the user interface widgets.
  * @param state sender's current state. 
  */
-static void UpdateUIwithCurrentState(HWND hDlg, sender_state_t state)
+static void UpdateUIwithCurrentState(struct sender_dialog * p_sender, sender_state_t state)
 {
-    static HWND hSettingsBtn = NULL, hJoinMcastBtn = NULL, hLeaveMcast = NULL, hStartSendingBtn = NULL, hStopSendingBtn = NULL, hTestToneCheck = NULL, hWavSelCombo = NULL;
-    static HMENU hMenu = NULL;
-    if (NULL == hSettingsBtn)
-        hSettingsBtn = GetDlgItem(hDlg, ID_SENDER_SETTINGS);    
-    if (NULL == hJoinMcastBtn)
-        hJoinMcastBtn = GetDlgItem(hDlg, ID_SENDER_JOINMCAST);  
-    if (NULL == hStartSendingBtn)
-        hStartSendingBtn = GetDlgItem(hDlg, ID_SENDER_STARTSENDING);    
-    if (NULL == hStopSendingBtn)
-        hStopSendingBtn = GetDlgItem(hDlg, ID_SENDER_STOPSENDING);  
-    if (NULL == hLeaveMcast)
-        hLeaveMcast = GetDlgItem(hDlg, ID_SENDER_LEAVEMCAST);
-    if (NULL == hMenu)
-        hMenu = GetMenu(hDlg);
-    if (NULL == hTestToneCheck)
-        hTestToneCheck = GetDlgItem(hDlg, IDC_TEST_TONE_CHECKBOX);
-    if (NULL == hWavSelCombo)
-        hWavSelCombo = GetDlgItem(hDlg, IDC_TONE_COMBO);
-     switch (state)
+    assert(p_sender);
+    switch (state)
     {
         case SENDER_INITIAL:
-            EnableMenuItem(hMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
-            EnableWindow(hSettingsBtn, TRUE);
-            EnableWindow(hJoinMcastBtn, TRUE);
-            EnableWindow(hLeaveMcast, FALSE);
-            EnableWindow(hStartSendingBtn, FALSE);
-            EnableWindow(hStopSendingBtn, FALSE);
-            EnableWindow(hTestToneCheck, TRUE);
-            EnableWindow(hWavSelCombo, TRUE);
-            SetFocus(hJoinMcastBtn);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
+            EnableWindow(p_sender->hSettingsBtn, TRUE);
+            EnableWindow(p_sender->hJoinMcastBtn, TRUE);
+            EnableWindow(p_sender->hLeaveMcast, FALSE);
+            EnableWindow(p_sender->hStartSendingBtn, FALSE);
+            EnableWindow(p_sender->hStopSendingBtn, FALSE);
+            EnableWindow(p_sender->hTestToneCheck, TRUE);
+            EnableWindow(p_sender->hOpenWav, TRUE);
+            SetFocus(p_sender->hJoinMcastBtn);
             break;
         case SENDER_MCAST_JOINED:
-            EnableMenuItem(hMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_ENABLED);
-            EnableMenuItem(hMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
-            EnableWindow(hSettingsBtn, FALSE);
-            EnableWindow(hJoinMcastBtn, FALSE);
-            EnableWindow(hLeaveMcast, TRUE);
-            EnableWindow(hStartSendingBtn, TRUE);
-            EnableWindow(hStopSendingBtn, FALSE);
-            EnableWindow(hTestToneCheck, FALSE);
-            EnableWindow(hWavSelCombo, FALSE);
-            SetFocus(hStartSendingBtn);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_ENABLED);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
+            EnableWindow(p_sender->hSettingsBtn, FALSE);
+            EnableWindow(p_sender->hJoinMcastBtn, FALSE);
+            EnableWindow(p_sender->hLeaveMcast, TRUE);
+            EnableWindow(p_sender->hStartSendingBtn, TRUE);
+            EnableWindow(p_sender->hStopSendingBtn, FALSE);
+            EnableWindow(p_sender->hTestToneCheck, FALSE);
+            EnableWindow(p_sender->hOpenWav, FALSE);
+            SetFocus(p_sender->hStartSendingBtn);
             break;
         case SENDER_SENDING:
-            EnableMenuItem(hMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_ENABLED);
-            EnableWindow(hSettingsBtn, FALSE);
-            EnableWindow(hJoinMcastBtn, FALSE);
-            EnableWindow(hLeaveMcast, FALSE);
-            EnableWindow(hStartSendingBtn, FALSE);
-            EnableWindow(hStopSendingBtn, TRUE);
-            EnableWindow(hTestToneCheck, FALSE);
-            EnableWindow(hWavSelCombo, FALSE);
-            SetFocus(hStopSendingBtn);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(p_sender->hMainMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_ENABLED);
+            EnableWindow(p_sender->hSettingsBtn, FALSE);
+            EnableWindow(p_sender->hJoinMcastBtn, FALSE);
+            EnableWindow(p_sender->hLeaveMcast, FALSE);
+            EnableWindow(p_sender->hStartSendingBtn, FALSE);
+            EnableWindow(p_sender->hStopSendingBtn, TRUE);
+            EnableWindow(p_sender->hTestToneCheck, FALSE);
+            EnableWindow(p_sender->hOpenWav, FALSE);
+            SetFocus(p_sender->hStopSendingBtn);
             break;
         default:
             break;
@@ -156,15 +131,66 @@ static void UpdateUI(HWND hDlg)
 {
     static sender_state_t prev_state = -1;
     sender_state_t curr_state;
-    assert(g_sender);
-    curr_state = sender_get_current_state(g_sender);
+    assert(g_sender_dlg);
+    curr_state = sender_get_current_state(g_sender_dlg->sender_);
     if (prev_state != curr_state)
     {
-        UpdateUIwithCurrentState(hDlg, curr_state);
+        UpdateUIwithCurrentState(g_sender_dlg, curr_state);
         prev_state = curr_state;
+    }
+    if (g_sender_dlg->bPlayWav_)
+    {
+        EnableWindow(g_sender_dlg->hOpenWav, TRUE);
+    }
+    else
+    {
+        EnableWindow(g_sender_dlg->hOpenWav, FALSE);
     }
 }
 
+/*!
+ * @brief Handler for WM_INITDIALOG message.
+ * @details This handler does as follows:
+ * \li Initializes the control handles
+ * \li Presents the settings on the UI
+ * @param[in] hwnd handle to the window that received WM_INITDIALOG message
+ * @param[in] hwndFocus handle to the Window that is to be got the keyboard focus upon dialog initalizing. 
+ * @param[in] lParam client specific parameter passed to DialogBoxParam function. This is a way to pass to the
+ * handler some client specific data.
+ * @param returns TRUE if the window indicated as hWndFocus is to get keyboard focus. Returns FALSE otherwise.
+ */
+static BOOL Handle_wm_initdialog(HWND hDlg, HWND hWndFocus, LPARAM lParam)
+{
+    int result;
+    struct sender_dialog * p_dlg;
+    g_sender_dlg = (struct sender_dialog*)lParam;
+    p_dlg = g_sender_dlg;
+    assert(p_dlg);
+    p_dlg->hDlg_ = hDlg;
+    assert(p_dlg->hDlg_);
+    p_dlg->hSettingsBtn = GetDlgItem(hDlg, ID_SENDER_SETTINGS);    
+    assert(p_dlg->hSettingsBtn);
+    p_dlg->hJoinMcastBtn = GetDlgItem(hDlg, ID_SENDER_JOINMCAST);  
+    assert(p_dlg->hJoinMcastBtn);
+    p_dlg->hStartSendingBtn = GetDlgItem(hDlg, ID_SENDER_STARTSENDING);    
+    assert(p_dlg->hStartSendingBtn);
+    p_dlg->hStopSendingBtn = GetDlgItem(hDlg, ID_SENDER_STOPSENDING);  
+    assert(p_dlg->hStopSendingBtn);
+    p_dlg->hLeaveMcast = GetDlgItem(hDlg, ID_SENDER_LEAVEMCAST);
+    assert(p_dlg->hLeaveMcast );
+    p_dlg->hMainMenu = GetMenu(hDlg);
+    assert(p_dlg->hMainMenu);
+    p_dlg->hTestToneCheck = GetDlgItem(hDlg, ID_TEST_TONE);
+    assert(p_dlg->hTestToneCheck);
+    p_dlg->hOpenWav = GetDlgItem(hDlg, ID_OPEN_WAV);
+    assert(p_dlg->hOpenWav);
+    result = get_default_settings(&g_sender_dlg->settings_);
+    assert(result);
+    g_sender_dlg->sender_ = sender_create(&g_sender_dlg->settings_);
+    assert(g_sender_dlg->sender_);
+    return TRUE;
+}
+ 
 /**
  * @brief Sender dialog message processing routine.
  * @details Processes the messages for the dialog, mainly the WM_COMMAND type.
@@ -180,53 +206,52 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
     switch (uMessage)
     {
         case WM_INITDIALOG:
-            {
-                int result;
-                g_sender_dlg = (struct sender_ui_controls*)lParam;
-                result = get_default_settings(&g_settings);
-                assert(result);
-                g_sender = sender_create(&g_settings);
-                assert(g_sender);
-            }
-            return TRUE;
+           return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
        case WM_COMMAND:
             switch(LOWORD(wParam))
             {
                 case ID_SENDER_SETTINGS:
-                    curr_state = sender_get_current_state(g_sender);
+                    assert(g_sender_dlg);
+                    curr_state = sender_get_current_state(g_sender_dlg->sender_);
                     if (SENDER_INITIAL == curr_state)
                     {
                         /* Open up the settings dialog with the MCAST settings parameters */
-                        if (sender_settings_from_dialog(hDlg, &g_settings))
+                        if (sender_settings_from_dialog(hDlg, &g_sender_dlg->settings_))
                         {
-                            sender_destroy(g_sender);
-                            g_sender = sender_create(&g_settings);
-                            assert(g_sender);
+                            sender_destroy(g_sender_dlg->sender_);
+                            g_sender_dlg->sender_ = sender_create(&g_sender_dlg->settings_);
+                            assert(g_sender_dlg->sender_);
                         }
                     }
                     else
                     {
-                        debug_outputln("%s %5.5d", __FILE__, __LINE__);
+                        debug_outputln("%s %4.4u", __FILE__, __LINE__);
                     }
                     break;
                 case ID_SENDER_JOINMCAST:
-                    sender_handle_mcastjoin(g_sender);
+                    sender_handle_mcastjoin(g_sender_dlg->sender_);
                     break;
                 case ID_SENDER_LEAVEMCAST:
-                    sender_handle_mcastleave(g_sender);
+                    sender_handle_mcastleave(g_sender_dlg->sender_);
                     break;
                 case ID_SENDER_STARTSENDING:
-                    sender_handle_startsending(g_sender);
+                    sender_handle_startsending(g_sender_dlg->sender_);
                     break;
                 case ID_SENDER_STOPSENDING:
-                    sender_handle_stopsending(g_sender);
+                    sender_handle_stopsending(g_sender_dlg->sender_);
                     break;
-                case IDM_SENDER_ABOUT:
+                case ID_TEST_TONE:
+                    g_sender_dlg->bPlayWav_ = !g_sender_dlg->bPlayWav_;
+                    break;
+                case ID_OPEN_WAV:
+                    debug_outputln("%s %4.4u", __FILE__, __LINE__);
+                    break;
+               case IDM_SENDER_ABOUT:
                     display_about_dialog(hDlg);
                     break;
                 case IDOK:
                 case IDCANCEL: 
-                    sender_destroy(g_sender);
+                    sender_destroy(g_sender_dlg->sender_);
                     DestroyWindow(hDlg);
                     break;
             }
@@ -280,8 +305,8 @@ int PASCAL WinMain(HINSTANCE hInstance,
     HRESULT hr;
     WSADATA wsd;
     int	rc;
-    struct sender_ui_controls sender_dlg;
-
+    struct sender_dialog sender_dlg;
+    ZeroMemory(&sender_dlg, sizeof(sender_dlg));
     /* Init Winsock */
     if ((rc = WSAStartup(MAKEWORD(1, 1), &wsd)) != 0)
         return FALSE;
@@ -289,7 +314,7 @@ int PASCAL WinMain(HINSTANCE hInstance,
     hr = CoInitializeEx(0, COINIT_APARTMENTTHREADED);
     if (FAILED(hr))
         return FALSE;
-    g_hInst = hInstance;
+    sender_dlg.hInst_ = hInstance;
     //required to use the common controls
     InitCommonControls();
     
