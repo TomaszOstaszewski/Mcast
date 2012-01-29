@@ -121,14 +121,7 @@ static void UpdateUI(HWND hDlg)
         } 
         prev_state = curr_state;
     }
-    if (g_sender_dlg->bPlayWav_)
-    {
-        EnableWindow(g_sender_dlg->hOpenWav, TRUE);
-    }
-    else
-    {
-        EnableWindow(g_sender_dlg->hOpenWav, FALSE);
-    }
+    EnableWindow(g_sender_dlg->hOpenWav, g_sender_dlg->bPlayWav_);
     Button_SetCheck(g_sender_dlg->hTestToneCheck, !g_sender_dlg->bPlayWav_);
 }
 
