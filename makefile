@@ -83,7 +83,7 @@ $(OUTDIR_OBJ)\mcast-settings.obj: mcast-settings.c mcast-settings.h pcc.h $(OUTD
 $(OUTDIR_OBJ)\mcast-settings-dlg.obj: mcast-settings-dlg.c mcast-settings-dlg.h pcc.h common-dialogs-res.h $(OUTDIR_OBJ)
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
-$(OUTDIR_OBJ)\sender-settings-dlg.obj: sender-settings-dlg.c pcc.h sender-settings-dlg.h sender-settings.h $(OUTDIR_OBJ)
+$(OUTDIR_OBJ)\sender-settings-dlg.obj: sender-settings-dlg.c pcc.h sender-settings-dlg.h sender-settings.h sender-res.h $(OUTDIR_OBJ)
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\sender-settings.obj: sender-settings.c pcc.h sender-settings.h $(OUTDIR_OBJ)

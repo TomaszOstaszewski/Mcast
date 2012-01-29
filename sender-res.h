@@ -9,7 +9,6 @@
 #define IDD_SENDER_SETTINGS                     122
 #define IDR_MENU_SENDER                         128
 #define IDC_MCAST_SETTINGS                      1002
-#define IDC_WAVCOMBO                            1003
 #define IDS_APPTITLE_SENDER                     40000
 #define ID_SENDER_LEAVEMCAST                    40000
 #define IDT_TIMER_1                             40001
@@ -22,3 +21,6 @@
 #define IDC_PACKET_LENGTH_MS_EDIT               40022
 #define IDC_PACKET_LENGTH_BYTES_EDIT            40023
 #define IDC_PACKET_LENGTH_MS_SPIN               40024
+#define IDC_TEST_TONE_CHECKBOX                  40024
+#define IDC_TONE_COMBO                          40026
+#define IDC_TONE_SELECTION_STATIC               40027

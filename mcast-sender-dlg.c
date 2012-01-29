@@ -35,6 +35,20 @@
 #include "about-dialog.h"
 #include "sender-res.h"
 
+/*!
+ * @brief Describes all the 'interesting' UI controls of the sender's main dialog.
+ */
+struct sender_ui_controls {
+    HWND hSettingsBtn; /*!< Handle to the 'Settings' button. */
+    HWND hJoinMcastBtn; /*!< Handle to the 'Join Multicast' button. */
+    HWND hLeaveMcast; /*!< Handle to the 'Join Multicast' button. */
+    HWND hStartSendingBtn; /*!< Handle to the 'Start sending' button. */
+    HWND hStopSendingBtn; /*!< Handle to the 'Stop sending' button. */
+    HWND hTestToneCheck; /*!< Handle to the 'Test tone' check button. */
+    HWND hWavSelCombo; /*!< Handle to the 'WAV selection' combo. */
+    HMENU hMainMenu; /*!< Handle to the main menu. */
+};
+
 /**
  * @brief Global Application instance.
  * @details Required for various Windows related stuff.
@@ -51,6 +65,8 @@ static struct mcast_sender * g_sender;
  */
 static struct sender_settings g_settings;
 
+static struct sender_ui_controls * g_sender_dlg;
+
 /**
  * @brief Handles the user interface widgets update.
  * @details Given the state, in which the sender object currently has, updates the UI widgets to match that state. For instance, if the sender state is <b>SENDER_INITIAL</b>, then only the "Settings" and "Join multicast" widgets shall be enabled, all others shall be disabled. Then, for the <b>SENDER_MCAST_JOINED</b> state, the "Leave multicast" and "Start sending" buttons shall be enabled, all other widgets shall be disabled. 
@@ -60,7 +76,7 @@ static struct sender_settings g_settings;
  */
 static void UpdateUIwithCurrentState(HWND hDlg, sender_state_t state)
 {
-    static HWND hSettingsBtn = NULL, hJoinMcastBtn = NULL, hLeaveMcast = NULL, hStartSendingBtn = NULL, hStopSendingBtn = NULL;
+    static HWND hSettingsBtn = NULL, hJoinMcastBtn = NULL, hLeaveMcast = NULL, hStartSendingBtn = NULL, hStopSendingBtn = NULL, hTestToneCheck = NULL, hWavSelCombo = NULL;
     static HMENU hMenu = NULL;
     if (NULL == hSettingsBtn)
         hSettingsBtn = GetDlgItem(hDlg, ID_SENDER_SETTINGS);    
@@ -74,7 +90,11 @@ static void UpdateUIwithCurrentState(HWND hDlg, sender_state_t state)
         hLeaveMcast = GetDlgItem(hDlg, ID_SENDER_LEAVEMCAST);
     if (NULL == hMenu)
         hMenu = GetMenu(hDlg);
-    switch (state)
+    if (NULL == hTestToneCheck)
+        hTestToneCheck = GetDlgItem(hDlg, IDC_TEST_TONE_CHECKBOX);
+    if (NULL == hWavSelCombo)
+        hWavSelCombo = GetDlgItem(hDlg, IDC_TONE_COMBO);
+     switch (state)
     {
         case SENDER_INITIAL:
             EnableMenuItem(hMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
@@ -87,6 +107,8 @@ static void UpdateUIwithCurrentState(HWND hDlg, sender_state_t state)
             EnableWindow(hLeaveMcast, FALSE);
             EnableWindow(hStartSendingBtn, FALSE);
             EnableWindow(hStopSendingBtn, FALSE);
+            EnableWindow(hTestToneCheck, TRUE);
+            EnableWindow(hWavSelCombo, TRUE);
             SetFocus(hJoinMcastBtn);
             break;
         case SENDER_MCAST_JOINED:
@@ -100,6 +122,8 @@ static void UpdateUIwithCurrentState(HWND hDlg, sender_state_t state)
             EnableWindow(hLeaveMcast, TRUE);
             EnableWindow(hStartSendingBtn, TRUE);
             EnableWindow(hStopSendingBtn, FALSE);
+            EnableWindow(hTestToneCheck, FALSE);
+            EnableWindow(hWavSelCombo, FALSE);
             SetFocus(hStartSendingBtn);
             break;
         case SENDER_SENDING:
@@ -113,6 +137,8 @@ static void UpdateUIwithCurrentState(HWND hDlg, sender_state_t state)
             EnableWindow(hLeaveMcast, FALSE);
             EnableWindow(hStartSendingBtn, FALSE);
             EnableWindow(hStopSendingBtn, TRUE);
+            EnableWindow(hTestToneCheck, FALSE);
+            EnableWindow(hWavSelCombo, FALSE);
             SetFocus(hStopSendingBtn);
             break;
         default:
@@ -156,12 +182,13 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
         case WM_INITDIALOG:
             {
                 int result;
+                g_sender_dlg = (struct sender_ui_controls*)lParam;
                 result = get_default_settings(&g_settings);
                 assert(result);
                 g_sender = sender_create(&g_settings);
                 assert(g_sender);
             }
-            return FALSE; /* Return FALSE, as we did set focus ourselves in UpdateUIwithCurrentState call, and we don't want to focus on the default control */
+            return TRUE;
        case WM_COMMAND:
             switch(LOWORD(wParam))
             {
@@ -251,8 +278,9 @@ int PASCAL WinMain(HINSTANCE hInstance,
 {
     HWND hDlg;
     HRESULT hr;
-    WSADATA             wsd;
+    WSADATA wsd;
     int	rc;
+    struct sender_ui_controls sender_dlg;
 
     /* Init Winsock */
     if ((rc = WSAStartup(MAKEWORD(1, 1), &wsd)) != 0)
@@ -264,7 +292,8 @@ int PASCAL WinMain(HINSTANCE hInstance,
     g_hInst = hInstance;
     //required to use the common controls
     InitCommonControls();
-    hDlg = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_MAIN_SENDER), NULL, SenderDlgProc);
+    
+    hDlg = CreateDialogParam(hInstance, MAKEINTRESOURCE(IDD_MAIN_SENDER), NULL, SenderDlgProc, (LPARAM)&sender_dlg);
     if (NULL == hDlg)
         return (-1);
     message_loop(hDlg, &on_idle);
