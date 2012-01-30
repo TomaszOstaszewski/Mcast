@@ -36,11 +36,6 @@ extern "C" {
 #include "mcast-settings.h"
 
 /*!
- * @brief Forward declaration.
- */
-struct master_riff_chunk;
-
-/*!
  * @brief Describes the sender settings.
  */
 struct sender_settings {
@@ -50,7 +45,6 @@ struct sender_settings {
      * @details This member contains how many milliseconds of WAV file will be send in a single packet. 
      */
 	uint16_t chunk_size_ms_;
-	struct master_riff_chunk * chunk_; /*!< Describes which WAV file to send. */
 };
 
 /*!

@@ -70,16 +70,11 @@ static uint32_t chunk_size_bytes_to_ms(uint16_t bytes)
 
 int get_default_settings(struct sender_settings * p_settings)
 {
-	int result;
-	result = init_master_riff(&p_settings->chunk_, NULL, MAKEINTRESOURCE(IDR_0_1));
-	assert(result);
-	if (result) 
-	{
-		p_settings->chunk_size_ms_ = DEFAULT_WAV_CHUNK_SIZE_MS;
-		result = mcast_settings_get_default(&p_settings->mcast_settings_);
-        assert(result);
-	}
-	return result;
+    int result;
+    p_settings->chunk_size_ms_ = DEFAULT_WAV_CHUNK_SIZE_MS;
+    result = mcast_settings_get_default(&p_settings->mcast_settings_);
+    assert(result);
+    return result;
 }
 
 int sender_settings_validate(struct sender_settings const * p_settings)

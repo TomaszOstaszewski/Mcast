@@ -38,9 +38,23 @@ void test_00(void)
 	destroy_tone(p_tone);
 }
 
+void test_01(void)
+{
+	struct abstract_tone * p_tone;
+    uint8_t * p_data;
+    size_t data_size = 0;
+	p_tone = create_tone(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
+	assert(p_tone);
+    p_data = get_wave_data(p_tone, &data_size);
+    assert(p_data);
+    assert(0 != data_size);
+	destroy_tone(p_tone);
+}
+
 int main(int argc, char ** argv)
 {
 	test_00();
+	test_01();
 	return 0;
 }
 

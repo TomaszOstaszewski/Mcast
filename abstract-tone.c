@@ -83,6 +83,8 @@ PCMWAVEFORMAT * get_wave_format(struct abstract_tone * p_tone)
 
 void * get_wave_data(struct abstract_tone * p_tone, size_t * p_data_size)
 {
-    return NULL;
+    assert(p_tone);
+    *p_data_size = p_tone->mriff_->format_chunk_.subchunk_.subchunk_size_;
+    return &p_tone->mriff_->format_chunk_.subchunk_.samples8_;
 }
 

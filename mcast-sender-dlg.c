@@ -33,12 +33,15 @@
 #include "sender-settings-dlg.h"
 #include "sender-settings.h"
 #include "about-dialog.h"
+#include "abstract-tone.h"
 #include "sender-res.h"
 
 /*!
  * @brief Describes all the 'interesting' UI controls of the sender's main dialog.
  */
 struct sender_dialog {
+    struct mcast_sender * sender_; /*!< The sender object. This sends out the data on the multicast group. */
+    struct sender_settings settings_; /*!< The sender settings object. Here are multicast group settings stored, and how many bytes to send with each packet. */
     HWND hDlg_; /*!< Handle to the main dialog */
     HWND hSettingsBtn; /*!< Handle to the 'Settings' button. */
     HWND hJoinMcastBtn; /*!< Handle to the 'Join Multicast' button. */
@@ -48,8 +51,6 @@ struct sender_dialog {
     HWND hTestToneCheck; /*!< Handle to the 'Test tone' check button. */
     HWND hOpenWav; /*!< Handle to the 'Open WAV ...' box. */
     HMENU hMainMenu; /*!< Handle to the main menu. */
-    struct mcast_sender * sender_; /*!< The sender object. This sends out the data on the multicast group. */
-    struct sender_settings settings_; /*!< The sender settings object. Here are multicast group settings stored, and how many bytes to send with each packet. */
     BOOL bPlayWav_; /*!< Whether or not to play the selected WAV or the test tone */
     HINSTANCE hInst_; /*!< @brief Global Application instance.  Required for various Windows related stuff. */
 };
@@ -89,7 +90,35 @@ static void UpdateUI(struct sender_dialog * p_dlg)
                 EnableWindow(p_dlg->hTestToneCheck, TRUE);
                 SetFocus(p_dlg->hJoinMcastBtn);
                 break;
-            case SENDER_MCAST_JOINED:
+            case SENDER_TONE_SELECTED:
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_GRAYED);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
+                EnableWindow(p_dlg->hSettingsBtn, TRUE);
+                EnableWindow(p_dlg->hJoinMcastBtn, TRUE);
+                EnableWindow(p_dlg->hLeaveMcast, FALSE);
+                EnableWindow(p_dlg->hStartSendingBtn, FALSE);
+                EnableWindow(p_dlg->hStopSendingBtn, FALSE);
+                EnableWindow(p_dlg->hTestToneCheck, TRUE);
+                SetFocus(p_dlg->hJoinMcastBtn);
+                break;
+             case SENDER_MCAST_JOINED:
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_ENABLED);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
+                EnableWindow(p_dlg->hSettingsBtn, FALSE);
+                EnableWindow(p_dlg->hJoinMcastBtn, FALSE);
+                EnableWindow(p_dlg->hLeaveMcast, TRUE);
+                EnableWindow(p_dlg->hStartSendingBtn, FALSE);
+                EnableWindow(p_dlg->hStopSendingBtn, FALSE);
+                EnableWindow(p_dlg->hTestToneCheck, FALSE);
+                SetFocus(p_dlg->hTestToneCheck);
+                break;
+            case SENDER_MCASTJOINED_TONESELECTED:
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
@@ -166,6 +195,12 @@ static BOOL Handle_wm_initdialog(HWND hDlg, HWND hWndFocus, LPARAM lParam)
     assert(result);
     g_sender_dlg->sender_ = sender_create(&g_sender_dlg->settings_);
     assert(g_sender_dlg->sender_);
+    {
+        struct abstract_tone * p_tone;
+	    p_tone = create_tone(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
+        assert(p_tone);
+        sender_handle_selecttone(g_sender_dlg->sender_, p_tone);
+    }
     UpdateUI(g_sender_dlg);
     return TRUE;
 }
@@ -192,19 +227,21 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                 case ID_SENDER_SETTINGS:
                     assert(g_sender_dlg);
                     curr_state = sender_get_current_state(g_sender_dlg->sender_);
-                    if (SENDER_INITIAL == curr_state)
+                    switch (curr_state)
                     {
-                        /* Open up the settings dialog with the MCAST settings parameters */
-                        if (sender_settings_from_dialog(hDlg, &g_sender_dlg->settings_))
-                        {
-                            sender_destroy(g_sender_dlg->sender_);
-                            g_sender_dlg->sender_ = sender_create(&g_sender_dlg->settings_);
-                            assert(g_sender_dlg->sender_);
-                        }
-                    }
-                    else
-                    {
-                        debug_outputln("%s %4.4u", __FILE__, __LINE__);
+                        case SENDER_INITIAL:
+                        case SENDER_TONE_SELECTED:
+                            /* Open up the settings dialog with the MCAST settings parameters */
+                            if (sender_settings_from_dialog(hDlg, &g_sender_dlg->settings_))
+                            {
+                                sender_destroy(g_sender_dlg->sender_);
+                                g_sender_dlg->sender_ = sender_create(&g_sender_dlg->settings_);
+                                assert(g_sender_dlg->sender_);
+                            }
+                            break;
+                        default:
+                            debug_outputln("%s %4.4u", __FILE__, __LINE__);
+                            break;
                     }
                     break;
                 case ID_SENDER_JOINMCAST:
