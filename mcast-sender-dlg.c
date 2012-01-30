@@ -41,6 +41,7 @@
  */
 struct sender_dialog {
     struct mcast_sender * sender_; /*!< The sender object. This sends out the data on the multicast group. */
+    struct abstract_tone * tone_selected_; /*!< Currently selected tone to be played. */
     struct sender_settings settings_; /*!< The sender settings object. Here are multicast group settings stored, and how many bytes to send with each packet. */
     HWND hDlg_; /*!< Handle to the main dialog */
     HWND hSettingsBtn; /*!< Handle to the 'Settings' button. */
@@ -115,7 +116,7 @@ static void UpdateUI(struct sender_dialog * p_dlg)
                 EnableWindow(p_dlg->hLeaveMcast, TRUE);
                 EnableWindow(p_dlg->hStartSendingBtn, FALSE);
                 EnableWindow(p_dlg->hStopSendingBtn, FALSE);
-                EnableWindow(p_dlg->hTestToneCheck, FALSE);
+                EnableWindow(p_dlg->hTestToneCheck, TRUE);
                 SetFocus(p_dlg->hTestToneCheck);
                 break;
             case SENDER_MCASTJOINED_TONESELECTED:
@@ -193,15 +194,12 @@ static BOOL Handle_wm_initdialog(HWND hDlg, HWND hWndFocus, LPARAM lParam)
     assert(p_dlg->hOpenWav);
     result = get_default_settings(&g_sender_dlg->settings_);
     assert(result);
-    g_sender_dlg->sender_ = sender_create(&g_sender_dlg->settings_);
-    assert(g_sender_dlg->sender_);
-    {
-        struct abstract_tone * p_tone;
-	    p_tone = create_tone(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
-        assert(p_tone);
-        sender_handle_selecttone(g_sender_dlg->sender_, p_tone);
-    }
-    UpdateUI(g_sender_dlg);
+    p_dlg->sender_ = sender_create(&g_sender_dlg->settings_);
+    assert(p_dlg->sender_);
+    p_dlg->tone_selected_ = abstract_tone_create(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
+    assert(p_dlg->tone_selected_);
+    sender_handle_selecttone(p_dlg->sender_, p_dlg->tone_selected_);
+    UpdateUI(p_dlg);
     return TRUE;
 }
  
@@ -258,6 +256,18 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     break;
                 case ID_TEST_TONE:
                     g_sender_dlg->bPlayWav_ = !g_sender_dlg->bPlayWav_;
+                    if (g_sender_dlg->bPlayWav_) /* If 'bPlayWav_' is TRUE, then we are to play user selected tone. */
+                    {
+                        abstract_tone_destroy(g_sender_dlg->tone_selected_);
+                        g_sender_dlg->tone_selected_ = NULL;
+                        sender_handle_deselecttone(g_sender_dlg->sender_);
+                    }
+                    else
+                    {
+                        g_sender_dlg->tone_selected_ = abstract_tone_create(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
+                        assert(g_sender_dlg->tone_selected_);
+                        sender_handle_selecttone(g_sender_dlg->sender_, g_sender_dlg->tone_selected_);
+                    }
                     break;
                 case ID_OPEN_WAV:
                     debug_outputln("%s %4.4u", __FILE__, __LINE__);

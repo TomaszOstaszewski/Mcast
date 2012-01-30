@@ -62,7 +62,7 @@ $(OUTDIR_OBJ)\resolve.obj: resolve.c resolve.h debug_helpers.h $(OUTDIR_PCC)\pcc
 $(OUTDIR_OBJ)\timeofday.obj: timeofday.c timeofday.h $(OUTDIR_PCC)\pcc.pch
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
-$(OUTDIR_OBJ)\mcast-sender-state-machine.obj: mcast-sender-state-machine.c mcast-sender-state-machine.h sender-settings.h mcast_setup.h wave_utils.h $(OUTDIR_PCC)\pcc.pch
+$(OUTDIR_OBJ)\mcast-sender-state-machine.obj: mcast-sender-state-machine.c mcast-sender-state-machine.h sender-settings.h mcast_setup.h wave_utils.h abstract-tone.h $(OUTDIR_PCC)\pcc.pch
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\mcast-receiver-state-machine.obj: mcast-receiver-state-machine.c mcast-receiver-state-machine.h receiver-settings.h play-settings.h mcast_setup.h dsoundplay.h fifo-circular-buffer.h wave_utils.h $(OUTDIR_PCC)\pcc.pch
@@ -77,7 +77,7 @@ $(OUTDIR_OBJ)\debug_helpers.obj: debug_helpers.c pcc.h debug_helpers.h  $(OUTDIR
 $(OUTDIR_OBJ)\mcast-receiver-dlg.obj: mcast-receiver-dlg.c pcc.h dsoundplay.h mcast_setup.h mcast-settings.h mcast-receiver-state-machine.h fifo-circular-buffer.h receiver-settings.h play-settings.h wave_utils.h receiver-res.h $(OUTDIR_OBJ)
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
-$(OUTDIR_OBJ)\mcast-sender-dlg.obj: mcast-sender-dlg.c sender-settings-dlg.h mcast-sender-state-machine.h pcc.h sender-settings.h sender-res.h $(OUTDIR_OBJ)
+$(OUTDIR_OBJ)\mcast-sender-dlg.obj: mcast-sender-dlg.c sender-settings-dlg.h mcast-sender-state-machine.h pcc.h sender-settings.h sender-res.h abstract-tone.h $(OUTDIR_OBJ)
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\mcast-settings.obj: mcast-settings.c mcast-settings.h pcc.h $(OUTDIR_OBJ)

@@ -52,7 +52,7 @@ typedef enum eToneType {
  * @param[in] Tone specific creation data.
  * @return returns a handle to the abstract tone.
  */
-struct abstract_tone * create_tone(tone_type_t eType, LPCTSTR psz_tone_name);
+struct abstract_tone * abstract_tone_create(tone_type_t eType, LPCTSTR psz_tone_name);
 
 /*!
  * @brief Destroys a tone.
@@ -61,7 +61,7 @@ struct abstract_tone * create_tone(tone_type_t eType, LPCTSTR psz_tone_name);
  * memory mappings, if such exist).
  * @param[in]
  */
-void destroy_tone(struct abstract_tone * p_tone);
+void abstract_tone_destroy(struct abstract_tone * p_tone);
 
 /*!
  * @brief Returns the PCMWAVEFORMAT structure for the tone.
@@ -69,7 +69,7 @@ void destroy_tone(struct abstract_tone * p_tone);
  * @param[in] p_tone
  * @return 
  */
-PCMWAVEFORMAT * get_wave_format(struct abstract_tone * p_tone);
+PCMWAVEFORMAT * abstract_tone_get_wave_format(struct abstract_tone * p_tone);
 
 /*!
  * @brief Returns the pointer to tone data.
@@ -78,7 +78,7 @@ PCMWAVEFORMAT * get_wave_format(struct abstract_tone * p_tone);
  * @param[in,out] p_data_size Pointer to the caller allocated memory, which will be written with size of the array returned as function value.
  * @return Pointer to the first byte of the tone data.
  */
-void * get_wave_data(struct abstract_tone * p_tone, size_t * p_data_size);
+void * abstract_tone_get_wave_data(struct abstract_tone * p_tone, size_t * p_data_size);
 
 #if defined __cplusplus
 }

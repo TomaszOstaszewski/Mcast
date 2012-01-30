@@ -34,7 +34,7 @@ struct abstract_tone {
     master_riff_chunk_t * mriff_; /*!< Pointer to the WAV file first bytes */
 };
 
-struct abstract_tone * create_tone(tone_type_t eType, LPCTSTR psz_tone_name)
+struct abstract_tone * abstract_tone_create(tone_type_t eType, LPCTSTR psz_tone_name)
 {
     struct abstract_tone * retval = (struct abstract_tone *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct abstract_tone));
     assert(retval);
@@ -61,7 +61,7 @@ struct abstract_tone * create_tone(tone_type_t eType, LPCTSTR psz_tone_name)
     return retval;
 }
 
-void destroy_tone(struct abstract_tone * p_tone)
+void abstract_tone_destroy(struct abstract_tone * p_tone)
 {
     switch (p_tone->e_type_)
     {
@@ -76,12 +76,12 @@ void destroy_tone(struct abstract_tone * p_tone)
     }
 }
 
-PCMWAVEFORMAT * get_wave_format(struct abstract_tone * p_tone)
+PCMWAVEFORMAT * abstract_tone_get_wave_format(struct abstract_tone * p_tone)
 {
     return NULL;
 }
 
-void * get_wave_data(struct abstract_tone * p_tone, size_t * p_data_size)
+void * abstract_tone_get_wave_data(struct abstract_tone * p_tone, size_t * p_data_size)
 {
     assert(p_tone);
     *p_data_size = p_tone->mriff_->format_chunk_.subchunk_.subchunk_size_;
