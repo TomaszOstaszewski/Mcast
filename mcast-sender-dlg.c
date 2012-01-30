@@ -34,7 +34,13 @@
 #include "sender-settings.h"
 #include "about-dialog.h"
 #include "abstract-tone.h"
+#include "wave_utils.h"
 #include "sender-res.h"
+
+/*! 
+ * @brief Length of the text displayed in the preview window.
+ */
+#define WAV_PREVIEW_LENGTH (512)
 
 /*!
  * @brief Describes all the 'interesting' UI controls of the sender's main dialog.
@@ -43,6 +49,7 @@ struct sender_dialog {
     struct mcast_sender * sender_; /*!< The sender object. This sends out the data on the multicast group. */
     struct abstract_tone * tone_selected_; /*!< Currently selected tone to be played. */
     struct sender_settings settings_; /*!< The sender settings object. Here are multicast group settings stored, and how many bytes to send with each packet. */
+    TCHAR wav_preview_text_[WAV_PREVIEW_LENGTH+1];
     HWND hDlg_; /*!< Handle to the main dialog */
     HWND hSettingsBtn; /*!< Handle to the 'Settings' button. */
     HWND hJoinMcastBtn; /*!< Handle to the 'Join Multicast' button. */
@@ -51,6 +58,7 @@ struct sender_dialog {
     HWND hStopSendingBtn; /*!< Handle to the 'Stop sending' button. */
     HWND hTestToneCheck; /*!< Handle to the 'Test tone' check button. */
     HWND hOpenWav; /*!< Handle to the 'Open WAV ...' box. */
+    HWND hWavPreview_; /*!< Handle to the static control in which WAV file details will be displayed. */
     HMENU hMainMenu; /*!< Handle to the main menu. */
     HINSTANCE hInst_; /*!< @brief Global Application instance.  Required for various Windows related stuff. */
 };
@@ -58,7 +66,7 @@ struct sender_dialog {
 /**
  * @brief Entry point for the user interface widgets update.
  * @details Compares the previous and current sender state.
- * @param hDlg handle to the main dialog window, holding the user interface widgets.
+ * @param hwnd handle to the main dialog window, holding the user interface widgets.
  */
 static void UpdateUI(HWND hwnd)
 {
@@ -88,6 +96,8 @@ static void UpdateUI(HWND hwnd)
                 EnableWindow(p_dlg->hStopSendingBtn, FALSE);
                 EnableWindow(p_dlg->hTestToneCheck, TRUE);
                 SetFocus(p_dlg->hJoinMcastBtn);
+                p_dlg->wav_preview_text_[0] = _T('\0');
+                SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
                 break;
             case SENDER_TONE_SELECTED:
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
@@ -102,8 +112,10 @@ static void UpdateUI(HWND hwnd)
                 EnableWindow(p_dlg->hStopSendingBtn, FALSE);
                 EnableWindow(p_dlg->hTestToneCheck, TRUE);
                 SetFocus(p_dlg->hJoinMcastBtn);
+                dump_pcmwaveformat(p_dlg->wav_preview_text_, WAV_PREVIEW_LENGTH, abstract_tone_get_pcmwaveformat(p_dlg->tone_selected_));
+                SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
                 break;
-             case SENDER_MCAST_JOINED:
+            case SENDER_MCAST_JOINED:
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
@@ -116,6 +128,8 @@ static void UpdateUI(HWND hwnd)
                 EnableWindow(p_dlg->hStopSendingBtn, FALSE);
                 EnableWindow(p_dlg->hTestToneCheck, TRUE);
                 SetFocus(p_dlg->hTestToneCheck);
+                p_dlg->wav_preview_text_[0] = _T('\0');
+                SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
                 break;
             case SENDER_MCASTJOINED_TONESELECTED:
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
@@ -130,6 +144,8 @@ static void UpdateUI(HWND hwnd)
                 EnableWindow(p_dlg->hStopSendingBtn, FALSE);
                 EnableWindow(p_dlg->hTestToneCheck, TRUE);
                 SetFocus(p_dlg->hStartSendingBtn);
+                dump_pcmwaveformat(p_dlg->wav_preview_text_, WAV_PREVIEW_LENGTH, abstract_tone_get_pcmwaveformat(p_dlg->tone_selected_));
+                SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
                 break;
             case SENDER_SENDING:
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
@@ -190,6 +206,8 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(p_dlg->hTestToneCheck);
     p_dlg->hOpenWav = GetDlgItem(hwnd, ID_OPEN_WAV);
     assert(p_dlg->hOpenWav);
+    p_dlg->hWavPreview_ = GetDlgItem(hwnd, IDC_WAV_PREVIEW);
+    assert(p_dlg->hWavPreview_);
     result = get_default_settings(&p_dlg->settings_);
     assert(result);
     p_dlg->sender_ = sender_create(&p_dlg->settings_);

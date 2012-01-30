@@ -98,7 +98,7 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
     max_chunk_size = sender_settings_get_chunk_size_bytes(&p_sender->settings_);
     assert(max_chunk_size <= MAX_ETHER_PAYLOAD_SANS_UPD_IP);
     send_offset = 0;
-    p_data_begin = abstract_tone_get_wave_data(p_sender->tone_, &max_offset);
+    p_data_begin = (int8_t const *)abstract_tone_get_wave_data(p_sender->tone_, &max_offset);
     assert(p_data_begin);
     for (;;)
     {

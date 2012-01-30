@@ -35,7 +35,7 @@ extern "C" {
 #include <tchar.h>
 
 struct abstract_tone;
-struct PCMWAVEFORMAT;
+struct PCMWAVEFORMAT; /* defined int <mmsystem.h> and <mmreg.h> from WINDOWS SDK */
 
 /*! 
  * @brief Type of the tone to be created.
@@ -65,20 +65,20 @@ void abstract_tone_destroy(struct abstract_tone * p_tone);
 
 /*!
  * @brief Returns the PCMWAVEFORMAT structure for the tone.
- * @details 
- * @param[in] p_tone
- * @return 
+ * @param[in] p_tone tone for which PCMWAVEFORMAT structure is to be retrieved.
+ * @return retuns
  */
-PCMWAVEFORMAT * abstract_tone_get_wave_format(struct abstract_tone * p_tone);
+PCMWAVEFORMAT const * abstract_tone_get_pcmwaveformat(struct abstract_tone const * p_tone);
 
 /*!
  * @brief Returns the pointer to tone data.
- * @details 
+ * @details Const-correct variant of the abstract_tone_get_wave_data routine.
  * @param[in] p_tone Tone for which data is to be returned.
  * @param[in,out] p_data_size Pointer to the caller allocated memory, which will be written with size of the array returned as function value.
  * @return Pointer to the first byte of the tone data.
+ * @sa abstract_tone_get_wave_data
  */
-void * abstract_tone_get_wave_data(struct abstract_tone * p_tone, size_t * p_data_size);
+const void * abstract_tone_get_wave_data(struct abstract_tone const * p_tone, size_t * p_data_size);
 
 #if defined __cplusplus
 }

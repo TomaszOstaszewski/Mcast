@@ -76,12 +76,13 @@ void abstract_tone_destroy(struct abstract_tone * p_tone)
     }
 }
 
-PCMWAVEFORMAT * abstract_tone_get_wave_format(struct abstract_tone * p_tone)
+PCMWAVEFORMAT const * abstract_tone_get_pcmwaveformat(struct abstract_tone const * p_tone)
 {
-    return NULL;
+    assert(p_tone);
+    return &p_tone->mriff_->format_chunk_.format_;
 }
 
-void * abstract_tone_get_wave_data(struct abstract_tone * p_tone, size_t * p_data_size)
+void const * abstract_tone_get_wave_data(struct abstract_tone const * p_tone, size_t * p_data_size)
 {
     assert(p_tone);
     *p_data_size = p_tone->mriff_->format_chunk_.subchunk_.subchunk_size_;
