@@ -52,7 +52,6 @@ struct sender_dialog {
     HWND hTestToneCheck; /*!< Handle to the 'Test tone' check button. */
     HWND hOpenWav; /*!< Handle to the 'Open WAV ...' box. */
     HMENU hMainMenu; /*!< Handle to the main menu. */
-    BOOL bPlayWav_; /*!< Whether or not to play the selected WAV or the test tone */
     HINSTANCE hInst_; /*!< @brief Global Application instance.  Required for various Windows related stuff. */
 };
 
@@ -130,7 +129,7 @@ static void UpdateUI(struct sender_dialog * p_dlg)
                 EnableWindow(p_dlg->hLeaveMcast, TRUE);
                 EnableWindow(p_dlg->hStartSendingBtn, TRUE);
                 EnableWindow(p_dlg->hStopSendingBtn, FALSE);
-                EnableWindow(p_dlg->hTestToneCheck, FALSE);
+                EnableWindow(p_dlg->hTestToneCheck, TRUE);
                 SetFocus(p_dlg->hStartSendingBtn);
                 break;
             case SENDER_SENDING:
@@ -152,8 +151,8 @@ static void UpdateUI(struct sender_dialog * p_dlg)
         } 
         prev_state = curr_state;
     }
-    EnableWindow(p_dlg->hOpenWav, p_dlg->bPlayWav_);
-    Button_SetCheck(p_dlg->hTestToneCheck, !p_dlg->bPlayWav_);
+    EnableWindow(p_dlg->hOpenWav, NULL == p_dlg->tone_selected_);
+    Button_SetCheck(p_dlg->hTestToneCheck, NULL != p_dlg->tone_selected_);
 }
 
 /*!
@@ -255,12 +254,11 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     sender_handle_stopsending(g_sender_dlg->sender_);
                     break;
                 case ID_TEST_TONE:
-                    g_sender_dlg->bPlayWav_ = !g_sender_dlg->bPlayWav_;
-                    if (g_sender_dlg->bPlayWav_) /* If 'bPlayWav_' is TRUE, then we are to play user selected tone. */
+                    if (g_sender_dlg->tone_selected_)
                     {
+                        sender_handle_deselecttone(g_sender_dlg->sender_);
                         abstract_tone_destroy(g_sender_dlg->tone_selected_);
                         g_sender_dlg->tone_selected_ = NULL;
-                        sender_handle_deselecttone(g_sender_dlg->sender_);
                     }
                     else
                     {
