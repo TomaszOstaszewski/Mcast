@@ -56,20 +56,19 @@ struct sender_dialog {
 };
 
 /**
- * @brief A pointer to the sender dialog object. This pointer is used in all the dialog routines.
- * @todo Use GWL_USERDATA slot rather than this global.
- */
-static struct sender_dialog * g_sender_dlg;
-
-/**
  * @brief Entry point for the user interface widgets update.
  * @details Compares the previous and current sender state.
  * @param hDlg handle to the main dialog window, holding the user interface widgets.
  */
-static void UpdateUI(struct sender_dialog * p_dlg)
+static void UpdateUI(HWND hwnd)
 {
     static sender_state_t prev_state = -1;
+    static struct sender_dialog * p_dlg = NULL;
     sender_state_t curr_state;
+    if (NULL == p_dlg)
+    {
+        p_dlg = (struct sender_dialog*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    }
     assert(p_dlg);
     curr_state = sender_get_current_state(p_dlg->sender_);
     if (prev_state != curr_state)
@@ -166,39 +165,39 @@ static void UpdateUI(struct sender_dialog * p_dlg)
  * handler some client specific data.
  * @param returns TRUE if the window indicated as hWndFocus is to get keyboard focus. Returns FALSE otherwise.
  */
-static BOOL Handle_wm_initdialog(HWND hDlg, HWND hWndFocus, LPARAM lParam)
+static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
     int result;
     struct sender_dialog * p_dlg;
-    g_sender_dlg = (struct sender_dialog*)lParam;
-    p_dlg = g_sender_dlg;
+    p_dlg = (struct sender_dialog*)lParam;
+    SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)p_dlg);
     assert(p_dlg);
-    p_dlg->hDlg_ = hDlg;
+    p_dlg->hDlg_ = hwnd;
     assert(p_dlg->hDlg_);
-    p_dlg->hSettingsBtn = GetDlgItem(hDlg, ID_SENDER_SETTINGS);    
+    p_dlg->hSettingsBtn = GetDlgItem(hwnd, ID_SENDER_SETTINGS);    
     assert(p_dlg->hSettingsBtn);
-    p_dlg->hJoinMcastBtn = GetDlgItem(hDlg, ID_SENDER_JOINMCAST);  
+    p_dlg->hJoinMcastBtn = GetDlgItem(hwnd, ID_SENDER_JOINMCAST);  
     assert(p_dlg->hJoinMcastBtn);
-    p_dlg->hStartSendingBtn = GetDlgItem(hDlg, ID_SENDER_STARTSENDING);    
+    p_dlg->hStartSendingBtn = GetDlgItem(hwnd, ID_SENDER_STARTSENDING);    
     assert(p_dlg->hStartSendingBtn);
-    p_dlg->hStopSendingBtn = GetDlgItem(hDlg, ID_SENDER_STOPSENDING);  
+    p_dlg->hStopSendingBtn = GetDlgItem(hwnd, ID_SENDER_STOPSENDING);  
     assert(p_dlg->hStopSendingBtn);
-    p_dlg->hLeaveMcast = GetDlgItem(hDlg, ID_SENDER_LEAVEMCAST);
+    p_dlg->hLeaveMcast = GetDlgItem(hwnd, ID_SENDER_LEAVEMCAST);
     assert(p_dlg->hLeaveMcast );
-    p_dlg->hMainMenu = GetMenu(hDlg);
+    p_dlg->hMainMenu = GetMenu(hwnd);
     assert(p_dlg->hMainMenu);
-    p_dlg->hTestToneCheck = GetDlgItem(hDlg, ID_TEST_TONE);
+    p_dlg->hTestToneCheck = GetDlgItem(hwnd, ID_TEST_TONE);
     assert(p_dlg->hTestToneCheck);
-    p_dlg->hOpenWav = GetDlgItem(hDlg, ID_OPEN_WAV);
+    p_dlg->hOpenWav = GetDlgItem(hwnd, ID_OPEN_WAV);
     assert(p_dlg->hOpenWav);
-    result = get_default_settings(&g_sender_dlg->settings_);
+    result = get_default_settings(&p_dlg->settings_);
     assert(result);
-    p_dlg->sender_ = sender_create(&g_sender_dlg->settings_);
+    p_dlg->sender_ = sender_create(&p_dlg->settings_);
     assert(p_dlg->sender_);
     p_dlg->tone_selected_ = abstract_tone_create(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
     assert(p_dlg->tone_selected_);
     sender_handle_selecttone(p_dlg->sender_, p_dlg->tone_selected_);
-    UpdateUI(p_dlg);
+    UpdateUI(hwnd);
     return TRUE;
 }
  
@@ -214,6 +213,11 @@ static BOOL Handle_wm_initdialog(HWND hDlg, HWND hWndFocus, LPARAM lParam)
 static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
     sender_state_t curr_state;
+    static struct sender_dialog * p_dlg = NULL;
+    if (NULL == p_dlg)
+    {
+        p_dlg = (struct sender_dialog*)GetWindowLongPtr(hDlg, GWLP_USERDATA);
+    }
     switch (uMessage)
     {
         case WM_INITDIALOG:
@@ -222,18 +226,18 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
             switch(LOWORD(wParam))
             {
                 case ID_SENDER_SETTINGS:
-                    assert(g_sender_dlg);
-                    curr_state = sender_get_current_state(g_sender_dlg->sender_);
+                    assert(p_dlg);
+                    curr_state = sender_get_current_state(p_dlg->sender_);
                     switch (curr_state)
                     {
                         case SENDER_INITIAL:
                         case SENDER_TONE_SELECTED:
                             /* Open up the settings dialog with the MCAST settings parameters */
-                            if (sender_settings_from_dialog(hDlg, &g_sender_dlg->settings_))
+                            if (sender_settings_from_dialog(hDlg, &p_dlg->settings_))
                             {
-                                sender_destroy(g_sender_dlg->sender_);
-                                g_sender_dlg->sender_ = sender_create(&g_sender_dlg->settings_);
-                                assert(g_sender_dlg->sender_);
+                                sender_destroy(p_dlg->sender_);
+                                p_dlg->sender_ = sender_create(&p_dlg->settings_);
+                                assert(p_dlg->sender_);
                             }
                             break;
                         default:
@@ -242,29 +246,29 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     }
                     break;
                 case ID_SENDER_JOINMCAST:
-                    sender_handle_mcastjoin(g_sender_dlg->sender_);
+                    sender_handle_mcastjoin(p_dlg->sender_);
                     break;
                 case ID_SENDER_LEAVEMCAST:
-                    sender_handle_mcastleave(g_sender_dlg->sender_);
+                    sender_handle_mcastleave(p_dlg->sender_);
                     break;
                 case ID_SENDER_STARTSENDING:
-                    sender_handle_startsending(g_sender_dlg->sender_);
+                    sender_handle_startsending(p_dlg->sender_);
                     break;
                 case ID_SENDER_STOPSENDING:
-                    sender_handle_stopsending(g_sender_dlg->sender_);
+                    sender_handle_stopsending(p_dlg->sender_);
                     break;
                 case ID_TEST_TONE:
-                    if (g_sender_dlg->tone_selected_)
+                    if (p_dlg->tone_selected_)
                     {
-                        sender_handle_deselecttone(g_sender_dlg->sender_);
-                        abstract_tone_destroy(g_sender_dlg->tone_selected_);
-                        g_sender_dlg->tone_selected_ = NULL;
+                        sender_handle_deselecttone(p_dlg->sender_);
+                        abstract_tone_destroy(p_dlg->tone_selected_);
+                        p_dlg->tone_selected_ = NULL;
                     }
                     else
                     {
-                        g_sender_dlg->tone_selected_ = abstract_tone_create(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
-                        assert(g_sender_dlg->tone_selected_);
-                        sender_handle_selecttone(g_sender_dlg->sender_, g_sender_dlg->tone_selected_);
+                        p_dlg->tone_selected_ = abstract_tone_create(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
+                        assert(p_dlg->tone_selected_);
+                        sender_handle_selecttone(p_dlg->sender_, p_dlg->tone_selected_);
                     }
                     break;
                 case ID_OPEN_WAV:
@@ -275,7 +279,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     break;
                 case IDOK:
                 case IDCANCEL: 
-                    sender_destroy(g_sender_dlg->sender_);
+                    sender_destroy(p_dlg->sender_);
                     DestroyWindow(hDlg);
                     break;
             }
@@ -299,12 +303,12 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
  * in the message queue and its processed. When it returns a non-zero, it may be called again,
  * unless a message shows up in the message queue.
  */
-static long int on_idle(HWND hWnd, long int count)
+static long int on_idle(HWND hwnd, long int count)
 {
     switch (count)
     {
         case 0:
-            UpdateUI(g_sender_dlg);
+            UpdateUI(hwnd);
             return 1;
         default: 
             return 0;
