@@ -70,12 +70,6 @@ struct reciever_dialog {
 };
 
 /*!
- * @brief Pointer to the dialog data structure. This one is used by windows message handlers.
- * @todo Use the GWL_USERDATA slot rather than this global.
- */
-static struct reciever_dialog * g_dialog;
-
-/*!
  * @brief Defines time how often the UI is updated.
  */
 #define UI_UPDATE_TIMER_MS (500)
@@ -90,16 +84,22 @@ static void update_fifo_receiver_bytes_edit_control(struct reciever_dialog * p_d
 /**
  * @brief Main UI update function.
  * @details Updates the UI widgets if the reciever state changes (i.e. previously stored state is different than current one).
- * @param[in] hDlg a handle to the dialog window to be updated
+ * @param[in] hwnd a handle to the dialog window to be updated
  * @attention This is usually called by the application's idle handler.
  */
-static void UpdateUI(struct reciever_dialog * p_dlg)
+static void UpdateUI(HWND hwnd)
 {
+    static struct reciever_dialog * p_dlg = NULL;
     static receiver_state_t prev_state = -1;
     receiver_state_t new_state;
     struct fifo_circular_buffer * fifo;
     uint32_t items_count;
 
+    if (NULL == p_dlg)
+    {
+        p_dlg = (struct reciever_dialog*)GetWindowLongPtr(hwnd, GWLP_USERDATA); 
+        assert(p_dlg);
+    }
     new_state = receiver_get_state(p_dlg->receiver_);
     /* Enable/disable controls only if state changes. */
     if (prev_state != new_state)
@@ -233,9 +233,10 @@ static void UpdateUI(struct reciever_dialog * p_dlg)
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
     int result;
-    struct reciever_dialog * p_dialog = (struct reciever_dialog *)lParam;
+    struct reciever_dialog * p_dialog;
+    p_dialog = (struct reciever_dialog *)lParam;
     assert(p_dialog);
-    g_dialog = p_dialog;
+    SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)p_dialog); 
     result = receiver_settings_get_default(&p_dialog->settings_);
     assert(result);
     if (result)
@@ -271,7 +272,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     {
         EndDialog(hwnd, IDCANCEL);
     }
-    return FALSE; /* We return FALSE, as we do call SetFocus() ourselves */
+    return TRUE; /* We return FALSE, as we do call SetFocus() ourselves */
 }
 
 /**
@@ -284,6 +285,11 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
  */
 static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
+    static struct reciever_dialog * p_dlg = NULL;
+    if (NULL == p_dlg)
+    {
+        p_dlg = (struct reciever_dialog*)GetWindowLongPtr(hDlg, GWLP_USERDATA); 
+    }
     switch (uMessage)
     {
         case WM_INITDIALOG:
@@ -292,39 +298,39 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
             switch (wParam)
             {
                 case ID_RECEIVER_SETTINGS:
-                    if (RECEIVER_INITIAL == receiver_get_state(g_dialog->receiver_) && receiver_settings_do_dialog(hDlg, &g_dialog->settings_))
+                    if (RECEIVER_INITIAL == receiver_get_state(p_dlg->receiver_) && receiver_settings_do_dialog(hDlg, &p_dlg->settings_))
                     {
                         int result;
-                        result = receiver_destroy(g_dialog->receiver_); 
+                        result = receiver_destroy(p_dlg->receiver_); 
                         assert(result);
                         if (result)
                         {
-                            g_dialog->receiver_ = receiver_create(&g_dialog->settings_);
-                            assert(g_dialog->receiver_);
+                            p_dlg->receiver_ = receiver_create(&p_dlg->settings_);
+                            assert(p_dlg->receiver_);
                         }
                     }
                     else
                     {
-                        debug_outputln("%s %5.5d : %d", __FILE__, __LINE__, receiver_get_state(g_dialog->receiver_));
+                        debug_outputln("%s %5.5d : %d", __FILE__, __LINE__, receiver_get_state(p_dlg->receiver_));
                     }
                     break;
                 case ID_RECEIVER_JOINMCAST:
-                    handle_mcastjoin(g_dialog->receiver_);
+                    handle_mcastjoin(p_dlg->receiver_);
                     break;
                 case ID_RECEIVER_LEAVEMCAST:
-                    handle_mcastleave(g_dialog->receiver_);
+                    handle_mcastleave(p_dlg->receiver_);
                     break;
                 case ID_RECEIVER_PLAY:
-                    handle_play(g_dialog->receiver_, hDlg);
+                    handle_play(p_dlg->receiver_, hDlg);
                     break;
                 case ID_RECEIVER_STOP:
-                    handle_stop(g_dialog->receiver_);
+                    handle_stop(p_dlg->receiver_);
                     break;
                 case ID_RECEIVER_STARTRCV:
-                    handle_rcvstart(g_dialog->receiver_);
+                    handle_rcvstart(p_dlg->receiver_);
                     break;
                 case ID_RECEIVER_STOPRCV:
-                    handle_rcvstop(g_dialog->receiver_);
+                    handle_rcvstop(p_dlg->receiver_);
                     break;
                 case IDM_ABOUT_RECEIVER:
                     display_about_dialog(hDlg);
@@ -356,12 +362,12 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
  * in the message queue and its processed. When it returns a non-zero, it may be called again,
  * unless a message shows up in the message queue.
  */
-static long int on_idle(HWND hWnd, long int count)
+static long int on_idle(HWND hwnd, long int count)
 {
     switch (count)
     {
         case 0:
-            UpdateUI(g_dialog);
+           UpdateUI(hwnd);
             return 1;
         default:
             return 0;
