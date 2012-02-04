@@ -30,56 +30,68 @@
 #include "debug_helpers.h"
 #include "common-dialogs-res.h"
 
-static HWND hVersionInfo = NULL;
-static HWND hModuleName = NULL;
-static TCHAR module_file_name[MAX_PATH+1];
-
 /*!
  * @brief Maximum number of characters that are to appear on the version control.
  */
 #define MODULE_VERSION_STRING_LENGTH (16)
 
-static TCHAR module_version_string[MODULE_VERSION_STRING_LENGTH];
+struct about_dlg_data {
+    HWND hVersion_; /*!<  */
+    HWND hModuleName_; /*!<  */
+    TCHAR module_name[MAX_PATH+1]; /*!< */
+    TCHAR module_version_string[MODULE_VERSION_STRING_LENGTH]; /*! */
+};
+
+static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
+{
+    struct about_dlg_data * p_dlg;
+    DWORD dwSize;
+    uint8_t * data;
+    UINT                uiVerLen = 0;
+    VS_FIXEDFILEINFO*   pFixedInfo = 0;     // pointer to fixed file info structure
+    assert(p_dlg);
+    p_dlg = (struct about_dlg_data*)lParam;
+    SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)p_dlg);
+
+    p_dlg->hVersion_ = GetDlgItem(hwnd, IDC_VERSION_INFO);
+    assert(p_dlg->hVersion_);
+    p_dlg->hModuleName_ = GetDlgItem(hwnd, IDC_MODULE_NAME);
+    assert(p_dlg->hModuleName_);
+
+    if (_T('\0') == p_dlg->module_name[0])
+    {
+        GetModuleFileName(NULL, p_dlg->module_name, MAX_PATH+1);
+    }
+    SetWindowText(p_dlg->hModuleName_, p_dlg->module_name);
+    dwSize = GetFileVersionInfoSize(p_dlg->module_name, &dwSize);
+    data = alloca(dwSize);
+    GetFileVersionInfo(p_dlg->module_name, 0, dwSize, (void *)&data[0]);
+    // get the fixed file info (language-independend) 
+    if( 0 != VerQueryValue(&data[0], TEXT("\\"), (void**)&pFixedInfo, (UINT *)&uiVerLen))
+    {
+        StringCchPrintf(p_dlg->module_version_string, MODULE_VERSION_STRING_LENGTH, "%u.%u.%u.%u", 
+                HIWORD (pFixedInfo->dwProductVersionMS),
+                LOWORD (pFixedInfo->dwProductVersionMS),
+                HIWORD (pFixedInfo->dwProductVersionLS),
+                LOWORD (pFixedInfo->dwProductVersionLS));
+        SetWindowText(p_dlg->hVersion_, p_dlg->module_version_string);
+    }
+    else
+    {
+        debug_outputln("%s %u : %u", __FILE__, __LINE__, GetLastError());
+    }
+    return TRUE;
+} 
 
 static INT_PTR CALLBACK VersionDialogProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
+    struct about_dlg_data * p_dlg;
+    p_dlg = (struct about_dlg_data *)GetWindowLongPtr(hDlg, GWLP_USERDATA);
     switch (uMessage)
     {
         case WM_INITDIALOG:
-            hVersionInfo = GetDlgItem(hDlg, IDC_VERSION_INFO);
-            hModuleName = GetDlgItem(hDlg, IDC_MODULE_NAME);
-            assert(hVersionInfo);
-            assert(hModuleName);
-            if (_T('\0') == module_file_name[0])
-                GetModuleFileName(NULL, module_file_name, MAX_PATH+1);
-            SetWindowText(hModuleName, module_file_name);
-            {
-                DWORD dwSize;
-                dwSize = GetFileVersionInfoSize(module_file_name, &dwSize);
-                {
-                    uint8_t * data = alloca(dwSize);
-                    UINT                uiVerLen = 0;
-                    VS_FIXEDFILEINFO*   pFixedInfo = 0;     // pointer to fixed file info structure
-                    GetFileVersionInfo(module_file_name, 0, dwSize, (void *)&data[0]);
-
-                    // get the fixed file info (language-independend) 
-                    if( 0 != VerQueryValue(&data[0], TEXT("\\"), (void**)&pFixedInfo, (UINT *)&uiVerLen))
-                    {
-                        StringCchPrintf(module_version_string, MODULE_VERSION_STRING_LENGTH, "%u.%u.%u.%u", 
-                                HIWORD (pFixedInfo->dwProductVersionMS),
-                                LOWORD (pFixedInfo->dwProductVersionMS),
-                                HIWORD (pFixedInfo->dwProductVersionLS),
-                                LOWORD (pFixedInfo->dwProductVersionLS));
-                        SetWindowText(hVersionInfo, module_version_string);
-                    }
-                    else
-                    {
-                        debug_outputln("%s %u : %u", __FILE__, __LINE__, GetLastError());
-                    }
-                }
-            }
-            return TRUE;
-        case WM_COMMAND:
+            return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
+       case WM_COMMAND:
             switch (LOWORD(wParam))
             {
                 case IDOK:
@@ -97,6 +109,8 @@ static INT_PTR CALLBACK VersionDialogProc(HWND hDlg, UINT uMessage, WPARAM wPara
 
 void display_about_dialog(HWND hWndParent)
 {
-	DialogBox(NULL, MAKEINTRESOURCE(IDD_VERSION_DIALOG), hWndParent, VersionDialogProc);
+    struct about_dlg_data dlg;
+    ZeroMemory(&dlg, sizeof(dlg));
+	DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_VERSION_DIALOG), hWndParent, VersionDialogProc, (LPARAM)&dlg);
 }
 
