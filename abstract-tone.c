@@ -29,12 +29,15 @@
 #include "abstract-tone.h"
 #include "wave_utils.h"
 
+/*!
+ * @brief The container for tone.
+ */
 struct abstract_tone {
     tone_type_t e_type_; /*!< Type of the tone */
     P_MASTER_RIFF_CONST mriff_; /*!< Pointer to the WAV file first bytes */
-    TCHAR name_[MAX_PATH+1];
-    HANDLE hf_;
-    HANDLE mapping_; 
+    TCHAR name_[MAX_PATH+1]; /*!< Tone name - this is only valid for WAV-like tone */
+    HANDLE hf_; /*!< Tone file handle - this is only valid for WAV-like tone */
+    HANDLE mapping_;  /*!< Tone file mapping  - this is only valid for WAV-like tone */
 };
 
 static void destroy_tone_impl(struct abstract_tone * p_tone)

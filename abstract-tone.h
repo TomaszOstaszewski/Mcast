@@ -49,9 +49,10 @@ typedef enum eToneType {
 /*!
  * @brief Tones factory.
  * @details Creates a tone.
- * @param[in] Type of the tone to be created.
- * @param[in] Tone specific creation data.
+ * @param[in] eType Type of the tone to be created.
+ * @param[in] psz_tone_name Tone specific creation data.
  * @return returns a handle to the abstract tone.
+ * @sa abstract_tone_destroy
  */
 struct abstract_tone * abstract_tone_create(tone_type_t eType, LPCTSTR psz_tone_name);
 
@@ -60,10 +61,20 @@ struct abstract_tone * abstract_tone_create(tone_type_t eType, LPCTSTR psz_tone_
  * @details Performs tone specific destruction. For a tone embedded in a WAV file, no special action is needed.
  * For a tone which is read from external file, they may be some actions needed (closing underlying file and its
  * memory mappings, if such exist).
- * @param[in]
+ * @param[in] p_tone handle to the tone 
+ * @sa abstract_tone_create
  */
 void abstract_tone_destroy(struct abstract_tone * p_tone);
 
+/*!
+ * @brief Returns tone type.
+ * @details Although such a method is usually bashed by OO evangelists, I decided to use it.
+ * Having a single method that returns a type avoids cluttering this abstract object aobut UI details.
+ * It is the UI widgets that are to be changed/updated to reflect tone type.
+ * @param[in] p_tone handle to the tone 
+ * @return returns the type of the tone.
+ * @sa abstract_tone_create
+ */
 tone_type_t abstract_tone_get_type(struct abstract_tone * p_tone);
 
 /*!
@@ -76,7 +87,7 @@ PCMWAVEFORMAT const * abstract_tone_get_pcmwaveformat(struct abstract_tone const
 /*!
  * @brief Returns the pointer to tone data.
  * @details Const-correct variant of the abstract_tone_get_wave_data routine.
- * @param[in] p_tone Tone for which data is to be returned.
+ * @param[in] p_tone handle of the tone, for which data is to be returned.
  * @param[in,out] p_data_size Pointer to the caller allocated memory, which will be written with size of the array returned as function value.
  * @return Pointer to the first byte of the tone data.
  * @sa abstract_tone_get_wave_data
@@ -86,9 +97,10 @@ const void * abstract_tone_get_wave_data(struct abstract_tone const * p_tone, si
 /*!
  * @brief Dumps the tone details into caller's provided buffer.
  * @details <b>Fill me</b>
- * @dparam[in] pszBuffer caller's allocated buffer into which tone details will be dump.
- * @dparam[in] size size of the buffer, measured in number of characters, that the caller's buffer can hold, including terminating NULL. 
- * @retrun returns number of characters written into the buffer.
+ * @param[in] p_tone handle of the tone, for which data is to be returned.
+ * @param[in] pszBuffer caller's allocated buffer into which tone details will be dump.
+ * @param[in] size size of the buffer, measured in number of characters, that the caller's buffer can hold, including terminating NULL. 
+ * @return returns number of characters written into the buffer.
  */
 size_t abstract_tone_dump(struct abstract_tone const * p_tone, LPTSTR pszBuffer, size_t size);
 

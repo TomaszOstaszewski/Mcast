@@ -217,7 +217,7 @@ typedef WAVEFORMAT NEAR *NPWAVEFORMAT;
  */
 typedef WAVEFORMAT FAR  *LPWAVEFORMAT;
 
-/* flags for wFormatTag field of WAVEFORMAT */
+/*! flags for wFormatTag field of WAVEFORMAT */
 #define WAVE_FORMAT_PCM     1
 
 /*!

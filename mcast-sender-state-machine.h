@@ -87,19 +87,16 @@ void sender_handle_mcastjoin(struct mcast_sender * p_sender);
 void sender_handle_mcastleave(struct mcast_sender * p_sender);
 
 /*! 
- * @brief 
- * @details 
+ * @brief Selects a particular tone to be send via multicast.
  * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
- * @param[in] p_tone 
+ * @param[in] p_tone handle of the tone whose to be selected to send.
  * @sa sender_handle_deselecttone()
  */
 void sender_handle_selecttone(struct mcast_sender * p_sender, struct abstract_tone * p_tone);
 
 /*! 
- * @brief 
- * @details
+ * @brief Indicates, that the tone shall no longer be send onto the multicast group.
  * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
- * @param[in] p_tone
  * @sa sender_handle_selecttone()
  */
 void sender_handle_deselecttone(struct mcast_sender * p_sender);
