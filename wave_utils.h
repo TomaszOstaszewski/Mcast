@@ -276,7 +276,7 @@ typedef struct wav_format_chunk {
 /*!
  * @brief WAV file header.
  */
-typedef struct master_riff_chunk {
+struct master_riff_chunk {
     uint8_t     ckid_[4]; /*!< ChunkID, 4 bytes that give "RIFF", 0x52 0x49 0x46 0x46 in hex */
     uint32_t    cksize_; /*!< Chunk size, 4+n, little endian. */
     union {
@@ -285,7 +285,17 @@ typedef struct master_riff_chunk {
         uint16_t    data_u16_[1];
         uint32_t    data_u32_[1];
     };
-} master_riff_chunk_t;
+};
+
+/*!
+ * @brief Typedef for pointer, this one is to save some typing.
+ */
+typedef struct master_riff_chunk * P_MASTER_RIFF;
+
+/*!
+ * @brief Typedef for pointer, this one is to save some typing and const correctness.
+ */
+typedef struct master_riff_chunk const * P_MASTER_RIFF_CONST;
 
 /*!
  * @brief Helper function, dumps the WAVEFORMATEX into the provided buffer.
@@ -329,7 +339,7 @@ void copy_pcmwaveformat_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, PCMWAVEFORMAT cons
  * @param[in] lpResName describes what resource to load
  * @return returns 0 on success, <>0 otherwise.
  */
-int init_master_riff(master_riff_chunk_t ** pp_chunk, HINSTANCE hModule, LPCTSTR lpResName);
+int init_master_riff(P_MASTER_RIFF_CONST * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName);
 
 #if defined __cplusplus
 }

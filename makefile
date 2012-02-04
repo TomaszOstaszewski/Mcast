@@ -47,7 +47,7 @@ $(OUTDIR_OBJ)\receiver.res: receiver.rc receiver-res.h receiver.exe.manifest $(O
 $(OUTDIR_OBJ)\common-dialogs.res: common-dialogs.rc common-dialogs-res.h $(OUTDIR_OBJ)
 	$(rc) $(rcflags) $(rcvars) /fo $@ %s
 
-$(OUTDIR_OBJ)\abstract-tone.obj: abstract-tone.c abstract-tone.h $(OUTDIR_PCC)\pcc.pch
+$(OUTDIR_OBJ)\abstract-tone.obj: abstract-tone.c abstract-tone.h wave_utils.h $(OUTDIR_PCC)\pcc.pch
     $(cc) $(cdebug) $(cvars) $(cflags) /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\about-dialog.obj: about-dialog.c about-dialog.h $(OUTDIR_PCC)\pcc.pch

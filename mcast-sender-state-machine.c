@@ -54,7 +54,7 @@ struct mcast_sender {
 	/** @brief Current sender state. */
     sender_state_t state_; 
     /** @brief Pointer to the first byte of data being send. */
-    master_riff_chunk_t * chunk_;
+    P_MASTER_RIFF_CONST chunk_;
 	/** @brief Pointer to the structure that describes multicast connection */
     struct mcast_connection * conn_;   
 	/** @brief Copy of the sender settings. */

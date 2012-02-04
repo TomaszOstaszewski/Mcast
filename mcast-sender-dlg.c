@@ -57,7 +57,8 @@ struct sender_dialog {
     HWND hStartSendingBtn; /*!< Handle to the 'Start sending' button. */
     HWND hStopSendingBtn; /*!< Handle to the 'Stop sending' button. */
     HWND hTestToneCheck; /*!< Handle to the 'Test tone' check button. */
-    HWND hOpenWav; /*!< Handle to the 'Open WAV ...' box. */
+    HWND hOpenWav_; /*!< Handle to the 'Open WAV ...' box. */
+    HWND hCloseWav_; /*!< Handle to the 'Close WAV ...' box. */
     HWND hWavPreview_; /*!< Handle to the static control in which WAV file details will be displayed. */
     HMENU hMainMenu; /*!< Handle to the main menu. */
     HINSTANCE hInst_; /*!< @brief Global Application instance.  Required for various Windows related stuff. */
@@ -89,76 +90,126 @@ static void UpdateUI(HWND hwnd)
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_GRAYED);
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
+                EnableMenuItem(p_dlg->hMainMenu, ID_OPEN_WAV, MF_BYCOMMAND | MF_ENABLED);
+                EnableMenuItem(p_dlg->hMainMenu, ID_CLOSE_WAV, MF_BYCOMMAND | MF_GRAYED);
                 EnableWindow(p_dlg->hSettingsBtn, TRUE);
                 EnableWindow(p_dlg->hJoinMcastBtn, TRUE);
                 EnableWindow(p_dlg->hLeaveMcast, FALSE);
                 EnableWindow(p_dlg->hStartSendingBtn, FALSE);
                 EnableWindow(p_dlg->hStopSendingBtn, FALSE);
                 EnableWindow(p_dlg->hTestToneCheck, TRUE);
-                SetFocus(p_dlg->hJoinMcastBtn);
+                EnableWindow(p_dlg->hOpenWav_, TRUE);
+                EnableWindow(p_dlg->hCloseWav_, FALSE);
+                Button_SetCheck(p_dlg->hTestToneCheck, FALSE);
                 p_dlg->wav_preview_text_[0] = _T('\0');
                 SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
+                SetFocus(p_dlg->hJoinMcastBtn);
                 break;
             case SENDER_TONE_SELECTED:
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
                 EnableWindow(p_dlg->hSettingsBtn, TRUE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_ENABLED);
                 EnableWindow(p_dlg->hJoinMcastBtn, TRUE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
                 EnableWindow(p_dlg->hLeaveMcast, FALSE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_GRAYED);
                 EnableWindow(p_dlg->hStartSendingBtn, FALSE);
-                EnableWindow(p_dlg->hStopSendingBtn, FALSE);
-                EnableWindow(p_dlg->hTestToneCheck, TRUE);
-                SetFocus(p_dlg->hJoinMcastBtn);
-                dump_pcmwaveformat(p_dlg->wav_preview_text_, WAV_PREVIEW_LENGTH, abstract_tone_get_pcmwaveformat(p_dlg->tone_selected_));
-                SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
-                break;
-            case SENDER_MCAST_JOINED:
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_ENABLED);
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
-                EnableWindow(p_dlg->hSettingsBtn, FALSE);
-                EnableWindow(p_dlg->hJoinMcastBtn, FALSE);
-                EnableWindow(p_dlg->hLeaveMcast, TRUE);
-                EnableWindow(p_dlg->hStartSendingBtn, FALSE);
                 EnableWindow(p_dlg->hStopSendingBtn, FALSE);
-                EnableWindow(p_dlg->hTestToneCheck, TRUE);
-                SetFocus(p_dlg->hTestToneCheck);
-                p_dlg->wav_preview_text_[0] = _T('\0');
+                EnableMenuItem(p_dlg->hMainMenu, ID_OPEN_WAV, MF_BYCOMMAND | MF_GRAYED);
+                EnableWindow(p_dlg->hOpenWav_, FALSE);
+                assert(p_dlg->tone_selected_);
+                switch(abstract_tone_get_type(p_dlg->tone_selected_))
+                {
+                    case EMBEDDED_TEST_TONE: 
+                        EnableWindow(p_dlg->hCloseWav_, FALSE);
+                        EnableMenuItem(p_dlg->hMainMenu, ID_CLOSE_WAV, MF_BYCOMMAND | MF_GRAYED);
+                        Button_SetCheck(p_dlg->hTestToneCheck, TRUE);
+                        break;
+                    case EXTERNAL_WAV_TONE:
+                        EnableWindow(p_dlg->hCloseWav_, TRUE);
+                        EnableMenuItem(p_dlg->hMainMenu, ID_CLOSE_WAV, MF_BYCOMMAND | MF_ENABLED);
+                        Button_SetCheck(p_dlg->hTestToneCheck, FALSE);
+                        EnableWindow(p_dlg->hTestToneCheck, FALSE);
+                        break;
+                    default:
+                        assert(0);
+                        break;
+                }
+                abstract_tone_dump(p_dlg->tone_selected_, p_dlg->wav_preview_text_, WAV_PREVIEW_LENGTH);
                 SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
+                SetFocus(p_dlg->hJoinMcastBtn);
                 break;
             case SENDER_MCASTJOINED_TONESELECTED:
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_ENABLED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
                 EnableWindow(p_dlg->hSettingsBtn, FALSE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
                 EnableWindow(p_dlg->hJoinMcastBtn, FALSE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
                 EnableWindow(p_dlg->hLeaveMcast, TRUE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_ENABLED);
                 EnableWindow(p_dlg->hStartSendingBtn, TRUE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
+                EnableWindow(p_dlg->hStopSendingBtn, FALSE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_OPEN_WAV, MF_BYCOMMAND | MF_GRAYED);
+                EnableWindow(p_dlg->hOpenWav_, FALSE);
+                assert(p_dlg->tone_selected_);
+                switch(abstract_tone_get_type(p_dlg->tone_selected_))
+                {
+                    case EMBEDDED_TEST_TONE: 
+                        EnableMenuItem(p_dlg->hMainMenu, ID_CLOSE_WAV, MF_BYCOMMAND | MF_GRAYED);
+                        EnableWindow(p_dlg->hCloseWav_, FALSE);
+                        EnableWindow(p_dlg->hTestToneCheck, TRUE);
+                        Button_SetCheck(p_dlg->hTestToneCheck, TRUE);
+                        break;
+                    case EXTERNAL_WAV_TONE:
+                        EnableMenuItem(p_dlg->hMainMenu, ID_CLOSE_WAV, MF_BYCOMMAND | MF_ENABLED);
+                        EnableWindow(p_dlg->hCloseWav_, TRUE);
+                        Button_SetCheck(p_dlg->hTestToneCheck, FALSE);
+                        EnableWindow(p_dlg->hTestToneCheck, FALSE);
+                        break;
+                    default:
+                        assert(0);
+                        break;
+                }
+                abstract_tone_dump(p_dlg->tone_selected_, p_dlg->wav_preview_text_, WAV_PREVIEW_LENGTH);
+                SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
+                SetFocus(p_dlg->hStartSendingBtn);
+                break;
+             case SENDER_MCAST_JOINED:
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
+                EnableWindow(p_dlg->hSettingsBtn, FALSE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
+                EnableWindow(p_dlg->hJoinMcastBtn, FALSE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_ENABLED);
+                EnableWindow(p_dlg->hLeaveMcast, TRUE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_ENABLED);
+                EnableWindow(p_dlg->hStartSendingBtn, FALSE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_GRAYED);
                 EnableWindow(p_dlg->hStopSendingBtn, FALSE);
                 EnableWindow(p_dlg->hTestToneCheck, TRUE);
-                SetFocus(p_dlg->hStartSendingBtn);
-                dump_pcmwaveformat(p_dlg->wav_preview_text_, WAV_PREVIEW_LENGTH, abstract_tone_get_pcmwaveformat(p_dlg->tone_selected_));
+                EnableWindow(p_dlg->hOpenWav_, TRUE);
+                EnableWindow(p_dlg->hCloseWav_, FALSE);
+                assert(NULL == p_dlg->tone_selected_);
+                Button_SetCheck(p_dlg->hTestToneCheck, FALSE);
+                p_dlg->wav_preview_text_[0] = _T('\0');
                 SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
+                SetFocus(p_dlg->hLeaveMcast);
                 break;
-            case SENDER_SENDING:
+           case SENDER_SENDING:
                 EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_SETTINGS, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_GRAYED);
-                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_ENABLED);
                 EnableWindow(p_dlg->hSettingsBtn, FALSE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_JOINMCAST, MF_BYCOMMAND | MF_GRAYED);
                 EnableWindow(p_dlg->hJoinMcastBtn, FALSE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_LEAVEMCAST, MF_BYCOMMAND | MF_GRAYED);
                 EnableWindow(p_dlg->hLeaveMcast, FALSE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STARTSENDING, MF_BYCOMMAND | MF_GRAYED);
                 EnableWindow(p_dlg->hStartSendingBtn, FALSE);
+                EnableMenuItem(p_dlg->hMainMenu, ID_SENDER_STOPSENDING, MF_BYCOMMAND | MF_ENABLED);
                 EnableWindow(p_dlg->hStopSendingBtn, TRUE);
                 EnableWindow(p_dlg->hTestToneCheck, FALSE);
+                EnableWindow(p_dlg->hOpenWav_, FALSE);
+                EnableWindow(p_dlg->hCloseWav_, FALSE);
                 SetFocus(p_dlg->hStopSendingBtn);
                 break;
             default:
@@ -166,8 +217,6 @@ static void UpdateUI(HWND hwnd)
         } 
         prev_state = curr_state;
     }
-    EnableWindow(p_dlg->hOpenWav, NULL == p_dlg->tone_selected_);
-    Button_SetCheck(p_dlg->hTestToneCheck, NULL != p_dlg->tone_selected_);
 }
 
 /*!
@@ -204,8 +253,10 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(p_dlg->hMainMenu);
     p_dlg->hTestToneCheck = GetDlgItem(hwnd, ID_TEST_TONE);
     assert(p_dlg->hTestToneCheck);
-    p_dlg->hOpenWav = GetDlgItem(hwnd, ID_OPEN_WAV);
-    assert(p_dlg->hOpenWav);
+    p_dlg->hOpenWav_ = GetDlgItem(hwnd, ID_OPEN_WAV);
+    assert(p_dlg->hOpenWav_);
+    p_dlg->hCloseWav_ = GetDlgItem(hwnd, ID_CLOSE_WAV);
+    assert(p_dlg->hCloseWav_);
     p_dlg->hWavPreview_ = GetDlgItem(hwnd, IDC_WAV_PREVIEW);
     assert(p_dlg->hWavPreview_);
     result = get_default_settings(&p_dlg->settings_);
@@ -222,16 +273,11 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 static LPCTSTR getWavFileName(HWND hwnd)
 {
     static TCHAR pszFileNameBuffer[MAX_PATH+1];
-
-    OPENFILENAME ofn;       // common dialog box structure
-
-    // Initialize OPENFILENAME
+    OPENFILENAME ofn;
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = hwnd;
     ofn.lpstrFile = pszFileNameBuffer;
-    // Set lpstrFile[0] to '\0' so that GetOpenFileName does not 
-    // use the contents of szFile to initialize itself.
     ofn.lpstrFile[0] = '\0';
     ofn.nMaxFile = sizeof(pszFileNameBuffer);
     ofn.lpstrFilter = "WAV (*.wav)\0*.wav\0All\0*.*\0";
@@ -241,22 +287,10 @@ static LPCTSTR getWavFileName(HWND hwnd)
     ofn.lpstrInitialDir = NULL;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-    // Display the Open dialog box. 
-
     if (GetOpenFileName(&ofn)==TRUE) 
         return pszFileNameBuffer;
     return NULL;
-/*
-        hf = CreateFile(ofn.lpstrFile, 
-                GENERIC_READ,
-                0,
-                (LPSECURITY_ATTRIBUTES) NULL,
-                OPEN_EXISTING,
-                FILE_ATTRIBUTE_NORMAL,
-                (HANDLE) NULL);
-*/
 }
-
  
 /**
  * @brief Sender dialog message processing routine.
@@ -331,9 +365,20 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                 case ID_OPEN_WAV:
                     {
                         LPCTSTR pszFileName = getWavFileName(hDlg);
-                    debug_outputln("%s %4.4u : %s", __FILE__, __LINE__, pszFileName);
-                    
+                        if (NULL != pszFileName)
+                        {
+                            p_dlg->tone_selected_ = abstract_tone_create(EXTERNAL_WAV_TONE, pszFileName);
+                            assert(p_dlg->tone_selected_);
+                            sender_handle_selecttone(p_dlg->sender_, p_dlg->tone_selected_);
+                            debug_outputln("%s %4.4u : %s %p", __FILE__, __LINE__, pszFileName, p_dlg->tone_selected_);
+                        }
                     }
+                    break;
+               case ID_CLOSE_WAV:
+                    assert(p_dlg->tone_selected_);
+                    sender_handle_deselecttone(p_dlg->sender_);
+                    abstract_tone_destroy(p_dlg->tone_selected_);
+                    p_dlg->tone_selected_ = NULL;
                     break;
                case IDM_SENDER_ABOUT:
                     display_about_dialog(hDlg);

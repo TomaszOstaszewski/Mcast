@@ -32,6 +32,7 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
 #include <tchar.h>
 
 struct abstract_tone;
@@ -63,6 +64,8 @@ struct abstract_tone * abstract_tone_create(tone_type_t eType, LPCTSTR psz_tone_
  */
 void abstract_tone_destroy(struct abstract_tone * p_tone);
 
+tone_type_t abstract_tone_get_type(struct abstract_tone * p_tone);
+
 /*!
  * @brief Returns the PCMWAVEFORMAT structure for the tone.
  * @param[in] p_tone tone for which PCMWAVEFORMAT structure is to be retrieved.
@@ -79,6 +82,15 @@ PCMWAVEFORMAT const * abstract_tone_get_pcmwaveformat(struct abstract_tone const
  * @sa abstract_tone_get_wave_data
  */
 const void * abstract_tone_get_wave_data(struct abstract_tone const * p_tone, size_t * p_data_size);
+
+/*!
+ * @brief Dumps the tone details into caller's provided buffer.
+ * @details <b>Fill me</b>
+ * @dparam[in] pszBuffer caller's allocated buffer into which tone details will be dump.
+ * @dparam[in] size size of the buffer, measured in number of characters, that the caller's buffer can hold, including terminating NULL. 
+ * @retrun returns number of characters written into the buffer.
+ */
+size_t abstract_tone_dump(struct abstract_tone const * p_tone, LPTSTR pszBuffer, size_t size);
 
 #if defined __cplusplus
 }

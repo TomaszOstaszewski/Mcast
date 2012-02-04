@@ -8,6 +8,7 @@
 #define IDR_0_1                                 118
 #define IDD_SENDER_SETTINGS                     122
 #define IDR_MENU_SENDER                         128
+#define ID_CLOSE_WAV                            1001
 #define IDC_MCAST_SETTINGS                      1002
 #define IDS_APPTITLE_SENDER                     40000
 #define ID_SENDER_LEAVEMCAST                    40000

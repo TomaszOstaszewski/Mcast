@@ -82,7 +82,7 @@ void copy_pcmwaveformat_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, PCMWAVEFORMAT cons
 	p_dest->cbSize 			= sizeof(WAVEFORMATEX);
 }
 
-int init_master_riff(master_riff_chunk_t ** pp_chunk, HINSTANCE hModule, LPCTSTR lpResName)
+int init_master_riff(P_MASTER_RIFF_CONST * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName)
 {
     HRSRC hRes;
     int result = 0;
@@ -95,7 +95,7 @@ int init_master_riff(master_riff_chunk_t ** pp_chunk, HINSTANCE hModule, LPCTSTR
         globRes = LoadResource(hModule, hRes);
         if (NULL != hRes)
         {
-            *pp_chunk = (master_riff_chunk_t *)LockResource(globRes);
+            *pp_chunk = (P_MASTER_RIFF_CONST)LockResource(globRes);
             if (NULL != *pp_chunk)
             {
                 result = 1;
