@@ -68,19 +68,34 @@
  * <b>22 56 00 00 88 58 01 00 04 00 10 00 64 61 74 61 00 08 00 00 00 00 00 00 </b>
  * <b>24 17 1e f3 3c 13 3c 14 16 f9 18 f9 34 e7 23 a6 3c f2 24 f2 11 ce 1a 0d </b>
  * </pre>
- * 
- * <p> Here is the interpretation of these bytes as a WAVE soundfile:
- * 
- * 
+ * <p>Here is the interpretation of these bytes as a WAVE soundfile:<br/>
+ * <b>52 49 46 46</b> The 'RIFF' bytes.<br/>
+ * <b>24 08 00 00</b> The chunk size in little endian. This chunk is 0x00000824 or 4044 bytes long.<br/>
+ * <b>57 41 56 45</b> The 'WAVE' bytes.<br/>
+ * <b>66 6d 74 20</b> The 'fmt ' bytes.<br/>
+ * <b>10 00 00 00</b> Subchunk size in little endian, here it is 0x00000010 or 16 in decimal
+ * <b>01 00</b> Audio format, here 0x0001 i.e. PCM.<br/>
+ * <b>02 00</b> Number of channels, here 0x0002 i.e. stereo sound.<br/>
+ * <b>22 56 00 00</b> Sample rate, 0x00005622 or 22050 samples per second.<br/>
+ * <b>88 58 01 00</b> Byte rate, number of bytes per second, here 0x00015888 or 88200 bytes per second.<br>
+ * <b>04 00</b> Block align, here 0x0004 = 4 decimal.<br/>
+ * <b>10 00</b> Bits per sample, here 0x0010 = 16 bits per sample.<br/>
+ * <b>64 61 74 61</b> The 'data' bytes. Start of data subchunk.<br/>
+ * <b>00 08 00 00</b> Subchunk size, 0x00000800, or 2048 decimal.<br/>
+ * <b>00 00 </b> Right channel sample 1.<br/>
+ * <b>00 00 </b> Left channel sample 1.<br/>
+ * <b>24 17</b> Rigth channel sample 2.<br/>
+ * <b>1e f3</b> Left channel sample 2.<br/>
+ * <b>3c 13</b> Right channel sample 3.<br/>
+ * <b>3c 14</b> Left channel sample 3.<br/>
+ * <b>16 f9</b> Right channel sample 4.<br/>
+ * <b>18 f9</b> Left channel sample 4.<br/>
+ * <b>...</b> And so on.
  * <h3> Notes: </h3>
- * 
  * <ul>
- * 
  * <li> The default byte ordering assumed for WAVE data files is little-endian.
- *  Files written using the big-endian byte ordering scheme have the identifier 
- *  RIFX instead of RIFF.
+ * Files written using the big-endian byte ordering scheme have the identifier RIFX instead of RIFF.
  * <li> The sample data must end on an even byte boundary. Whatever that means.
- * 
  * <li> 8-bit samples are stored as unsigned bytes, ranging from 0 to 255. 
  *      16-bit samples are stored as 2's-complement signed integers, 
  *      ranging from -32768 to 32767.
@@ -173,24 +188,60 @@
 extern "C" { 
 #endif 
 
+#ifndef WAVE_FORMAT_PCM
+
 /*!
- * @brief WAV file description
- * @details This structure is binary compatible with WAV bytes, 16 bytes from the beginning.
- * It describes number of channels in WAV file, its format, how many samples per second, 
- * how many bytes per second, how many bits per sample and so on.
- * @attention All the data in the WAV file is stored in little endian. So on the little endian machine 
- * it is enough to load a WAV file into this structure.
- * @attention This structure is exactly the same as the PCMWAVEFORMAT structure from MMReg.h header file, provided 
- * by WinAPI.
+ * @brief general waveform format structure (information common to all formats) 
+ * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
  */
-typedef struct waveformatex {
-    uint16_t  wFormatTag; /*!< Format tag */
-    uint16_t  nChannels; /*!< Number of interleaved channels */
-    uint32_t  nSamplesPerSec; /*!< Sampling rate, blocks per second */
-    uint32_t  nAvgBytesPerSec; /*!< Data rate */
-    uint16_t  nBlockAlign; /*!< Data block size */
-    uint16_t  wBitsPerSample; /*!< Bits per sample */
-} waveformatex_t;
+typedef struct waveformat_tag {
+    WORD    wFormatTag;        /*!< format type */
+    WORD    nChannels;         /*!< number of channels (i.e. mono, stereo...) */
+    DWORD   nSamplesPerSec;    /*!< sample rate */
+    DWORD   nAvgBytesPerSec;   /*!< for buffer estimation */
+    WORD    nBlockAlign;       /*!< block size of data */
+} WAVEFORMAT;
+
+/*!
+ * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
+ */
+typedef WAVEFORMAT       *PWAVEFORMAT;
+
+/*!
+ * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
+ */
+typedef WAVEFORMAT NEAR *NPWAVEFORMAT;
+
+/*!
+ * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
+ */
+typedef WAVEFORMAT FAR  *LPWAVEFORMAT;
+
+/* flags for wFormatTag field of WAVEFORMAT */
+#define WAVE_FORMAT_PCM     1
+
+/*!
+ * @brief specific waveform format structure for PCM data 
+ * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
+ */
+typedef struct pcmwaveformat_tag {
+    WAVEFORMAT  wf;             /*!< All the preceeding format settings. */
+    WORD        wBitsPerSample; /*!< Bits per sample (16, 24, 32) */
+} PCMWAVEFORMAT;
+/*!
+ * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
+ */
+typedef PCMWAVEFORMAT       *PPCMWAVEFORMAT;
+/*!
+ * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
+ */
+typedef PCMWAVEFORMAT NEAR *NPPCMWAVEFORMAT;
+/*!
+ * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
+ */
+typedef PCMWAVEFORMAT FAR  *LPPCMWAVEFORMAT;
+
+#endif /* WAVE_FORMAT_PCM */
 
 /*!
  * @brief A sub-chunk header
@@ -218,28 +269,42 @@ typedef struct wav_format_chunk {
     uint8_t     waveid_[4]; /*!< WaveID, 4 bytes that give "WAVE", 0x57 0x41 0x56 0x45 */ 
     uint8_t     ckid_[4]; /*!< Yet another chunk id, 4 bytes that give "fmt ", 0x66 0x6d 0x74 0x20 */
     uint32_t    cksize_; /*!< Chunk size, either 16, 18 or 40 decimal */
-    struct waveformatex format_; /*!< Format of the chunk */
+    struct pcmwaveformat_tag format_; /*!< Format of the chunk */
     struct wav_subchunk subchunk_; /*!< The chunk itself, prepended with some rudimentary header. */
 } wav_format_chunk_t; 
 
 /*!
  * @brief WAV file header.
  */
-typedef struct master_riff_chunk {
+struct master_riff_chunk {
     uint8_t     ckid_[4]; /*!< ChunkID, 4 bytes that give "RIFF", 0x52 0x49 0x46 0x46 in hex */
-    uint32_t    cksize_; /*!< Chunk size, 4+n */
+    uint32_t    cksize_; /*!< Chunk size, 4+n, little endian. */
     union {
         wav_format_chunk_t format_chunk_;
         uint8_t     data_u8_[1];
         uint16_t    data_u16_[1];
         uint32_t    data_u32_[1];
     };
-} master_riff_chunk_t;
+};
 
 /*!
- * @brief Helper function, dumps the WAVEFORMATEX to the debug view window.
+ * @brief Typedef for pointer, this one is to save some typing.
  */
-void dump_waveformatex(WAVEFORMATEX const * p_wfe);
+typedef struct master_riff_chunk * P_MASTER_RIFF;
+
+/*!
+ * @brief Typedef for pointer, this one is to save some typing and const correctness.
+ */
+typedef struct master_riff_chunk const * P_MASTER_RIFF_CONST;
+
+/*!
+ * @brief Helper function, dumps the WAVEFORMATEX into the provided buffer.
+ * @param[in,out] psz_buffer the buffer into which the structure will be dumped.
+ * @param[in] buffer_size size of the buffer given as the psz_buffer parameter.
+ * @param[in] p_wfe pointer to the WAVEFORMATEX structure to be dumped.
+ * @return returns non-zero on success, 0 otherwise.
+ */
+int dump_pcmwaveformat(TCHAR * psz_buffer, size_t buffer_size, PCMWAVEFORMAT const * p_wfe);
 
 /*!
  * @brief Copies the waveformatex structure into a valid WAVEFORMATEX structure.
@@ -251,7 +316,7 @@ void dump_waveformatex(WAVEFORMATEX const * p_wfe);
  * @param[out] p_dest pointer to the memory location which will be written with data copied from p_source parameter.
  * @param[in] p_source pointer to the memory location which will be written with data copied from p_source parameter.
  */
-void copy_waveformatex_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, const struct waveformatex * p_source);
+void copy_pcmwaveformat_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, PCMWAVEFORMAT const * p_source);
 
 /*!
  * @brief Loads the WAV file from the resources.
@@ -274,7 +339,7 @@ void copy_waveformatex_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, const struct wavefo
  * @param[in] lpResName describes what resource to load
  * @return returns 0 on success, <>0 otherwise.
  */
-int init_master_riff(master_riff_chunk_t ** pp_chunk, HINSTANCE hModule, LPCTSTR lpResName);
+int init_master_riff(P_MASTER_RIFF_CONST * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName);
 
 #if defined __cplusplus
 }

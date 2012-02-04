@@ -70,16 +70,11 @@ static uint32_t chunk_size_bytes_to_ms(uint16_t bytes)
 
 int get_default_settings(struct sender_settings * p_settings)
 {
-	int result;
-	result = init_master_riff(&p_settings->chunk_, NULL, MAKEINTRESOURCE(IDR_0_1));
-	assert(result);
-	if (result) 
-	{
-		p_settings->chunk_size_ms_ = DEFAULT_WAV_CHUNK_SIZE_MS;
-		result = mcast_settings_get_default(&p_settings->mcast_settings_);
-        assert(result);
-	}
-	return result;
+    int result;
+    p_settings->chunk_size_ms_ = DEFAULT_WAV_CHUNK_SIZE_MS;
+    result = mcast_settings_get_default(&p_settings->mcast_settings_);
+    assert(result);
+    return result;
 }
 
 int sender_settings_validate(struct sender_settings const * p_settings)
@@ -110,12 +105,12 @@ void sender_settings_swap(struct sender_settings * p_left, struct sender_setting
 	CopyMemory(p_right, &tmp, sizeof(struct sender_settings));
 }
 
-uint32_t sender_settings_get_chunk_size_bytes(struct sender_settings const * p_this)
+uint32_t sender_settings_get_chunk_size_bytes(struct sender_settings const * p_settings)
 {
-    return chunk_size_ms_to_bytes(p_this->chunk_size_ms_);
+    return chunk_size_ms_to_bytes(p_settings->chunk_size_ms_);
 }
 
-uint32_t sender_settings_convert_bytes_to_ms(struct sender_settings const * p_left, uint16_t bytes)
+uint32_t sender_settings_convert_bytes_to_ms(struct sender_settings const * p_settings, uint16_t bytes)
 {
     return chunk_size_bytes_to_ms(bytes);
 }

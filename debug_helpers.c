@@ -103,12 +103,12 @@ HRESULT debug_outputln_buffered(LPCTSTR formatString, ...)
 	hr = StringCchVPrintfEx(outputBuffer, OUTPUT_BUFFER_LEN, &pszDestEnd, NULL, 0, formatString, args);
 	if (SUCCEEDED(hr) || hr == STRSAFE_E_INSUFFICIENT_BUFFER)
     {
-        /* Check sum of write_offset + string length,
-         * if more than output buffer size, then flush output buffer;
+        /* Check if the sum of write_offset and string length is greater,
+         * than output buffer size. If so, then flush output buffer
          * copy from temporary buffer @ write offset
          * replace last character with '\n'
          */
-        UINT new_string_length = pszDestEnd - outputBuffer + 1; /* We count the terminating null - it will be replaced by the '\n' character. */
+        UINT new_string_length = pszDestEnd - outputBuffer + 1; /* We count the terminating null, hence +1. This null will be replaced by the '\n' character. */
         UINT new_write_offset = g_write_offset + new_string_length;
         *pszDestEnd = '\n';
         if (new_write_offset>BUFFER_MAX_TCHARS)

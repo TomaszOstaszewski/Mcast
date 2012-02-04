@@ -57,31 +57,32 @@ static const char * wFormatTag2String(WORD wFormatTag)
 	return "NULL";
 }
 
-void dump_waveformatex(WAVEFORMATEX const * p_wfe)
+int dump_pcmwaveformat(TCHAR * psz_buffer, size_t buffer_size, PCMWAVEFORMAT const * p_wfe)
 {
-	debug_outputln("%s %d : {%hx, %s} %d %d %d %d %d %d", __FILE__, __LINE__, 
-			p_wfe->wFormatTag, wFormatTag2String(p_wfe->wFormatTag),
-			p_wfe->nChannels,
-			p_wfe->nSamplesPerSec,
-			p_wfe->nAvgBytesPerSec,
-			p_wfe->nBlockAlign,
-			p_wfe->wBitsPerSample,
-			p_wfe->cbSize
-			);
+    HRESULT hr;
+    hr = StringCchPrintf(psz_buffer, buffer_size, "%p\n" 
+            "{%hx, %s}\n"
+            "%d %d %d %d\n"
+            "%d", 
+            p_wfe, p_wfe->wf.wFormatTag, wFormatTag2String(p_wfe->wf.wFormatTag),
+            p_wfe->wf.nChannels, p_wfe->wf.nSamplesPerSec, p_wfe->wf.nAvgBytesPerSec, p_wfe->wf.nBlockAlign, 
+            p_wfe->wBitsPerSample
+            );
+    return SUCCEEDED(hr);
 }
 
-void copy_waveformatex_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, const struct waveformatex * p_source)
+void copy_pcmwaveformat_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, PCMWAVEFORMAT const * p_source)
 {
-	p_dest->wFormatTag 		= p_source->wFormatTag;
-	p_dest->nChannels 		= p_source->nChannels;
-	p_dest->nSamplesPerSec 	= p_source->nSamplesPerSec;
-	p_dest->nAvgBytesPerSec = p_source->nAvgBytesPerSec;
-	p_dest->nBlockAlign 	= p_source->nBlockAlign;
+	p_dest->wFormatTag 		= p_source->wf.wFormatTag;
+	p_dest->nChannels 		= p_source->wf.nChannels;
+	p_dest->nSamplesPerSec 	= p_source->wf.nSamplesPerSec;
+	p_dest->nAvgBytesPerSec = p_source->wf.nAvgBytesPerSec;
+	p_dest->nBlockAlign 	= p_source->wf.nBlockAlign;
 	p_dest->wBitsPerSample	= p_source->wBitsPerSample;
 	p_dest->cbSize 			= sizeof(WAVEFORMATEX);
 }
 
-int init_master_riff(master_riff_chunk_t ** pp_chunk, HINSTANCE hModule, LPCTSTR lpResName)
+int init_master_riff(P_MASTER_RIFF_CONST * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName)
 {
     HRSRC hRes;
     int result = 0;
@@ -94,9 +95,11 @@ int init_master_riff(master_riff_chunk_t ** pp_chunk, HINSTANCE hModule, LPCTSTR
         globRes = LoadResource(hModule, hRes);
         if (NULL != hRes)
         {
-            *pp_chunk = (master_riff_chunk_t *)LockResource(globRes);
+            *pp_chunk = (P_MASTER_RIFF_CONST)LockResource(globRes);
             if (NULL != *pp_chunk)
+            {
                 result = 1;
+            }
         }
         else
         {
