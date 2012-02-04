@@ -42,6 +42,13 @@
  */
 #define WAV_PREVIEW_LENGTH (512)
 
+struct ui_control_state 
+{
+    UINT menu_state_;
+    UINT control_state_;
+    UINT btn_state_;
+};
+
 /*!
  * @brief Describes all the 'interesting' UI controls of the sender's main dialog.
  */
