@@ -107,6 +107,18 @@ static void test_004(void)
 
 static void test_005(void)
 {
+    const char string[] = "123456";
+    uint16_t val  = 0;
+    uint32_t val32 = 0;
+    uint8_t val8 = 0;
+    int result;
+
+    result = sscanf(string, "%hhu", &val8);
+    printf("%d, %hhu\n", result, val8);
+    result = sscanf(string, "%hu", &val);
+    printf("%d, %hu\n", result, val);
+    result = sscanf(string, "%u", &val32);
+    printf("%d, %u\n", result, val32);
 }
 
 int main(int argc, char ** argv)

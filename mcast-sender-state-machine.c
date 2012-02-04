@@ -38,6 +38,7 @@
 #include "wave_utils.h"
 #include "mcast-sender-state-machine.h"
 #include "sender-settings.h"
+#include "abstract-tone.h"
 
 /*!
  * @brief Maximum number of payload bytes that will fit a single 100BaseT Ethernet packet.
@@ -53,15 +54,13 @@ struct mcast_sender {
 	/** @brief Current sender state. */
     sender_state_t state_; 
     /** @brief Pointer to the first byte of data being send. */
-    master_riff_chunk_t * chunk_;
+    P_MASTER_RIFF_CONST chunk_;
 	/** @brief Pointer to the structure that describes multicast connection */
     struct mcast_connection * conn_;   
 	/** @brief Copy of the sender settings. */
     struct sender_settings settings_; 
-    /*!
-     * @brief Current offset from the beginning of the WAV file to the next byte being send.
-     */
-    uint32_t send_offset_;
+    /** @brief The tone that is to be played. */
+    struct abstract_tone * tone_;
     HANDLE hStopEvent_; /*!< Handle to the event used to stop the sending thread. */
     /*!
      * @brief Handle to the event used to stop the sending thread. 
@@ -87,55 +86,58 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
 {
     DWORD dwResult;
     struct mcast_sender * p_sender;
-    struct master_riff_chunk * p_master_riff;
+    uint32_t send_offset;
+    uint32_t send_delay;
+    size_t max_offset;
+    uint32_t max_chunk_size;
+    int8_t const * p_data_begin;
 
     p_sender = (struct mcast_sender *)param;
     assert(p_sender);
-    p_master_riff = p_sender->settings_.chunk_;
-    assert(p_master_riff);
-    {   
-        uint32_t send_delay;
-        uint32_t max_offset = p_master_riff->format_chunk_.subchunk_.subchunk_size_;
-        uint32_t max_chunk_size = sender_settings_get_chunk_size_bytes(&p_sender->settings_);
-        int8_t const * const p_data_begin = p_master_riff->format_chunk_.subchunk_.samples8_;
-        assert(max_chunk_size <= MAX_ETHER_PAYLOAD_SANS_UPD_IP);
-        for (;;)
+    assert(p_sender->tone_);
+    max_chunk_size = sender_settings_get_chunk_size_bytes(&p_sender->settings_);
+    assert(max_chunk_size <= MAX_ETHER_PAYLOAD_SANS_UPD_IP);
+    send_offset = 0;
+    p_data_begin = (int8_t const *)abstract_tone_get_wave_data(p_sender->tone_, &max_offset);
+    assert(p_data_begin);
+    for (;;)
+    {
+        int result;
+        uint32_t chunk_size = max_chunk_size;
+        if (send_offset + chunk_size > max_offset)
         {
-            int result;
-            uint32_t chunk_size = max_chunk_size;
-            if (p_sender->send_offset_ + chunk_size > max_offset)
+            chunk_size = max_offset - send_offset;
+        }
+        assert(send_offset + chunk_size <= max_offset);
+        /* We wait here to emulate the time it takes to gather the samples. 
+         * Time to wait is proportional to the send chunk length.
+         */
+        send_delay = sender_settings_convert_bytes_to_ms(&p_sender->settings_, chunk_size);
+        dwResult = WaitForSingleObject(p_sender->hStopEventThread_, send_delay);
+        if (WAIT_TIMEOUT == dwResult)
+        {
+            result = mcast_sendto(p_sender->conn_, p_data_begin + send_offset, chunk_size);
+            if (SOCKET_ERROR != result)
             {
-                chunk_size = max_offset - p_sender->send_offset_;
-            }
-            assert(p_sender->send_offset_ + chunk_size <= max_offset);
-            send_delay = sender_settings_convert_bytes_to_ms(&p_sender->settings_, chunk_size);
-            /* We wait here to emulate the time it takes to gather the samples. */
-            dwResult = WaitForSingleObject(p_sender->hStopEventThread_, send_delay);
-            if (WAIT_TIMEOUT == dwResult)
-            {
-                result = mcast_sendto(p_sender->conn_, p_data_begin + p_sender->send_offset_, chunk_size);
-                if (SOCKET_ERROR != result)
+                send_offset += result;
+                assert (send_offset <= max_offset);
+                if (send_offset >= max_offset)
                 {
-                    p_sender->send_offset_ += result;
-                    assert (p_sender->send_offset_ <= max_offset);
-                    if (p_sender->send_offset_ >= max_offset)
-                    {
-                        p_sender->send_offset_ = 0;
-                    }
+                    send_offset = 0;
                 }
-                continue;
             }
-            else if (WAIT_OBJECT_0 == dwResult)
-            {
-                dwResult = 0;
-                break;
-            }
-            else 
-            {
-                dwResult = -1;
-                debug_outputln("%s %4.4u : %d", __FILE__, __LINE__, dwResult);
-                break;
-            }
+            continue;
+        }
+        else if (WAIT_OBJECT_0 == dwResult)
+        {
+            dwResult = 0;
+            break;
+        }
+        else 
+        {
+            dwResult = -1;
+            debug_outputln("%s %4.4u : %d", __FILE__, __LINE__, dwResult);
+            break;
         }
     }
     CloseHandle(p_sender->hStopEventThread_);
@@ -189,6 +191,20 @@ static int sender_handle_mcastleave_internal(struct mcast_sender * p_sender)
         }
     }
     return result;
+}
+
+static int sender_handle_selecttone_internal(struct mcast_sender * p_sender, struct abstract_tone * p_tone)
+{
+    assert(NULL == p_sender->tone_);
+    p_sender->tone_ = p_tone;
+    return 1;
+}
+
+static int sender_handle_deselecttone_internal(struct mcast_sender * p_sender)
+{
+    assert(p_sender->tone_);
+    p_sender->tone_ = NULL;
+    return 1;
 }
 
 /**
@@ -255,7 +271,6 @@ static int sender_handle_stopsending_internal(struct mcast_sender * p_sender)
 struct mcast_sender * sender_create(struct sender_settings * p_settings)
 {
     struct mcast_sender * p_sender = (struct mcast_sender *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_sender));
-    p_sender->chunk_ = p_settings->chunk_;
     sender_settings_copy(&p_sender->settings_, p_settings);
     return p_sender;
 }
@@ -278,6 +293,11 @@ void sender_handle_mcastjoin(struct mcast_sender * p_sender)
         p_sender->state_ = SENDER_MCAST_JOINED;
         return;
     }
+    if (SENDER_TONE_SELECTED == p_sender->state_ && sender_handle_mcastjoin_internal(p_sender))
+    {
+        p_sender->state_ = SENDER_MCASTJOINED_TONESELECTED;
+        return;
+    }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
@@ -289,13 +309,50 @@ void sender_handle_mcastleave(struct mcast_sender * p_sender)
         p_sender->state_ = SENDER_INITIAL;
         return;
     }
+    if(SENDER_MCASTJOINED_TONESELECTED == p_sender->state_ && sender_handle_mcastleave_internal(p_sender))
+    {
+        p_sender->state_ = SENDER_TONE_SELECTED;
+        return;
+    }
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
+}
+
+void sender_handle_selecttone(struct mcast_sender * p_sender, struct abstract_tone * p_tone)
+{
+    assert(p_sender);
+    if (SENDER_INITIAL == p_sender->state_ && sender_handle_selecttone_internal(p_sender, p_tone))
+    {
+        p_sender->state_ = SENDER_TONE_SELECTED;
+        return;
+    }
+    if(SENDER_MCAST_JOINED == p_sender->state_ && sender_handle_selecttone_internal(p_sender, p_tone))
+    {
+        p_sender->state_ = SENDER_MCASTJOINED_TONESELECTED;
+        return;
+    }
+    debug_outputln("%s %4.4u", __FILE__, __LINE__);
+}
+
+void sender_handle_deselecttone(struct mcast_sender * p_sender)
+{
+    assert(p_sender);
+    if (SENDER_TONE_SELECTED == p_sender->state_ && sender_handle_deselecttone_internal(p_sender))
+    {
+        p_sender->state_ = SENDER_INITIAL;
+        return;
+    }
+    if(SENDER_MCASTJOINED_TONESELECTED == p_sender->state_ && sender_handle_deselecttone_internal(p_sender))
+    {
+        p_sender->state_ = SENDER_MCAST_JOINED;
+        return;
+    }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void sender_handle_startsending(struct mcast_sender * p_sender)
 {
     assert(p_sender);
-    if (SENDER_MCAST_JOINED == p_sender->state_ && sender_handle_startsending_internal(p_sender))
+    if (SENDER_MCASTJOINED_TONESELECTED == p_sender->state_ && sender_handle_startsending_internal(p_sender))
     {
         p_sender->state_ = SENDER_SENDING;
         return;
@@ -308,7 +365,7 @@ void sender_handle_stopsending(struct mcast_sender * p_sender)
     assert(p_sender);
     if (SENDER_SENDING == p_sender->state_ && sender_handle_stopsending_internal(p_sender))
     {
-        p_sender->state_ = SENDER_MCAST_JOINED;
+        p_sender->state_ = SENDER_MCASTJOINED_TONESELECTED;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }

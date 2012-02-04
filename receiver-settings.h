@@ -35,7 +35,6 @@ extern "C" {
 #include "std-int.h"
 #include "mcast-settings.h"
 #include "play-settings.h"
-#include "wave_utils.h"
 
 /*!
  * @brief A structure that describes receiver parameters.
