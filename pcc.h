@@ -41,8 +41,9 @@
 #define PCC_H_10C143CE_7FF9_4E22_8187_6EBF9DAEAA7B
 
 #define _CRT_SECURE_NO_WARNINGS 
-#define WIN32_LEAN_AND_MEAN
 
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <windows.h>
 #include <windowsx.h>
 #include <commctrl.h>
@@ -51,8 +52,6 @@
 #include <mmsystem.h>
 #include <tchar.h>
 #include <objbase.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
 #include <malloc.h> /* For alloca() */
 #if !defined __MINGW32__
 #undef _ftcscat

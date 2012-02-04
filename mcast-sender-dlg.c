@@ -218,6 +218,45 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     UpdateUI(hwnd);
     return TRUE;
 }
+
+static LPCTSTR getWavFileName(HWND hwnd)
+{
+    static TCHAR pszFileNameBuffer[MAX_PATH+1];
+
+    OPENFILENAME ofn;       // common dialog box structure
+
+    // Initialize OPENFILENAME
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = hwnd;
+    ofn.lpstrFile = pszFileNameBuffer;
+    // Set lpstrFile[0] to '\0' so that GetOpenFileName does not 
+    // use the contents of szFile to initialize itself.
+    ofn.lpstrFile[0] = '\0';
+    ofn.nMaxFile = sizeof(pszFileNameBuffer);
+    ofn.lpstrFilter = "WAV (*.wav)\0*.wav\0All\0*.*\0";
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFileTitle = NULL;
+    ofn.nMaxFileTitle = 0;
+    ofn.lpstrInitialDir = NULL;
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+    // Display the Open dialog box. 
+
+    if (GetOpenFileName(&ofn)==TRUE) 
+        return pszFileNameBuffer;
+    return NULL;
+/*
+        hf = CreateFile(ofn.lpstrFile, 
+                GENERIC_READ,
+                0,
+                (LPSECURITY_ATTRIBUTES) NULL,
+                OPEN_EXISTING,
+                FILE_ATTRIBUTE_NORMAL,
+                (HANDLE) NULL);
+*/
+}
+
  
 /**
  * @brief Sender dialog message processing routine.
@@ -290,7 +329,11 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     }
                     break;
                 case ID_OPEN_WAV:
-                    debug_outputln("%s %4.4u", __FILE__, __LINE__);
+                    {
+                        LPCTSTR pszFileName = getWavFileName(hDlg);
+                    debug_outputln("%s %4.4u : %s", __FILE__, __LINE__, pszFileName);
+                    
+                    }
                     break;
                case IDM_SENDER_ABOUT:
                     display_about_dialog(hDlg);
