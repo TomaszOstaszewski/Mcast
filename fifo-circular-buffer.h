@@ -52,11 +52,12 @@ struct fifo_circular_buffer;
 
 /**
  * @brief Create a circular buffer.
- * @details Fill me...
+ * @details <b>Fill me...</b>
+ * @param[in] level this is the exponent of the buffer size. Actual buffer, when successfully created, holds up to 2^level items without overwritting the oldest ones.
  * @return returns a handle to a circular buffer, or NULL if creation failed.
  * @sa fifo_circular_buffer_delete
  */
-struct fifo_circular_buffer *  fifo_circular_buffer_create(void);
+struct fifo_circular_buffer *  fifo_circular_buffer_create(uint16_t level);
 
 /**
  * @brief Destroys a circular buffer

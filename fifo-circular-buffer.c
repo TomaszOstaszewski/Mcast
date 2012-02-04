@@ -45,7 +45,7 @@ struct fifo_circular_buffer
     uint8_t     data_buffer_[MAX_ITEMS];    /*!< Data buffer from which bytes are read/to which will be written. */
 };
 
-struct fifo_circular_buffer *  fifo_circular_buffer_create(void)
+struct fifo_circular_buffer * fifo_circular_buffer_create(uint16_t level)
 {
     struct fifo_circular_buffer * p_buffer;
     p_buffer = malloc(sizeof(struct fifo_circular_buffer));
