@@ -28,10 +28,10 @@
 #define MCAST_SENDER_BF6FAC88_2286_488B_9256_997E81B13E49
 
 #include <windows.h>
-#include "wave_utils.h"
 
 struct sender_settings; 
 struct mcast_sender;
+struct abstract_tone;
 
 /*!
  * @brief Describes a sender state.
@@ -43,7 +43,9 @@ struct mcast_sender;
 typedef enum sender_state { 
     SENDER_INITIAL = 0,         /*!< Initial state, no sending, no receiving. */
     SENDER_MCAST_JOINED = 1,    /*!< Sender successfully joined a multicast group. */
-    SENDER_SENDING = 2,         /*!< Sender sending data. */
+    SENDER_TONE_SELECTED = 2,   /*!< Sender has a valid tone selected. */
+    SENDER_MCASTJOINED_TONESELECTED = 3, /*!< Sender has a tone selected and has joined multicast group. */
+    SENDER_SENDING = 4,         /*!< Sender sending data. */
 } sender_state_t;
 
 /*! 
@@ -83,6 +85,24 @@ void sender_handle_mcastjoin(struct mcast_sender * p_sender);
  * @sa sender_create()
  */
 void sender_handle_mcastleave(struct mcast_sender * p_sender);
+
+/*! 
+ * @brief 
+ * @details 
+ * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
+ * @param[in] p_tone 
+ * @sa sender_handle_deselecttone()
+ */
+void sender_handle_selecttone(struct mcast_sender * p_sender, struct abstract_tone * p_tone);
+
+/*! 
+ * @brief 
+ * @details
+ * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
+ * @param[in] p_tone
+ * @sa sender_handle_selecttone()
+ */
+void sender_handle_deselecttone(struct mcast_sender * p_sender);
 
 /*! 
  * @brief Causes the sender to start sending data (if it was not doing so).

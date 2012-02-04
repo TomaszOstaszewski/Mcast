@@ -1,20 +1,7 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
-
 /**
- * @file pcc.h
- * @brief Pre compiled header file.
- * @details This file is used to create a pre compiled header. The whole point of having a pre compiled header
- * is to save on compile time. The pre compiled header therefore contains a lot of include directives on a lot of header
- * files that:
- * - include a lot of other header files;
- * - do not change a lot during the course of the project.
- *
- * The perfect candidate to put into into the pre-compiled header are therefore:
- * - all the standard library files (stdlib.h, stdint.h and so on);
- * - platform specific files (asm/x86.h); 
- * - and vendor specific files (windows.h and so on).
- *
- * @author T.Ostaszewski
+ * @file ut-abstract-tone.c
+ * @author T. Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -36,40 +23,51 @@
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
  * @date 04-Jan-2012
+ * @brief 
+ * @details 
  */
-#if !defined PCC_H_10C143CE_7FF9_4E22_8187_6EBF9DAEAA7B
-#define PCC_H_10C143CE_7FF9_4E22_8187_6EBF9DAEAA7B
-
-#define _CRT_SECURE_NO_WARNINGS 
-
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <windows.h>
-#include <windowsx.h>
-#include <commctrl.h>
-#include <winerror.h>
-#include <mmreg.h>
+#include "pcc.h"
 #include <mmsystem.h>
-#include <tchar.h>
-#include <objbase.h>
-#include <malloc.h> /* For alloca() */
-#if !defined __MINGW32__
-#undef _ftcscat
-#include <dsound.h>
-#include <strsafe.h>
-#endif
+#include "abstract-tone.h"
+#include "sender-res.h"
 
-#include <assert.h>
-#include <assert.h>
-#include <limits.h>
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+void test_00(void)
+{
+	struct abstract_tone * p_tone;
+	p_tone = abstract_tone_create(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
+	assert(p_tone);
+	abstract_tone_destroy(p_tone);
+}
 
-#include "std-int.h" /* Wrapper for <stdint.h> which is not avaiable on every compiler. */
+void test_01(void)
+{
+	struct abstract_tone * p_tone;
+    uint8_t const * p_data;
+    size_t data_size = 0;
+	p_tone = abstract_tone_create(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
+	assert(p_tone);
+    p_data = (uint8_t const *)abstract_tone_get_wave_data(p_tone, &data_size);
+    assert(p_data);
+    assert(0 != data_size);
+	abstract_tone_destroy(p_tone);
+}
 
-#endif /* PCC_H_10C143CE_7FF9_4E22_8187_6EBF9DAEAA7B */
+void test_02(void)
+{
+	struct abstract_tone * p_tone;
+    PCMWAVEFORMAT const * p_pcmwaveformat;
+	p_tone = abstract_tone_create(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
+	assert(p_tone);
+    p_pcmwaveformat = abstract_tone_get_pcmwaveformat(p_tone);
+    assert(p_pcmwaveformat);
+	abstract_tone_destroy(p_tone);
+}
+
+int main(int argc, char ** argv)
+{
+	test_00();
+	test_01();
+	test_02();
+	return 0;
+}
 

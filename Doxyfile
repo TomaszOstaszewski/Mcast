@@ -83,7 +83,11 @@ WARN_LOGFILE           = doxy.warn
 INPUT =\
 about-dialog.c \
 about-dialog.h \
+abstract-tone.h \
+abstract-tone.c \
 debug_helpers.c \
+dialog-utils.c \
+dialog-utils.h \
 debug_helpers.h \
 dsoundplay.cpp \
 dsoundplay.h \
