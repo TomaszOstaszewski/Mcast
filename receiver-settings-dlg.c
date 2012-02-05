@@ -32,6 +32,7 @@
 #include "mcast-settings-dlg.h"
 #include "dialog-utils.h"
 #include "receiver-res.h"
+#include "wave_utils.h"
 
 /*!
  * @brief Maximum number of digits in the dialogs edit controls.
@@ -119,6 +120,10 @@ struct receiver_settings_dlg_controls
      */
     HWND bits_per_sample_combo_;
     /*!
+     * @brief Handle to the 'WAV channels' combo box.
+     */
+    HWND channels_combo_;
+    /*!
      * @brief Handle to the Multimedit timer timeout spin control.
      */
     HWND btok_;
@@ -145,6 +150,11 @@ static struct val_2_combo bits_per_sample_values[] = {
     { 16, 0 },
 };
 
+static struct val_2_combo channel_values[] = {
+    { 1, 0 },
+    { 2, 0 },
+};
+
 /*!
  * @brief The object that has all the controls.
  */
@@ -167,36 +177,37 @@ static void fill_combo(HWND hCombo, struct val_2_combo * values, unsigned int co
 }
 
 /*!
+ * @brief For given combo and given value, selects the combo box item so it matches the value.
+ */
+static void select_combo_value(struct val_2_combo const * val_table, size_t table_size, HWND combo, const unsigned int value)
+{
+    size_t idx;
+    /* Find the sample rate that matches the combo box items */
+    for (idx = 0; idx < table_size; ++idx)
+    {
+        if (value == val_table[idx].val_)
+        {
+            ComboBox_SetCurSel(combo, val_table[idx].combo_idx_);
+            break;
+        }
+    }
+    assert(idx < table_size);
+}
+
+/*!
  * @brief Transfer from data to UI
  * @details Takes values from the settings object and presents them on the UI
  */
 static void data_to_controls(struct receiver_settings const * p_settings, struct receiver_settings_dlg_controls * p_controls)
 {
-    size_t idx;
     put_in_edit_control_uint16(p_controls->poll_sleep_time_edit_, p_settings->poll_sleep_time_);
     put_in_edit_control_uint16(p_controls->play_buffer_size_edit_, p_settings->play_settings_.play_buffer_size_);
     put_in_edit_control_uint16(p_controls->mmtimer_edit_, p_settings->play_settings_.timer_delay_);
     put_in_edit_control_uint16(p_controls->num_of_chunks_edit_, p_settings->play_settings_.play_chunks_count_);
     /* Find the sample rate that matches the combo box items */
-    for (idx = 0; idx < sizeof(sample_rate_values)/sizeof(sample_rate_values[0]); ++idx)
-    {
-        if (p_settings->wfex_.nSamplesPerSec == sample_rate_values[idx].val_)
-        {
-            ComboBox_SetCurSel(p_controls->sample_rate_combo_, sample_rate_values[idx].combo_idx_);
-            break;
-        }
-    }
-    assert(idx < sizeof(sample_rate_values)/sizeof(sample_rate_values[0]));
-    /* Find the sample rate that matches the combo box items */
-    for (idx = 0; idx < sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]); ++idx)
-    {
-        if (p_settings->wfex_.wBitsPerSample == bits_per_sample_values[idx].val_)
-        {
-            ComboBox_SetCurSel(p_controls->bits_per_sample_combo_, bits_per_sample_values[idx].combo_idx_);
-            break;
-        }
-    }
-    assert(idx < sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]));
+    select_combo_value(sample_rate_values, sizeof(sample_rate_values)/sizeof(sample_rate_values[0]), p_controls->sample_rate_combo_, p_settings->wfex_.nSamplesPerSec);
+    select_combo_value(bits_per_sample_values, sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]), p_controls->bits_per_sample_combo_, p_settings->wfex_.wBitsPerSample);
+    select_combo_value(channel_values, sizeof(channel_values)/sizeof(channel_values[0]), p_controls->channels_combo_, p_settings->wfex_.nChannels);
 }
 
 /*!
@@ -241,6 +252,7 @@ static int combo_controls_to_data(struct receiver_settings * p_settings, struct 
 {
     int result;
     WORD wBitsPerSample;
+    WORD nChannels;
     DWORD nSamplesPerSec;
     unsigned int combo_data_item;
     /* Get a value from sample rate combo control */
@@ -275,6 +287,24 @@ static int combo_controls_to_data(struct receiver_settings * p_settings, struct 
         goto error;
     }
     wBitsPerSample = bits_per_sample_values[combo_data_item].val_;
+    /* Get value form 'channels' combo */
+    result = ComboBox_GetCurSel(p_controls->channels_combo_);
+    assert(CB_ERR != result);
+    if (CB_ERR == result)
+    {
+        debug_outputln("%s %d", __FILE__, __LINE__);
+        goto error;
+    }
+    combo_data_item = ComboBox_GetItemData(p_controls->channels_combo_, result);
+    assert(combo_data_item < sizeof(channel_values)/sizeof(channel_values[0]));
+    if(combo_data_item >= sizeof(channel_values)/sizeof(channel_values[0]))
+    {
+        debug_outputln("%s %d : %d %u", __FILE__, __LINE__, combo_data_item, sizeof(channel_values)/sizeof(channel_values));
+        goto error;
+    }
+    nChannels = channel_values[combo_data_item].val_;
+
+    p_settings->wfex_.nChannels      = nChannels;
     p_settings->wfex_.wBitsPerSample = wBitsPerSample;
     p_settings->wfex_.nSamplesPerSec = nSamplesPerSec;
     return 1;
@@ -312,7 +342,8 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(g_controls->num_of_chunks_edit_);
     g_controls->num_of_chunks_spin_ = GetDlgItem(hwnd, IDC_PLAY_CHUNKS_SPIN);
     assert(g_controls->num_of_chunks_spin_);
-
+    g_controls->channels_combo_ = GetDlgItem(hwnd, IDC_WAV_CHANNELS);
+    assert(g_controls->channels_combo_);
     SendMessage(g_controls->poll_sleep_time_spin_, UDM_SETBUDDY, (WPARAM)g_controls->poll_sleep_time_edit_, (LPARAM)0);
     SendMessage(g_controls->play_buffer_size_spin_, UDM_SETBUDDY, (WPARAM)g_controls->play_buffer_size_edit_, (LPARAM)0);
     SendMessage(g_controls->mmtimer_spin_, UDM_SETBUDDY, (WPARAM)g_controls->mmtimer_edit_, (LPARAM)0);
@@ -322,6 +353,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     SendMessage(g_controls->num_of_chunks_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     fill_combo(g_controls->sample_rate_combo_, sample_rate_values, sizeof(sample_rate_values)/sizeof(sample_rate_values[0]));
     fill_combo(g_controls->bits_per_sample_combo_, bits_per_sample_values, sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]));
+    fill_combo(g_controls->channels_combo_, channel_values, sizeof(channel_values)/sizeof(channel_values[0]));
     data_to_controls(&g_controls->settings_, g_controls);
     return TRUE;
 } 
@@ -407,6 +439,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                     break;
                 case IDC_WAV_SAMPLE_RATE:
                 case IDC_WAV_BITS_PER_SAMPLE:
+                case IDC_WAV_CHANNELS:
                     switch (HIWORD(wParam))
                     {
                         case CBN_SELCHANGE:
@@ -449,6 +482,7 @@ int receiver_settings_do_dialog(HWND hWndParent, struct receiver_settings * p_se
     /* NULL hInst means = read dialog template from this application's resource file */
     if (IDOK == DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_RECEIVER_SETTINGS), hWndParent, McastSettingsProc, (LPARAM)&controls))
     {
+        waveformat_normalize(&controls.settings_.wfex_);
         receiver_settings_copy(p_settings, &controls.settings_);
         return 1;
     }
