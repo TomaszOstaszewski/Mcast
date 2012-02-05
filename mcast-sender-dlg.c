@@ -81,7 +81,7 @@ static struct ui_focus focus_table[] = {
     { SENDER_TONE_SELECTED, ID_SENDER_JOINMCAST },
     { SENDER_MCAST_JOINED, ID_TEST_TONE },
     { SENDER_MCASTJOINED_TONESELECTED, ID_SENDER_STARTSENDING },
-    { SENDER_SENDING, ID_SENDER_STARTSENDING },
+    { SENDER_SENDING, ID_SENDER_STOPSENDING },
 };
  
 static void on_ui_tone_deselected(struct sender_dialog * p_dlg)
