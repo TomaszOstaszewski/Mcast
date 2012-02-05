@@ -98,10 +98,12 @@ void abstract_tone_destroy(struct abstract_tone * p_tone)
     HeapFree(GetProcessHeap(), 0, p_tone);
 }
 
+#if defined DEBUG
 tone_type_t abstract_tone_get_type(struct abstract_tone * p_tone)
 {
     return p_tone->e_type_;
 }
+#endif
 
 PCMWAVEFORMAT const * abstract_tone_get_pcmwaveformat(struct abstract_tone const * p_tone)
 {
