@@ -1,0 +1,7 @@
+LIBRARY   DSOUNDPLAY
+EXPORTS
+	dsoundplayer_create @1
+	dsoundplayer_destroy @2
+	dsoundplayer_play @3
+	dsoundplayer_pause @4
+	dsoundplayer_stop @5
