@@ -5,3 +5,11 @@ EXPORTS
 	dsoundplayer_play @3
 	dsoundplayer_pause @4
 	dsoundplayer_stop @5
+	fifo_circular_buffer_create @6
+	fifo_circular_buffer_delete @7
+	fifo_circular_buffer_get_capacity @8
+	fifo_circular_buffer_get_items_count @9
+	fifo_circular_buffer_is_free_space @10
+	fifo_circular_buffer_is_full @11
+	fifo_circular_buffer_push_item @12
+	fifo_circular_buffer_fetch_item @13
