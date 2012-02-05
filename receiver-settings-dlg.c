@@ -138,24 +138,24 @@ struct val_2_combo {
 };
  
 static struct val_2_combo sample_rate_values[] = {
-    { 8000, 0 },
-    { 11025, 0 },
-    { 16000, 0 },
-    { 22050, 0 },
-    { 32000, 0 },
-    { 44100, 0 },
-    { 48000, 0 },
-    { 96000, 0 },
+    { 8000 },
+    { 11025 },
+    { 16000 },
+    { 22050 },
+    { 32000 },
+    { 44100 },
+    { 48000 },
+    { 96000 },
 };
 
 static struct val_2_combo bits_per_sample_values[] = {
-    { 8, 0 },
-    { 16, 0 },
+    { 8 },
+    { 16 },
 };
 
 static struct val_2_combo channel_values[] = {
-    { 1, 0 },
-    { 2, 0 },
+    { 1 },
+    { 2 },
 };
 
 /*!
