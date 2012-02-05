@@ -239,11 +239,6 @@ static HRESULT create_buffers(struct dsound_data * p_ds_data)
         debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
         goto error;
     }
-    {
-        TCHAR buffer[1024];
-        dump_pcmwaveformat(buffer, 1024, (PCMWAVEFORMAT const *)&p_ds_data->wfe_);
-        debug_outputln("%s", buffer);
-    }
     hr = p_ds_data->p_primary_sound_buffer_->SetFormat(&p_ds_data->wfe_);
     if (FAILED(hr))
     {
