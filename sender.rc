@@ -30,7 +30,7 @@ IDR_MENU_SENDER MENU
         MENUITEM "St&op sending", ID_SENDER_STOPSENDING
         MENUITEM "&Test tone", ID_TEST_TONE
         MENUITEM "Select &Wav...", ID_OPEN_WAV
-        MENUITEM "&Close WAV", ID_CLOSE_WAV
+        MENUITEM "C&lose WAV", ID_CLOSE_WAV
         MENUITEM "&Quit", IDCANCEL
     }
     POPUP "&Help"
@@ -61,7 +61,7 @@ FONT 8, "Ms Shell Dlg"
     LTEXT           "", IDC_WAV_PREVIEW, 15, 90, 217, 70, SS_LEFT | SS_NOPREFIX | SS_SUNKEN, WS_EX_STATICEDGE
     PUSHBUTTON      "S&ettings...", ID_SENDER_SETTINGS, 167, 14, 61, 14
     PUSHBUTTON      "&Quit", IDCANCEL, 167, 37, 61, 14
-    PUSHBUTTON      "&Close WAV", ID_CLOSE_WAV, 167, 69, 61, 14
+    PUSHBUTTON      "C&lose WAV", ID_CLOSE_WAV, 167, 69, 61, 14
 }
 
 

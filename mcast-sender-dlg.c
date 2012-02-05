@@ -63,7 +63,7 @@ struct sender_dialog {
     struct mcast_sender * sender_; /*!< The sender object. This sends out the data on the multicast group. */
     struct abstract_tone * tone_selected_; /*!< Currently selected tone to be played. */
     struct sender_settings settings_; /*!< The sender settings object. Here are multicast group settings stored, and how many bytes to send with each packet. */
-    sender_ui_state_t ui_state_;
+    sender_ui_state_t ui_state_; /*!< The UI state. */
     TCHAR wav_preview_text_[WAV_PREVIEW_LENGTH+1];
     HWND hDlg_; /*!< Handle to the main dialog */
     HWND hWavPreview_; /*!< Handle to the static control in which WAV file details will be displayed. */
@@ -72,14 +72,13 @@ struct sender_dialog {
 };
 
 /*!
- * @brief Defines the state of the UI control.
+ * @brief Defines the state (enabled/disabled, checked/unchecke) of the UI control.
  */
 struct ui_control_state {
     sender_ui_state_t state_; /*!< The UI state */
     UINT nID_; /*!< Control's ID. The control with this ID will be enabled/disabled and checked/unchecked upon entering the UI state */
     BOOL enabled_; /*!< Whether or not to enable item. */
     BOOL checked_; /*!< Whether or not to check item. */
-    HWND hwnd_; /*!< Handle to the control. This entry holds the cached value, so that one can avoid calling GetDlgItem() every time. */
 };
 
 /*!
@@ -88,7 +87,6 @@ struct ui_control_state {
 struct ui_focus {
     sender_ui_state_t state_; /*!< The UI state */
     UINT nID_; /*!< The control ID. This control will get the focus for given UI state. */
-    HWND hwnd_; /*!< Handle to the control. This entry holds the cached value, so that one can avoid calling GetDlgItem() every time. */
 };
 
 /*!
@@ -201,6 +199,7 @@ static void UpdateUI(HWND hwnd)
     curr_state = p_dlg->ui_state_;
     if (prev_state != curr_state)
     {
+        HWND hwnd;
         struct ui_control_state const * const p_past_end = &controls_state_table[sizeof(controls_state_table)/sizeof(controls_state_table[0])];
         struct ui_focus const * const p_focus_past_end = &focus_table[sizeof(focus_table)/sizeof(focus_table[0])];
         struct ui_control_state * p_item = &controls_state_table[0];
@@ -211,19 +210,16 @@ static void UpdateUI(HWND hwnd)
             if (curr_state == p_item->state_)
             {
                 UINT nMenuEnabled = MF_GRAYED, nMenuChecked = MF_UNCHECKED;
-                if (NULL == p_item->hwnd_)
-                {
-                    p_item->hwnd_ = GetDlgItem(p_dlg->hDlg_, p_item->nID_);
-                }
-                assert(p_item->hwnd_);
-                EnableWindow(p_item->hwnd_, p_item->enabled_);
                 if (p_item->enabled_)
                     nMenuEnabled  = MF_ENABLED;
                 if (p_item->checked_)
                     nMenuChecked = MF_CHECKED;
                 EnableMenuItem(p_dlg->hMainMenu, p_item->nID_, MF_BYCOMMAND | nMenuEnabled);
                 CheckMenuItem(p_dlg->hMainMenu, p_item->nID_, MF_BYCOMMAND | nMenuChecked);
-                Button_SetCheck(p_item->hwnd_, p_item->checked_);
+                hwnd = GetDlgItem(p_dlg->hDlg_, p_item->nID_);
+                assert(hwnd);
+                EnableWindow(hwnd, p_item->enabled_);
+                Button_SetCheck(hwnd, p_item->checked_);
             } 
         }
         /* Set the focus */
@@ -231,10 +227,9 @@ static void UpdateUI(HWND hwnd)
         {
             if (p_focus_item->state_ == curr_state)
             {
-                if (NULL == p_focus_item->hwnd_)
-                    p_focus_item->hwnd_ = GetDlgItem(p_dlg->hDlg_, p_focus_item->nID_);
-                assert(p_focus_item->hwnd_);
-                SetFocus(p_focus_item->hwnd_); 
+                hwnd = GetDlgItem(p_dlg->hDlg_, p_focus_item->nID_);
+                assert(hwnd);
+                SetFocus(hwnd); 
             }
         } 
         prev_state = curr_state;
