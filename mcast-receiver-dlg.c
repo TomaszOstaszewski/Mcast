@@ -333,7 +333,7 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                     handle_rcvstop(p_dlg->receiver_);
                     break;
                 case IDM_ABOUT_RECEIVER:
-                    display_about_dialog(hDlg);
+                    display_about_dialog(hDlg, _T("Receiver"));
                     break;
                 case IDOK:
                 case IDCANCEL:

@@ -217,7 +217,7 @@ typedef WAVEFORMAT NEAR *NPWAVEFORMAT;
  */
 typedef WAVEFORMAT FAR  *LPWAVEFORMAT;
 
-/* flags for wFormatTag field of WAVEFORMAT */
+/*! flags for wFormatTag field of WAVEFORMAT */
 #define WAVE_FORMAT_PCM     1
 
 /*!
@@ -317,6 +317,15 @@ int dump_pcmwaveformat(TCHAR * psz_buffer, size_t buffer_size, PCMWAVEFORMAT con
  * @param[in] p_source pointer to the memory location which will be written with data copied from p_source parameter.
  */
 void copy_pcmwaveformat_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, PCMWAVEFORMAT const * p_source);
+
+/*!
+ * @brief Performs normalization of the WAVEFORMAT structure
+ * @details Normalization is recalculation of some members of the structure from other members of the structure.
+ * One of those settings is 'nAvgBytesPerSec', which has to be recaluclated from the others. It has to be valid, 
+ * otherwise some internal replay functions are likely to fail.
+ * @param[in, out] p_struct a pointer to the WAVEFORMATEX structure to be normalized.
+ */
+void waveformat_normalize(WAVEFORMATEX * p_struct);
 
 /*!
  * @brief Loads the WAV file from the resources.

@@ -68,10 +68,31 @@ int get_from_edit_uint16_dec(HWND hControl, uint16_t * p_target);
  */
 int get_from_edit_uint8_dec(HWND hControl, uint8_t * p_target);
 
+/*!
+ * @brief Writes the variable value into an edit control.
+ * @details Formats the variable in decimal and displays on the edit control
+ * @param[in] hControl handle to the control.
+ * @param[in] value value to be written into the edit control.
+ * @return returns non-zero on success, otherwise returns 0.
+ */
 int put_in_edit_control_uint32(HWND hControl, uint32_t value);
 
+/*!
+ * @brief Writes the variable value into an edit control.
+ * @details Formats the variable in decimal and displays on the edit control
+ * @param[in] hControl handle to the control.
+ * @param[in] value value to be written into the edit control.
+ * @return returns non-zero on success, otherwise returns 0.
+ */
 int put_in_edit_control_uint16(HWND hControl, uint16_t value);
 
+/*!
+ * @brief Writes the variable value into an edit control.
+ * @details Formats the variable in decimal and displays on the edit control
+ * @param[in] hControl handle to the control.
+ * @param[in] value value to be written into the edit control.
+ * @return returns non-zero on success, otherwise returns 0.
+ */
 int put_in_edit_control_uint8(HWND hControl, uint8_t value);
 
 #if defined __cplusplus

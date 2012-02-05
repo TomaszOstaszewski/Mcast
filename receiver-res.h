@@ -13,6 +13,7 @@
 #define IDC_MCAST_SETTINGS                      1002
 #define IDC_MMTIMER_EDIT_CTRL                   1003
 #define IDC_MMTIMER_SPIN                        1004
+#define IDC_WAV_CHANNELS                        1005
 #define IDC_POLL_SLEEP_TIME_EDIT                1006
 #define IDC_PLAY_BUFFER_SIZE_EDIT               1007
 #define ID_RECEIVER_SETTINGS                    1007
