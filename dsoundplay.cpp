@@ -218,15 +218,14 @@ static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb)
  * @param[in] single_buffer_size size of the single play buffer
  * @return
  */
-static HRESULT create_buffers(LPDIRECTSOUND8 p_direct_sound_8, LPDIRECTSOUNDBUFFER * pp_primary_buffer, LPDIRECTSOUNDBUFFER8 * pp_secondary_buffer, 
-        WAVEFORMATEX * p_wfe, size_t single_buffer_size, uint16_t num_of_chunks)
+static HRESULT create_buffers(struct dsound_data * p_ds_data)
 {
     HRESULT hr;
     DSBUFFERDESC bufferDesc;
     LPDIRECTSOUNDBUFFER lpDSB = NULL;
-    if (NULL == pp_primary_buffer || NULL == pp_secondary_buffer || NULL != *pp_primary_buffer || NULL != *pp_secondary_buffer)
+    if (NULL != p_ds_data->p_primary_sound_buffer_ || NULL != p_ds_data->p_secondary_sound_buffer_)
     {
-        debug_outputln("%s %4.4u : %p %p %p %p", __FILE__, __LINE__, pp_primary_buffer, pp_secondary_buffer, *pp_primary_buffer, *pp_secondary_buffer);
+        debug_outputln("%s %4.4u : %p %p", __FILE__, __LINE__, p_ds_data->p_primary_sound_buffer_, p_ds_data->p_secondary_sound_buffer_);
         return E_INVALIDARG;
     }
     ZeroMemory(&bufferDesc, sizeof(bufferDesc));
@@ -234,36 +233,36 @@ static HRESULT create_buffers(LPDIRECTSOUND8 p_direct_sound_8, LPDIRECTSOUNDBUFF
     bufferDesc.dwFlags = DSBCAPS_PRIMARYBUFFER; 
     bufferDesc.guid3DAlgorithm = DS3DALG_DEFAULT;
     /* All others must be null for primary buffer */
-    hr = p_direct_sound_8->CreateSoundBuffer(&bufferDesc, pp_primary_buffer, NULL);
+    hr = p_ds_data->p_direct_sound_8_->CreateSoundBuffer(&bufferDesc, &p_ds_data->p_primary_sound_buffer_, NULL);
     if (FAILED(hr))
     {
         debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
         goto error;
     }
-    hr = (*pp_primary_buffer)->SetFormat(p_wfe);
+    hr = p_ds_data->p_primary_sound_buffer_->SetFormat(&p_ds_data->wfe_);
     if (FAILED(hr))
     {
         debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);
         goto error;
     }
-    get_buffer_caps(*pp_primary_buffer);
+    get_buffer_caps(p_ds_data->p_primary_sound_buffer_);
     /* Secondary buffer */
     bufferDesc.dwFlags = DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLPAN | DSBCAPS_CTRLFREQUENCY | DSBCAPS_GLOBALFOCUS | DSBCAPS_CTRLPOSITIONNOTIFY;
-    bufferDesc.dwBufferBytes = num_of_chunks*single_buffer_size; /* double buffering - one buffer being played, whereas the other is being filled in */
-    bufferDesc.lpwfxFormat = p_wfe;
-    hr = p_direct_sound_8->CreateSoundBuffer(&bufferDesc, &lpDSB, NULL);
+    bufferDesc.dwBufferBytes = p_ds_data->number_of_chunks_*p_ds_data->nSingleBufferSize_; /* double buffering - one buffer being played, whereas the other is being filled in */
+    bufferDesc.lpwfxFormat = &p_ds_data->wfe_;
+    hr = p_ds_data->p_direct_sound_8_->CreateSoundBuffer(&bufferDesc, &lpDSB, NULL);
     if (FAILED(hr))
     {
         debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
         goto error;
     }
-    hr = lpDSB->QueryInterface(IID_IDirectSoundBuffer8, (LPVOID*)pp_secondary_buffer);
+    hr = lpDSB->QueryInterface(IID_IDirectSoundBuffer8, (LPVOID*)&p_ds_data->p_secondary_sound_buffer_);
     if (FAILED(hr))
     {
         debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
         goto error;
     }
-    get_buffer_caps(*pp_secondary_buffer);
+    get_buffer_caps(p_ds_data->p_secondary_sound_buffer_);
     if (NULL != lpDSB)
     {
         lpDSB->Release();
@@ -271,15 +270,15 @@ static HRESULT create_buffers(LPDIRECTSOUND8 p_direct_sound_8, LPDIRECTSOUNDBUFF
     }
     return hr;
 error:
-    if (NULL != *pp_secondary_buffer)
+    if (NULL != p_ds_data->p_secondary_sound_buffer_)
     {
-        (*pp_secondary_buffer)->Release();  
-        *pp_secondary_buffer = NULL;    
+        p_ds_data->p_secondary_sound_buffer_->Release();
+        p_ds_data->p_secondary_sound_buffer_ = NULL;
     }
-    if (NULL != *pp_primary_buffer)
+    if (NULL != p_ds_data->p_primary_sound_buffer_)
     {
-        (*pp_primary_buffer)->Release();
-        *pp_primary_buffer = NULL;
+        p_ds_data->p_primary_sound_buffer_->Release();
+        p_ds_data->p_primary_sound_buffer_ = NULL;
     }
     if (NULL != lpDSB)
     {
@@ -337,9 +336,9 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound
         goto error;
     }
     CopyMemory(&p_ds_data->wfe_, p_WFE, sizeof(WAVEFORMATEX));
+    p_ds_data->wfe_.cbSize = sizeof(WAVEFORMATEX);
     p_ds_data->nSingleBufferSize_ = p_ds_data->play_settings_.play_buffer_size_;
-    hr = create_buffers(p_ds_data->p_direct_sound_8_, &p_ds_data->p_primary_sound_buffer_, &p_ds_data->p_secondary_sound_buffer_, &p_ds_data->wfe_, p_ds_data->nSingleBufferSize_,
-        p_ds_data->number_of_chunks_);
+    hr = create_buffers(p_ds_data);
     if (FAILED(hr))
     {
         debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
@@ -467,7 +466,7 @@ static void CALLBACK sTimerCallback(UINT uTimerID, UINT uMsg, DWORD dwUser,
     play_data_chunk(p_ds_data);
     perf_counter_mark_after(p_ds_data->counter1_);
     perf_counter_get_duration(p_ds_data->counter1_, &p_ds_data->total, &p_ds_data->avg);
-    debug_outputln_buffered(" %I64d, %I64d", (1000000*p_ds_data->total)/p_ds_data->freq, (1000000*p_ds_data->avg)/p_ds_data->freq);
+    //debug_outputln_buffered(" %I64d, %I64d", (1000000*p_ds_data->total)/p_ds_data->freq, (1000000*p_ds_data->avg)/p_ds_data->freq);
 }
 
 extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings const * p_settings, struct fifo_circular_buffer * fifo)

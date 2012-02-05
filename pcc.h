@@ -59,6 +59,7 @@
 #include <strsafe.h>
 #endif
 
+#include <memory.h>
 #include <assert.h>
 #include <assert.h>
 #include <limits.h>
