@@ -51,11 +51,6 @@ struct sender_dialog {
     struct sender_settings settings_; /*!< The sender settings object. Here are multicast group settings stored, and how many bytes to send with each packet. */
     TCHAR wav_preview_text_[WAV_PREVIEW_LENGTH+1];
     HWND hDlg_; /*!< Handle to the main dialog */
-    HWND hSettingsBtn; /*!< Handle to the 'Settings' button. */
-    HWND hJoinMcastBtn; /*!< Handle to the 'Join Multicast' button. */
-    HWND hLeaveMcast; /*!< Handle to the 'Join Multicast' button. */
-    HWND hStartSendingBtn; /*!< Handle to the 'Start sending' button. */
-    HWND hStopSendingBtn; /*!< Handle to the 'Stop sending' button. */
     HWND hTestToneCheck; /*!< Handle to the 'Test tone' check button. */
     HWND hOpenWav_; /*!< Handle to the 'Open WAV ...' box. */
     HWND hCloseWav_; /*!< Handle to the 'Close WAV ...' box. */
@@ -64,26 +59,24 @@ struct sender_dialog {
     HINSTANCE hInst_; /*!< @brief Global Application instance.  Required for various Windows related stuff. */
 };
 
-struct ui_controls_state_key {
-    sender_state_t state_;
-    UINT        nID_;
-};
-
 typedef void (*P_EXTRA_CHECK)(struct sender_dialog * p_dlg);
 
-struct ui_control_state_data {
+struct ui_control_state {
+    sender_state_t state_;
+    UINT        nID_;
     BOOL enabled_;
     BOOL checked_;
     P_EXTRA_CHECK extra_check_;
     HWND hwnd_;
 };
 
-struct ui_control_state {
-    struct ui_controls_state_key key_;
-    struct ui_control_state_data data_;
-};
+static void on_ui_tone_deselected(struct sender_dialog * p_dlg)
+{
+    p_dlg->wav_preview_text_[0] = _T('\0');
+    SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
+}
 
-static void check_which_tone_selected(struct sender_dialog * p_dlg)
+static void on_ui_tone_selected(struct sender_dialog * p_dlg)
 {
     assert(p_dlg->tone_selected_);
     switch(abstract_tone_get_type(p_dlg->tone_selected_))
@@ -108,54 +101,56 @@ static void check_which_tone_selected(struct sender_dialog * p_dlg)
             assert(0);
             break;
     }
+    abstract_tone_dump(p_dlg->tone_selected_, p_dlg->wav_preview_text_, WAV_PREVIEW_LENGTH);
+    SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
 }
 
 static struct ui_control_state controls_state_table[] = {
     /* Controls state for 'SENDER_INITIAL' state */
-    {{SENDER_INITIAL,ID_SENDER_SETTINGS}, {TRUE, FALSE, NULL}},
-    {{SENDER_INITIAL,ID_SENDER_JOINMCAST}, {TRUE, FALSE, NULL}},
-    {{SENDER_INITIAL,ID_SENDER_LEAVEMCAST}, {FALSE, FALSE, NULL}},
-    {{SENDER_INITIAL,ID_SENDER_STARTSENDING}, {FALSE, FALSE, NULL}},
-    {{SENDER_INITIAL,ID_SENDER_STOPSENDING}, {FALSE, FALSE, NULL}},
-    {{SENDER_INITIAL,ID_OPEN_WAV}, {TRUE, FALSE, NULL}},
-    {{SENDER_INITIAL,ID_CLOSE_WAV}, {FALSE, FALSE, NULL}},
-    {{SENDER_INITIAL,ID_TEST_TONE}, {TRUE, FALSE, NULL}},
+    {SENDER_INITIAL,ID_SENDER_SETTINGS, TRUE, FALSE, NULL},
+    {SENDER_INITIAL,ID_SENDER_JOINMCAST, TRUE, FALSE, NULL},
+    {SENDER_INITIAL,ID_SENDER_LEAVEMCAST, FALSE, FALSE, NULL},
+    {SENDER_INITIAL,ID_SENDER_STARTSENDING, FALSE, FALSE, NULL},
+    {SENDER_INITIAL,ID_SENDER_STOPSENDING, FALSE, FALSE, NULL},
+    {SENDER_INITIAL,ID_OPEN_WAV, TRUE, FALSE, NULL},
+    {SENDER_INITIAL,ID_CLOSE_WAV, FALSE, FALSE, &on_ui_tone_deselected},
+    {SENDER_INITIAL,ID_TEST_TONE, TRUE, FALSE, &on_ui_tone_deselected},
     /* Controls state for 'SENDER_TONE_SELECTED' state */
-    {{SENDER_TONE_SELECTED,ID_SENDER_SETTINGS}, {TRUE, FALSE, NULL}},
-    {{SENDER_TONE_SELECTED,ID_SENDER_JOINMCAST}, {TRUE, FALSE, NULL}},
-    {{SENDER_TONE_SELECTED,ID_SENDER_LEAVEMCAST}, {FALSE, FALSE, NULL}},
-    {{SENDER_TONE_SELECTED,ID_SENDER_STARTSENDING}, {FALSE, FALSE, NULL}},
-    {{SENDER_TONE_SELECTED,ID_SENDER_STOPSENDING}, {FALSE, FALSE, NULL}},
-    {{SENDER_TONE_SELECTED,ID_OPEN_WAV}, {FALSE, FALSE, NULL}},
-    {{SENDER_TONE_SELECTED,ID_CLOSE_WAV}, {FALSE, FALSE, &check_which_tone_selected}},
-    {{SENDER_TONE_SELECTED,ID_TEST_TONE}, {TRUE, FALSE, &check_which_tone_selected}},
+    {SENDER_TONE_SELECTED,ID_SENDER_SETTINGS, TRUE, FALSE, NULL},
+    {SENDER_TONE_SELECTED,ID_SENDER_JOINMCAST, TRUE, FALSE, NULL},
+    {SENDER_TONE_SELECTED,ID_SENDER_LEAVEMCAST, FALSE, FALSE, NULL},
+    {SENDER_TONE_SELECTED,ID_SENDER_STARTSENDING, FALSE, FALSE, NULL},
+    {SENDER_TONE_SELECTED,ID_SENDER_STOPSENDING, FALSE, FALSE, NULL},
+    {SENDER_TONE_SELECTED,ID_OPEN_WAV, FALSE, FALSE, NULL},
+    {SENDER_TONE_SELECTED,ID_CLOSE_WAV, FALSE, FALSE, &on_ui_tone_selected},
+    {SENDER_TONE_SELECTED,ID_TEST_TONE, TRUE, FALSE, &on_ui_tone_selected},
     /* Controls state for 'SENDER_MCAST_JOINED' state */
-    {{SENDER_MCAST_JOINED,ID_SENDER_SETTINGS}, {FALSE, FALSE, NULL}},
-    {{SENDER_MCAST_JOINED,ID_SENDER_JOINMCAST}, {FALSE, FALSE, NULL}},
-    {{SENDER_MCAST_JOINED,ID_SENDER_LEAVEMCAST}, {TRUE, FALSE, NULL}},
-    {{SENDER_MCAST_JOINED,ID_SENDER_STARTSENDING}, {TRUE, FALSE, NULL}},
-    {{SENDER_MCAST_JOINED,ID_SENDER_STOPSENDING}, {FALSE, FALSE, NULL}},
-    {{SENDER_MCAST_JOINED,ID_OPEN_WAV}, {TRUE, FALSE, NULL}},
-    {{SENDER_MCAST_JOINED,ID_CLOSE_WAV}, {FALSE, FALSE, NULL}},
-    {{SENDER_MCAST_JOINED,ID_TEST_TONE}, {TRUE, FALSE, NULL}},
+    {SENDER_MCAST_JOINED,ID_SENDER_SETTINGS, FALSE, FALSE, NULL},
+    {SENDER_MCAST_JOINED,ID_SENDER_JOINMCAST, FALSE, FALSE, NULL},
+    {SENDER_MCAST_JOINED,ID_SENDER_LEAVEMCAST, TRUE, FALSE, NULL},
+    {SENDER_MCAST_JOINED,ID_SENDER_STARTSENDING, TRUE, FALSE, NULL},
+    {SENDER_MCAST_JOINED,ID_SENDER_STOPSENDING, FALSE, FALSE, NULL},
+    {SENDER_MCAST_JOINED,ID_OPEN_WAV, TRUE, FALSE, NULL},
+    {SENDER_MCAST_JOINED,ID_CLOSE_WAV, FALSE, FALSE, &on_ui_tone_deselected},
+    {SENDER_MCAST_JOINED,ID_TEST_TONE, TRUE, FALSE, &on_ui_tone_deselected},
     /* Controls state for 'SENDER_MCASTJOINED_TONESELECTED' state */
-    {{SENDER_MCASTJOINED_TONESELECTED,ID_SENDER_SETTINGS}, {FALSE, FALSE, NULL}},
-    {{SENDER_MCASTJOINED_TONESELECTED,ID_SENDER_JOINMCAST}, {FALSE, FALSE, NULL}},
-    {{SENDER_MCASTJOINED_TONESELECTED,ID_SENDER_LEAVEMCAST}, {TRUE, FALSE, NULL}},
-    {{SENDER_MCASTJOINED_TONESELECTED,ID_SENDER_STARTSENDING}, {TRUE, FALSE, NULL}},
-    {{SENDER_MCASTJOINED_TONESELECTED,ID_SENDER_STOPSENDING}, {FALSE, FALSE, NULL}},
-    {{SENDER_MCASTJOINED_TONESELECTED,ID_OPEN_WAV}, {FALSE, FALSE, NULL}},
-    {{SENDER_MCASTJOINED_TONESELECTED,ID_CLOSE_WAV}, {FALSE, FALSE, &check_which_tone_selected}},
-    {{SENDER_MCASTJOINED_TONESELECTED,ID_TEST_TONE}, {FALSE, FALSE, &check_which_tone_selected}},
+    {SENDER_MCASTJOINED_TONESELECTED,ID_SENDER_SETTINGS, FALSE, FALSE, NULL},
+    {SENDER_MCASTJOINED_TONESELECTED,ID_SENDER_JOINMCAST, FALSE, FALSE, NULL},
+    {SENDER_MCASTJOINED_TONESELECTED,ID_SENDER_LEAVEMCAST, TRUE, FALSE, NULL},
+    {SENDER_MCASTJOINED_TONESELECTED,ID_SENDER_STARTSENDING, TRUE, FALSE, NULL},
+    {SENDER_MCASTJOINED_TONESELECTED,ID_SENDER_STOPSENDING, FALSE, FALSE, NULL},
+    {SENDER_MCASTJOINED_TONESELECTED,ID_OPEN_WAV, FALSE, FALSE, NULL},
+    {SENDER_MCASTJOINED_TONESELECTED,ID_CLOSE_WAV, FALSE, FALSE, &on_ui_tone_selected},
+    {SENDER_MCASTJOINED_TONESELECTED,ID_TEST_TONE, FALSE, FALSE, &on_ui_tone_selected},
     /* Controls state for 'SENDER_SENDING' state */
-    {{SENDER_SENDING,ID_SENDER_SETTINGS}, {FALSE, FALSE, NULL}},
-    {{SENDER_SENDING,ID_SENDER_JOINMCAST}, {FALSE, FALSE, NULL}},
-    {{SENDER_SENDING,ID_SENDER_LEAVEMCAST}, {FALSE, FALSE, NULL}},
-    {{SENDER_SENDING,ID_SENDER_STARTSENDING}, {FALSE, FALSE, NULL}},
-    {{SENDER_SENDING,ID_SENDER_STOPSENDING}, {TRUE, FALSE, NULL}},
-    {{SENDER_SENDING,ID_OPEN_WAV}, {FALSE, FALSE, NULL}},
-    {{SENDER_SENDING,ID_CLOSE_WAV}, {FALSE, FALSE, NULL}},
-    {{SENDER_SENDING,ID_TEST_TONE}, {FALSE, FALSE, NULL}},
+    {SENDER_SENDING,ID_SENDER_SETTINGS, FALSE, FALSE, NULL},
+    {SENDER_SENDING,ID_SENDER_JOINMCAST, FALSE, FALSE, NULL},
+    {SENDER_SENDING,ID_SENDER_LEAVEMCAST, FALSE, FALSE, NULL},
+    {SENDER_SENDING,ID_SENDER_STARTSENDING, FALSE, FALSE, NULL},
+    {SENDER_SENDING,ID_SENDER_STOPSENDING, TRUE, FALSE, NULL},
+    {SENDER_SENDING,ID_OPEN_WAV, FALSE, FALSE, NULL},
+    {SENDER_SENDING,ID_CLOSE_WAV, FALSE, FALSE, NULL},
+    {SENDER_SENDING,ID_TEST_TONE, FALSE, FALSE, NULL},
 };
 
 /**
@@ -176,43 +171,32 @@ static void UpdateUI(HWND hwnd)
     curr_state = sender_get_current_state(p_dlg->sender_);
     if (prev_state != curr_state)
     {
-        static const UINT control_IDs[] = {
-            ID_SENDER_SETTINGS, ID_SENDER_JOINMCAST, ID_SENDER_LEAVEMCAST, ID_SENDER_STARTSENDING, ID_SENDER_STOPSENDING, ID_TEST_TONE, ID_OPEN_WAV, ID_CLOSE_WAV
-        };
-        size_t idx = 0;
-        struct ui_controls_state_key key = { curr_state };
-        for (idx = 0; idx < sizeof(control_IDs)/sizeof(control_IDs[0]); ++idx)
+        struct ui_control_state * p_item = &controls_state_table[0];
+        struct ui_control_state const * const p_past_end = &controls_state_table[sizeof(controls_state_table)/sizeof(controls_state_table[0])];
+        /* Find all the rows matching current state */
+        for (; p_item != p_past_end; ++p_item)
         {
-            size_t data_idx;
-            key.nID_ = control_IDs[idx];
-            for (data_idx = 0; data_idx<sizeof(controls_state_table)/sizeof(controls_state_table[0]); ++data_idx)
+            if (curr_state == p_item->state_)
             {
-                /* Find a data */
-                if (0 == memcmp(&key, &controls_state_table[data_idx].key_, sizeof(struct ui_controls_state_key)))
+                UINT nMenuEnabled = MF_GRAYED, nMenuChecked = MF_UNCHECKED;
+                if (NULL == p_item->hwnd_)
                 {
-                    if (NULL != controls_state_table[data_idx].data_.extra_check_)
-                    {
-                        (*controls_state_table[data_idx].data_.extra_check_)(p_dlg);
-                    }
-                    else
-                    {
-                        UINT nMenuEnabled = MF_GRAYED, nMenuChecked = MF_UNCHECKED;
-                        if (NULL == controls_state_table[data_idx].data_.hwnd_)
-                        {
-                            controls_state_table[data_idx].data_.hwnd_ = GetDlgItem(p_dlg->hDlg_, control_IDs[idx]);
-                        }
-                        assert(controls_state_table[data_idx].data_.hwnd_);
-                        EnableWindow(controls_state_table[data_idx].data_.hwnd_, controls_state_table[data_idx].data_.enabled_);
-                        if (controls_state_table[data_idx].data_.enabled_)
-                            nMenuEnabled  = MF_ENABLED;
-                        if (controls_state_table[data_idx].data_.checked_)
-                            nMenuChecked = MF_CHECKED;
-                        EnableMenuItem(p_dlg->hMainMenu, control_IDs[idx], MF_BYCOMMAND | nMenuEnabled);
-                        CheckMenuItem(p_dlg->hMainMenu, control_IDs[idx], MF_BYCOMMAND | nMenuChecked);
-                        Button_SetCheck(controls_state_table[data_idx].data_.hwnd_, controls_state_table[data_idx].data_.checked_);
-                    }
-                } 
-            }
+                    p_item->hwnd_ = GetDlgItem(p_dlg->hDlg_, p_item->nID_);
+                }
+                assert(p_item->hwnd_);
+                EnableWindow(p_item->hwnd_, p_item->enabled_);
+                if (p_item->enabled_)
+                    nMenuEnabled  = MF_ENABLED;
+                if (p_item->checked_)
+                    nMenuChecked = MF_CHECKED;
+                EnableMenuItem(p_dlg->hMainMenu, p_item->nID_, MF_BYCOMMAND | nMenuEnabled);
+                CheckMenuItem(p_dlg->hMainMenu, p_item->nID_, MF_BYCOMMAND | nMenuChecked);
+                Button_SetCheck(p_item->hwnd_, p_item->checked_);
+                if (NULL != p_item->extra_check_)
+                {
+                    (*p_item->extra_check_)(p_dlg);
+                }
+            } 
         }
         prev_state = curr_state;
     }
@@ -238,16 +222,6 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(p_dlg);
     p_dlg->hDlg_ = hwnd;
     assert(p_dlg->hDlg_);
-    p_dlg->hSettingsBtn = GetDlgItem(hwnd, ID_SENDER_SETTINGS);    
-    assert(p_dlg->hSettingsBtn);
-    p_dlg->hJoinMcastBtn = GetDlgItem(hwnd, ID_SENDER_JOINMCAST);  
-    assert(p_dlg->hJoinMcastBtn);
-    p_dlg->hStartSendingBtn = GetDlgItem(hwnd, ID_SENDER_STARTSENDING);    
-    assert(p_dlg->hStartSendingBtn);
-    p_dlg->hStopSendingBtn = GetDlgItem(hwnd, ID_SENDER_STOPSENDING);  
-    assert(p_dlg->hStopSendingBtn);
-    p_dlg->hLeaveMcast = GetDlgItem(hwnd, ID_SENDER_LEAVEMCAST);
-    assert(p_dlg->hLeaveMcast );
     p_dlg->hMainMenu = GetMenu(hwnd);
     assert(p_dlg->hMainMenu);
     p_dlg->hTestToneCheck = GetDlgItem(hwnd, ID_TEST_TONE);
@@ -422,17 +396,14 @@ static long int on_idle(HWND hwnd, long int count)
 }
 
 /*!
- * @brief Windows entry point.
- * @param hInstance 
- * @param hPrevInstance
- * @param lpCmdLine
- * @param nCmdShow
- * @return
+ * @brief The user-provided entry point for a graphical Windows-based application.
+ * @param hInstance A handle to the current instance of the application.
+ * @param hPrevInstance A handle to the previous instance of the application. This parameter <b>is always</b> NULL. 
+ * @param lpCmdLine The command line for the application, excluding the program name. To retrieve the entire command line, use the GetCommandLine function. 
+ * @param nCmdShow Controls how the window is to be shown. This parameter can be one of the following values.
+ * @return If the function succeeds, terminating when it receives a WM_QUIT message, it should return the exit value contained in that message's wParam parameter. If the function terminates before entering the message loop, it should return zero. 
  */
-int PASCAL WinMain(HINSTANCE hInstance,
-        HINSTANCE hPrevInstance,
-        LPSTR lpCmdLine,
-        int nCmdShow)
+int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     HWND hDlg;
     HRESULT hr;
@@ -442,18 +413,18 @@ int PASCAL WinMain(HINSTANCE hInstance,
     ZeroMemory(&sender_dlg, sizeof(sender_dlg));
     /* Init Winsock */
     if ((rc = WSAStartup(MAKEWORD(1, 1), &wsd)) != 0)
-        return FALSE;
+        return 0;
     /* Init COM */
     hr = CoInitializeEx(0, COINIT_APARTMENTTHREADED);
     if (FAILED(hr))
-        return FALSE;
+        return 0;
     sender_dlg.hInst_ = hInstance;
     //required to use the common controls
     InitCommonControls();
     
     hDlg = CreateDialogParam(hInstance, MAKEINTRESOURCE(IDD_MAIN_SENDER), NULL, SenderDlgProc, (LPARAM)&sender_dlg);
     if (NULL == hDlg)
-        return (-1);
+        return 0;
     message_loop(hDlg, &on_idle);
     return (int)0;
 }
