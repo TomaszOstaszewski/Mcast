@@ -61,18 +61,18 @@ int dump_pcmwaveformat(TCHAR * psz_buffer, size_t buffer_size, PCMWAVEFORMAT con
 {
     HRESULT hr;
     hr = StringCchPrintf(psz_buffer, buffer_size, 
-            "%s\n"
-            "Channels: %hu\n"
-            "Samples per sec: %u\n"
-            "Avg Bytes per sec: %u\n"
-            "Block align: %hu\n"
-            "Bits per sample: %hu",
-            wFormatTag2String(p_wfe->wf.wFormatTag),
-            p_wfe->wf.nChannels, 
-            p_wfe->wf.nSamplesPerSec, 
-            p_wfe->wf.nAvgBytesPerSec, 
-            p_wfe->wf.nBlockAlign, 
-            p_wfe->wBitsPerSample
+            "%-30s : %-10s\n"
+            "%-30s : %u\n"
+            "%-30s : %hu\n"
+            "%-30s : %hu\n"
+            "%-30s : %u\n"
+            "%-30s : %hu\n",
+            "Type", wFormatTag2String(p_wfe->wf.wFormatTag),
+            "Sample rate [Hz]", p_wfe->wf.nSamplesPerSec, 
+            "Bits per sample", p_wfe->wBitsPerSample,
+            "Channels", p_wfe->wf.nChannels, 
+            "Avg rate [bytes/sec]", p_wfe->wf.nAvgBytesPerSec, 
+            "Block align", p_wfe->wf.nBlockAlign 
             );
     return SUCCEEDED(hr);
 }
@@ -86,6 +86,11 @@ void copy_pcmwaveformat_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, PCMWAVEFORMAT cons
 	p_dest->nBlockAlign 	= p_source->wf.nBlockAlign;
 	p_dest->wBitsPerSample	= p_source->wBitsPerSample;
 	p_dest->cbSize 			= sizeof(WAVEFORMATEX);
+}
+
+void waveformat_normalize(WAVEFORMATEX * p_dest)
+{
+	p_dest->nAvgBytesPerSec = p_dest->nSamplesPerSec * (p_dest->wBitsPerSample/8) * p_dest->nChannels ;
 }
 
 int init_master_riff(P_MASTER_RIFF_CONST * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName)

@@ -319,6 +319,15 @@ int dump_pcmwaveformat(TCHAR * psz_buffer, size_t buffer_size, PCMWAVEFORMAT con
 void copy_pcmwaveformat_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, PCMWAVEFORMAT const * p_source);
 
 /*!
+ * @brief Performs normalization of the WAVEFORMAT structure
+ * @details Normalization is recalculation of some members of the structure from other members of the structure.
+ * One of those settings is 'nAvgBytesPerSec', which has to be recaluclated from the others. It has to be valid, 
+ * otherwise some internal replay functions are likely to fail.
+ * @param[in, out] p_struct a pointer to the WAVEFORMATEX structure to be normalized.
+ */
+void waveformat_normalize(WAVEFORMATEX * p_struct);
+
+/*!
  * @brief Loads the WAV file from the resources.
  * @details The WAV files are stored as binary data in the resources.  
  * @param[out] pp_chunk this pointer will be written with a reference to the memory location, where the WAV file is stored. 
