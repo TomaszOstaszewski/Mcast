@@ -66,6 +66,7 @@ struct abstract_tone * abstract_tone_create(tone_type_t eType, LPCTSTR psz_tone_
  */
 void abstract_tone_destroy(struct abstract_tone * p_tone);
 
+#if defined DEBUG
 /*!
  * @brief Returns tone type.
  * @details Although such a method is usually bashed by OO evangelists, I decided to use it.
@@ -76,6 +77,7 @@ void abstract_tone_destroy(struct abstract_tone * p_tone);
  * @sa abstract_tone_create
  */
 tone_type_t abstract_tone_get_type(struct abstract_tone * p_tone);
+#endif
 
 /*!
  * @brief Returns the PCMWAVEFORMAT structure for the tone.
