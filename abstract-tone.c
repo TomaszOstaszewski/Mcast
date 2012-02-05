@@ -130,15 +130,17 @@ size_t abstract_tone_dump(struct abstract_tone const * p_tone, LPTSTR pszBuffer,
             {
                 hr = StringCchLength(pszBuffer, size, &retval); 
             }
-            assert(SUCCEEDED(hr));
-            break;
+           assert(SUCCEEDED(hr));
+           pszBuffer += retval;
+           *pszBuffer = _T('\n');
+           pszBuffer++;
+           break;
         default:
             assert(0);
             break;
     }
     if (SUCCEEDED(hr))
     {
-        pszBuffer += retval;
         dump_pcmwaveformat(pszBuffer, size, abstract_tone_get_pcmwaveformat(p_tone));
     } 
     return retval;
