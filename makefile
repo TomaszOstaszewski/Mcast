@@ -157,29 +157,67 @@ $(OUTDIR)\ex-perf-counter.exe: $(OUTDIR_OBJ)\ex-perf-counter.obj $(OUTDIR_OBJ)\p
 	@ECHO $@
 	$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map /PDB:$(OUTDIR_OBJ)\$(@B).pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
 
-$(OUTDIR)\dsoundplay.lib: \
- $(OUTDIR_OBJ)\version.res \
- $(OUTDIR_OBJ)\dsoundplay.obj \
- $(OUTDIR_OBJ)\debug_helpers.obj \
- $(OUTDIR_OBJ)\input-buffer.obj \
- $(OUTDIR_OBJ)\fifo-circular-buffer.obj \
- $(OUTDIR_OBJ)\receiver-settings.obj \
- $(OUTDIR_OBJ)\mcast-settings.obj \
- $(OUTDIR_OBJ)\play-settings.obj \
- $(OUTDIR_OBJ)\perf-counter-itf.obj \
+$(OUTDIR)\dsoundplay.lib:\
+ $(OUTDIR_OBJ)\version.res\
+ $(OUTDIR_OBJ)\dsoundplay.obj\
+ $(OUTDIR_OBJ)\debug_helpers.obj\
+ $(OUTDIR_OBJ)\input-buffer.obj\
+ $(OUTDIR_OBJ)\fifo-circular-buffer.obj\
+ $(OUTDIR_OBJ)\receiver-settings.obj\
+ $(OUTDIR_OBJ)\mcast-settings.obj\
+ $(OUTDIR_OBJ)\play-settings.obj\
+ $(OUTDIR_OBJ)\perf-counter-itf.obj\
  $(OUTDIR_OBJ)\wave_utils.obj
 	@ECHO $@
 	$(link) /DEF:dsoundplay.def /dll $(ldebug) $(guiflags) /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$(OUTDIR)\$(@B).dll $** $(guilibs) dsound.lib winmm.lib dxguid.lib 
 
 $(OUTDIR)\receiver.exe: $(OUTDIR)\dsoundplay.lib
 
-$(OUTDIR)\receiver.exe: $(OUTDIR_OBJ)\version.res $(OUTDIR_OBJ)\receiver.res $(OUTDIR_OBJ)\common-dialogs.res $(OUTDIR_OBJ)\mcast-receiver-dlg.obj $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\input-buffer.obj  $(OUTDIR_OBJ)\mcast_setup.obj $(OUTDIR_OBJ)\mcast_utils.obj $(OUTDIR_OBJ)\timeofday.obj $(OUTDIR_OBJ)\resolve.obj $(OUTDIR_OBJ)\message-loop.obj  $(OUTDIR_OBJ)\mcast-receiver-state-machine.obj $(OUTDIR_OBJ)\receiver-settings.obj $(OUTDIR_OBJ)\receiver-settings-dlg.obj $(OUTDIR_OBJ)\mcast-settings.obj $(OUTDIR_OBJ)\mcast-settings-dlg.obj $(OUTDIR_OBJ)\play-settings.obj $(OUTDIR_OBJ)\about-dialog.obj $(OUTDIR_OBJ)\perf-counter-itf.obj $(OUTDIR_OBJ)\dialog-utils.obj $(OUTDIR_OBJ)\wave_utils.obj
+$(OUTDIR)\receiver.exe: \
+ $(OUTDIR_OBJ)\version.res\
+ $(OUTDIR_OBJ)\receiver.res\
+ $(OUTDIR_OBJ)\common-dialogs.res\
+ $(OUTDIR_OBJ)\timeofday.obj\
+ $(OUTDIR_OBJ)\mcast_setup.obj\
+ $(OUTDIR_OBJ)\mcast_utils.obj\
+ $(OUTDIR_OBJ)\resolve.obj\
+ $(OUTDIR_OBJ)\message-loop.obj\
+ $(OUTDIR_OBJ)\mcast-receiver-state-machine.obj\
+ $(OUTDIR_OBJ)\receiver-settings.obj\
+ $(OUTDIR_OBJ)\mcast-settings.obj\
+ $(OUTDIR_OBJ)\play-settings.obj\
+ $(OUTDIR_OBJ)\mcast-receiver-dlg.obj\
+ $(OUTDIR_OBJ)\mcast-settings-dlg.obj\
+ $(OUTDIR_OBJ)\receiver-settings-dlg.obj\
+ $(OUTDIR_OBJ)\about-dialog.obj\
+ $(OUTDIR_OBJ)\perf-counter-itf.obj\
+ $(OUTDIR_OBJ)\dialog-utils.obj
 	@ECHO $@
-	$(link) $(ldebug) $(guiflags) /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib Version.lib
+	$(link) $(ldebug) $(guiflags) /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$@ $** $(guilibs) ComCtl32.lib ole32.lib Version.lib
 
-$(OUTDIR)\sender.exe: $(OUTDIR_OBJ)\version.res $(OUTDIR_OBJ)\sender.res $(OUTDIR_OBJ)\common-dialogs.res $(OUTDIR_OBJ)\timeofday.obj $(OUTDIR_OBJ)\mcast_utils.obj $(OUTDIR_OBJ)\resolve.obj $(OUTDIR_OBJ)\mcast_setup.obj $(OUTDIR_OBJ)\mcast-sender-dlg.obj $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\message-loop.obj $(OUTDIR_OBJ)\wave_utils.obj $(OUTDIR_OBJ)\mcast-sender-state-machine.obj $(OUTDIR_OBJ)\sender-settings-dlg.obj $(OUTDIR_OBJ)\sender-settings.obj $(OUTDIR_OBJ)\mcast-settings.obj $(OUTDIR_OBJ)\mcast-settings-dlg.obj $(OUTDIR_OBJ)\about-dialog.obj $(OUTDIR_OBJ)\perf-counter-itf.obj $(OUTDIR_OBJ)\dialog-utils.obj $(OUTDIR_OBJ)\abstract-tone.obj
+$(OUTDIR)\sender.exe: $(OUTDIR)\dsoundplay.lib
+
+$(OUTDIR)\sender.exe: \
+ $(OUTDIR_OBJ)\version.res\
+ $(OUTDIR_OBJ)\sender.res\
+ $(OUTDIR_OBJ)\common-dialogs.res\
+ $(OUTDIR_OBJ)\timeofday.obj\
+ $(OUTDIR_OBJ)\mcast_utils.obj\
+ $(OUTDIR_OBJ)\resolve.obj\
+ $(OUTDIR_OBJ)\mcast_setup.obj\
+ $(OUTDIR_OBJ)\message-loop.obj\
+ $(OUTDIR_OBJ)\mcast-sender-state-machine.obj\
+ $(OUTDIR_OBJ)\sender-settings.obj\
+ $(OUTDIR_OBJ)\dialog-utils.obj\
+ $(OUTDIR_OBJ)\mcast-settings.obj\
+ $(OUTDIR_OBJ)\mcast-sender-dlg.obj\
+ $(OUTDIR_OBJ)\sender-settings-dlg.obj\
+ $(OUTDIR_OBJ)\mcast-settings-dlg.obj\
+ $(OUTDIR_OBJ)\about-dialog.obj\
+ $(OUTDIR_OBJ)\perf-counter-itf.obj\
+ $(OUTDIR_OBJ)\abstract-tone.obj
 	@ECHO $@
-	$(link) $(ldebug) $(guiflags) /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib Version.lib
+	$(link) $(ldebug) $(guiflags) /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$@ $** $(guilibs) ComCtl32.lib winmm.lib dxguid.lib ole32.lib Version.lib
 
 install: $(OUTDIR)\dsoundplay.dll
 	@ECHO $(OUTDIR)\dsoundplay.dll '->' .\dsoundplay.dll 
