@@ -389,9 +389,9 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                 case ID_SENDER_LEAVEMCAST:
                     if (UI_SENDER_MCASTJOINED == p_dlg->ui_state_ && sender_handle_mcastleave(p_dlg->sender_))
                         p_dlg->ui_state_ = UI_SENDER_INITIAL;
-                    if (UI_SENDER_MCASTJOINED_TESTTONESELECTED == p_dlg->ui_state_ && sender_handle_mcastleave(p_dlg->sender_))
+                    else if (UI_SENDER_MCASTJOINED_TESTTONESELECTED == p_dlg->ui_state_ && sender_handle_mcastleave(p_dlg->sender_))
                         p_dlg->ui_state_ = UI_SENDER_TESTTONE_SELECTED;
-                    if (UI_SENDER_MCASTJOINED_EXTTONESELECTED == p_dlg->ui_state_ && sender_handle_mcastleave(p_dlg->sender_))
+                    else if (UI_SENDER_MCASTJOINED_EXTTONESELECTED == p_dlg->ui_state_ && sender_handle_mcastleave(p_dlg->sender_))
                         p_dlg->ui_state_ = UI_SENDER_EXTTONE_SELECTED;
                     else
                         assert(0);
@@ -407,7 +407,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                 case ID_SENDER_STOPSENDING:
                     if ( UI_SENDER_SENDING_TESTTONESELECTED == p_dlg->ui_state_ && sender_handle_stopsending(p_dlg->sender_))
                         p_dlg->ui_state_ = UI_SENDER_MCASTJOINED_TESTTONESELECTED;
-                    if (UI_SENDER_SENDING_EXTTONESELECTED == p_dlg->ui_state_ && sender_handle_stopsending(p_dlg->sender_))
+                    else if (UI_SENDER_SENDING_EXTTONESELECTED == p_dlg->ui_state_ && sender_handle_stopsending(p_dlg->sender_))
                         p_dlg->ui_state_ = UI_SENDER_MCASTJOINED_EXTTONESELECTED;
                     else
                         assert(0);
