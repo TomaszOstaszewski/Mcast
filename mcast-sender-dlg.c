@@ -381,7 +381,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     p_dlg->tone_selected_ = NULL;
                     break;
                case IDM_SENDER_ABOUT:
-                    display_about_dialog(hDlg);
+                    display_about_dialog(hDlg, _T("Sender"));
                     break;
                 case IDOK:
                 case IDCANCEL: 
