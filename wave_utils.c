@@ -60,12 +60,18 @@ static const char * wFormatTag2String(WORD wFormatTag)
 int dump_pcmwaveformat(TCHAR * psz_buffer, size_t buffer_size, PCMWAVEFORMAT const * p_wfe)
 {
     HRESULT hr;
-    hr = StringCchPrintf(psz_buffer, buffer_size, "%p\n" 
-            "{%hx, %s}\n"
-            "%d %d %d %d\n"
-            "%d", 
-            p_wfe, p_wfe->wf.wFormatTag, wFormatTag2String(p_wfe->wf.wFormatTag),
-            p_wfe->wf.nChannels, p_wfe->wf.nSamplesPerSec, p_wfe->wf.nAvgBytesPerSec, p_wfe->wf.nBlockAlign, 
+    hr = StringCchPrintf(psz_buffer, buffer_size, 
+            "%s\n"
+            "Channels: %hu\n"
+            "Samples per sec: %u\n"
+            "Avg Bytes per sec: %u\n"
+            "Block align: %hu\n"
+            "Bits per sample: %hu",
+            wFormatTag2String(p_wfe->wf.wFormatTag),
+            p_wfe->wf.nChannels, 
+            p_wfe->wf.nSamplesPerSec, 
+            p_wfe->wf.nAvgBytesPerSec, 
+            p_wfe->wf.nBlockAlign, 
             p_wfe->wBitsPerSample
             );
     return SUCCEEDED(hr);

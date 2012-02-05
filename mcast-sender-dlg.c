@@ -70,6 +70,20 @@ struct ui_control_state {
     HWND hwnd_;
 };
 
+struct ui_focus {
+    sender_state_t state_;
+    UINT nID_;
+    HWND hwnd_;
+};
+
+static struct ui_focus focus_table[] = {
+    { SENDER_INITIAL, ID_TEST_TONE },
+    { SENDER_TONE_SELECTED, ID_SENDER_JOINMCAST },
+    { SENDER_MCAST_JOINED, ID_TEST_TONE },
+    { SENDER_MCASTJOINED_TONESELECTED, ID_SENDER_STARTSENDING },
+    { SENDER_SENDING, ID_SENDER_STOPSENDING },
+};
+ 
 static void on_ui_tone_deselected(struct sender_dialog * p_dlg)
 {
     p_dlg->wav_preview_text_[0] = _T('\0');
@@ -128,7 +142,7 @@ static struct ui_control_state controls_state_table[] = {
     {SENDER_MCAST_JOINED,ID_SENDER_SETTINGS, FALSE, FALSE, NULL},
     {SENDER_MCAST_JOINED,ID_SENDER_JOINMCAST, FALSE, FALSE, NULL},
     {SENDER_MCAST_JOINED,ID_SENDER_LEAVEMCAST, TRUE, FALSE, NULL},
-    {SENDER_MCAST_JOINED,ID_SENDER_STARTSENDING, TRUE, FALSE, NULL},
+    {SENDER_MCAST_JOINED,ID_SENDER_STARTSENDING, FALSE, FALSE, NULL},
     {SENDER_MCAST_JOINED,ID_SENDER_STOPSENDING, FALSE, FALSE, NULL},
     {SENDER_MCAST_JOINED,ID_OPEN_WAV, TRUE, FALSE, NULL},
     {SENDER_MCAST_JOINED,ID_CLOSE_WAV, FALSE, FALSE, &on_ui_tone_deselected},
@@ -171,33 +185,50 @@ static void UpdateUI(HWND hwnd)
     curr_state = sender_get_current_state(p_dlg->sender_);
     if (prev_state != curr_state)
     {
-        struct ui_control_state * p_item = &controls_state_table[0];
-        struct ui_control_state const * const p_past_end = &controls_state_table[sizeof(controls_state_table)/sizeof(controls_state_table[0])];
-        /* Find all the rows matching current state */
-        for (; p_item != p_past_end; ++p_item)
         {
-            if (curr_state == p_item->state_)
+            struct ui_control_state * p_item = &controls_state_table[0];
+            struct ui_control_state const * const p_past_end = &controls_state_table[sizeof(controls_state_table)/sizeof(controls_state_table[0])];
+            /* Find all the rows matching current state */
+            for (; p_item != p_past_end; ++p_item)
             {
-                UINT nMenuEnabled = MF_GRAYED, nMenuChecked = MF_UNCHECKED;
-                if (NULL == p_item->hwnd_)
+                if (curr_state == p_item->state_)
                 {
-                    p_item->hwnd_ = GetDlgItem(p_dlg->hDlg_, p_item->nID_);
-                }
-                assert(p_item->hwnd_);
-                EnableWindow(p_item->hwnd_, p_item->enabled_);
-                if (p_item->enabled_)
-                    nMenuEnabled  = MF_ENABLED;
-                if (p_item->checked_)
-                    nMenuChecked = MF_CHECKED;
-                EnableMenuItem(p_dlg->hMainMenu, p_item->nID_, MF_BYCOMMAND | nMenuEnabled);
-                CheckMenuItem(p_dlg->hMainMenu, p_item->nID_, MF_BYCOMMAND | nMenuChecked);
-                Button_SetCheck(p_item->hwnd_, p_item->checked_);
-                if (NULL != p_item->extra_check_)
+                    UINT nMenuEnabled = MF_GRAYED, nMenuChecked = MF_UNCHECKED;
+                    if (NULL == p_item->hwnd_)
+                    {
+                        p_item->hwnd_ = GetDlgItem(p_dlg->hDlg_, p_item->nID_);
+                    }
+                    assert(p_item->hwnd_);
+                    EnableWindow(p_item->hwnd_, p_item->enabled_);
+                    if (p_item->enabled_)
+                        nMenuEnabled  = MF_ENABLED;
+                    if (p_item->checked_)
+                        nMenuChecked = MF_CHECKED;
+                    EnableMenuItem(p_dlg->hMainMenu, p_item->nID_, MF_BYCOMMAND | nMenuEnabled);
+                    CheckMenuItem(p_dlg->hMainMenu, p_item->nID_, MF_BYCOMMAND | nMenuChecked);
+                    Button_SetCheck(p_item->hwnd_, p_item->checked_);
+                    if (NULL != p_item->extra_check_)
+                    {
+                        (*p_item->extra_check_)(p_dlg);
+                    }
+                } 
+            }
+        }
+        /* Set the focus */
+        {
+            struct ui_focus * p_item = &focus_table[0];
+            struct ui_focus const * const p_past_end = &focus_table[sizeof(focus_table)/sizeof(focus_table[0])];
+            for (; p_item != p_past_end; ++p_item)
+            {
+                if (p_item->state_ == curr_state)
                 {
-                    (*p_item->extra_check_)(p_dlg);
+                    if (NULL == p_item->hwnd_)
+                        p_item->hwnd_ = GetDlgItem(p_dlg->hDlg_, p_item->nID_);
+                    assert(p_item->hwnd_);
+                    SetFocus(p_item->hwnd_); 
                 }
             } 
-        }
+        }    
         prev_state = curr_state;
     }
 }
