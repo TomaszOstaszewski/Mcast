@@ -37,8 +37,9 @@ extern "C" {
  * @brief Displays an "About ..." dialog.
  * @details 
  * @param[in] hWndParent handle to the parent window.
+ * @param[in] psz_dialog_caption a NULL terminated string that is a dialog caption.
  */
-void display_about_dialog(HWND hWndParent);
+void display_about_dialog(HWND hWndParent, LPCTSTR psz_dialog_caption);
 
 #if defined __cplusplus
 }

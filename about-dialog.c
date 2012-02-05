@@ -40,17 +40,19 @@ struct about_dlg_data {
     HWND hModuleName_; /*!<  */
     TCHAR module_name[MAX_PATH+1]; /*!< */
     TCHAR module_version_string[MODULE_VERSION_STRING_LENGTH]; /*! */
+    LPCTSTR pszCaption_;
 };
 
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
     struct about_dlg_data * p_dlg;
+    HRESULT hr = E_FAIL;
     DWORD dwSize;
     uint8_t * data;
     UINT                uiVerLen = 0;
     VS_FIXEDFILEINFO*   pFixedInfo = 0;     // pointer to fixed file info structure
-    assert(p_dlg);
     p_dlg = (struct about_dlg_data*)lParam;
+    assert(p_dlg);
     SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)p_dlg);
 
     p_dlg->hVersion_ = GetDlgItem(hwnd, IDC_VERSION_INFO);
@@ -67,19 +69,23 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     data = alloca(dwSize);
     GetFileVersionInfo(p_dlg->module_name, 0, dwSize, (void *)&data[0]);
     // get the fixed file info (language-independend) 
-    if( 0 != VerQueryValue(&data[0], TEXT("\\"), (void**)&pFixedInfo, (UINT *)&uiVerLen))
+    if (0 != VerQueryValue(&data[0], TEXT("\\"), (void**)&pFixedInfo, (UINT *)&uiVerLen))
     {
-        StringCchPrintf(p_dlg->module_version_string, MODULE_VERSION_STRING_LENGTH, "%u.%u.%u.%u", 
+        hr = StringCchPrintf(p_dlg->module_version_string, MODULE_VERSION_STRING_LENGTH, "%u.%u.%u.%u", 
                 HIWORD (pFixedInfo->dwProductVersionMS),
                 LOWORD (pFixedInfo->dwProductVersionMS),
                 HIWORD (pFixedInfo->dwProductVersionLS),
                 LOWORD (pFixedInfo->dwProductVersionLS));
+    }
+    if (SUCCEEDED(hr))
+    {
         SetWindowText(p_dlg->hVersion_, p_dlg->module_version_string);
     }
     else
     {
         debug_outputln("%s %u : %u", __FILE__, __LINE__, GetLastError());
     }
+    SetWindowText(hwnd, p_dlg->pszCaption_);
     return TRUE;
 } 
 
@@ -107,10 +113,11 @@ static INT_PTR CALLBACK VersionDialogProc(HWND hDlg, UINT uMessage, WPARAM wPara
     return FALSE;
 }
 
-void display_about_dialog(HWND hWndParent)
+void display_about_dialog(HWND hWndParent, LPCTSTR pszCaption)
 {
     struct about_dlg_data dlg;
     ZeroMemory(&dlg, sizeof(dlg));
+    dlg.pszCaption_ = pszCaption;
 	DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_VERSION_DIALOG), hWndParent, VersionDialogProc, (LPARAM)&dlg);
 }
 
