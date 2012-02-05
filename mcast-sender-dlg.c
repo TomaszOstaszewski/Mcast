@@ -46,14 +46,14 @@
  * @brief Defines all the possible states of the UI.
  */
 typedef enum e_sender_ui_state {
-    UI_SENDER_INITIAL = 0,
-    UI_SENDER_MCASTJOINED,
-    UI_SENDER_TESTTONE_SELECTED,
-    UI_SENDER_EXTTONE_SELECTED,
-    UI_SENDER_MCASTJOINED_TESTTONESELECTED,
-    UI_SENDER_MCASTJOINED_EXTTONESELECTED,
-    UI_SENDER_SENDING_TESTTONESELECTED,
-    UI_SENDER_SENDING_EXTTONESELECTED,
+    UI_SENDER_INITIAL = 0, /*!< Initial state, no tone is selected, no mcast group joined, not sending anything. */
+    UI_SENDER_MCASTJOINED, /*!< The multicast group has been joined, but no tone is selected. */
+    UI_SENDER_TESTTONE_SELECTED, /*!< The test tone is selected. */
+    UI_SENDER_EXTTONE_SELECTED, /*!<  The external tone is selected. */
+    UI_SENDER_MCASTJOINED_TESTTONESELECTED, /*!< The multicast group has been joined, the test tone is selected.*/
+    UI_SENDER_MCASTJOINED_EXTTONESELECTED, /*!< The multicast group has been joined, the external tone is selected.*/
+    UI_SENDER_SENDING_TESTTONESELECTED, /*!< Sending out the test tone. */
+    UI_SENDER_SENDING_EXTTONESELECTED, /*!< Sending out the external tone.*/
 } sender_ui_state_t;
 
 /*!
@@ -66,30 +66,34 @@ struct sender_dialog {
     sender_ui_state_t ui_state_;
     TCHAR wav_preview_text_[WAV_PREVIEW_LENGTH+1];
     HWND hDlg_; /*!< Handle to the main dialog */
-    HWND hTestToneCheck; /*!< Handle to the 'Test tone' check button. */
-    HWND hOpenWav_; /*!< Handle to the 'Open WAV ...' box. */
-    HWND hCloseWav_; /*!< Handle to the 'Close WAV ...' box. */
     HWND hWavPreview_; /*!< Handle to the static control in which WAV file details will be displayed. */
     HMENU hMainMenu; /*!< Handle to the main menu. */
     HINSTANCE hInst_; /*!< @brief Global Application instance.  Required for various Windows related stuff. */
 };
 
-typedef void (*P_EXTRA_CHECK)(struct sender_dialog * p_dlg);
-
+/*!
+ * @brief Defines the state of the UI control.
+ */
 struct ui_control_state {
-    sender_ui_state_t state_;
-    UINT        nID_;
-    BOOL enabled_;
-    BOOL checked_;
-    HWND hwnd_;
+    sender_ui_state_t state_; /*!< The UI state */
+    UINT nID_; /*!< Control's ID. The control with this ID will be enabled/disabled and checked/unchecked upon entering the UI state */
+    BOOL enabled_; /*!< Whether or not to enable item. */
+    BOOL checked_; /*!< Whether or not to check item. */
+    HWND hwnd_; /*!< Handle to the control. This entry holds the cached value, so that one can avoid calling GetDlgItem() every time. */
 };
 
+/*!
+ * @brief Defines the entity that collection of which makes up the focus table.
+ */
 struct ui_focus {
-    sender_ui_state_t state_;
-    UINT nID_;
-    HWND hwnd_;
+    sender_ui_state_t state_; /*!< The UI state */
+    UINT nID_; /*!< The control ID. This control will get the focus for given UI state. */
+    HWND hwnd_; /*!< Handle to the control. This entry holds the cached value, so that one can avoid calling GetDlgItem() every time. */
 };
 
+/*!
+ * @brief Defines which control shall get the inital focus in each UI state.
+ */
 static struct ui_focus focus_table[] = {
     {UI_SENDER_INITIAL, ID_TEST_TONE},
     {UI_SENDER_MCASTJOINED, ID_TEST_TONE},
@@ -101,19 +105,9 @@ static struct ui_focus focus_table[] = {
     {UI_SENDER_SENDING_EXTTONESELECTED, ID_SENDER_STOPSENDING},
 };
  
-static void on_ui_tone_deselected(struct sender_dialog * p_dlg)
-{
-    p_dlg->wav_preview_text_[0] = _T('\0');
-    SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
-}
-
-static void on_ui_tone_selected(struct sender_dialog * p_dlg)
-{
-    assert(p_dlg->tone_selected_);
-    abstract_tone_dump(p_dlg->tone_selected_, p_dlg->wav_preview_text_, WAV_PREVIEW_LENGTH);
-    SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
-}
-
+/*!
+ * @brief Defines how controls shall be ghosted-out/enabled or checked in each UI state.
+ */
 static struct ui_control_state controls_state_table[] = {
     /* Controls state for 'UI_SENDER_INITIAL' state */
     {UI_SENDER_INITIAL,ID_SENDER_SETTINGS, TRUE, FALSE},
@@ -247,48 +241,6 @@ static void UpdateUI(HWND hwnd)
     }
 }
 
-/*!
- * @brief Handler for WM_INITDIALOG message.
- * @details This handler does as follows:
- * \li Initializes the control handles
- * \li Presents the settings on the UI
- * @param[in] hwnd handle to the window that received WM_INITDIALOG message
- * @param[in] hwndFocus handle to the Window that is to be got the keyboard focus upon dialog initalizing. 
- * @param[in] lParam client specific parameter passed to DialogBoxParam function. This is a way to pass to the
- * handler some client specific data.
- * @param returns TRUE if the window indicated as hWndFocus is to get keyboard focus. Returns FALSE otherwise.
- */
-static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
-{
-    int result;
-    struct sender_dialog * p_dlg;
-    p_dlg = (struct sender_dialog*)lParam;
-    SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)p_dlg);
-    assert(p_dlg);
-    p_dlg->hDlg_ = hwnd;
-    assert(p_dlg->hDlg_);
-    p_dlg->hMainMenu = GetMenu(hwnd);
-    assert(p_dlg->hMainMenu);
-    p_dlg->hTestToneCheck = GetDlgItem(hwnd, ID_TEST_TONE);
-    assert(p_dlg->hTestToneCheck);
-    p_dlg->hOpenWav_ = GetDlgItem(hwnd, ID_OPEN_WAV);
-    assert(p_dlg->hOpenWav_);
-    p_dlg->hCloseWav_ = GetDlgItem(hwnd, ID_CLOSE_WAV);
-    assert(p_dlg->hCloseWav_);
-    p_dlg->hWavPreview_ = GetDlgItem(hwnd, IDC_WAV_PREVIEW);
-    assert(p_dlg->hWavPreview_);
-    result = get_default_settings(&p_dlg->settings_);
-    assert(result);
-    p_dlg->sender_ = sender_create(&p_dlg->settings_);
-    assert(p_dlg->sender_);
-    p_dlg->tone_selected_ = abstract_tone_create(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
-    assert(p_dlg->tone_selected_);
-    if (sender_handle_selecttone(p_dlg->sender_, p_dlg->tone_selected_))
-        p_dlg->ui_state_ = UI_SENDER_TESTTONE_SELECTED;
-    UpdateUI(hwnd);
-    return TRUE;
-}
-
 static LPCTSTR getWavFileName(HWND hwnd)
 {
     static TCHAR pszFileNameBuffer[MAX_PATH+1];
@@ -315,6 +267,8 @@ static int handle_select_tone(struct sender_dialog * p_dlg, tone_type_t e_type, 
 {
     p_dlg->tone_selected_ = abstract_tone_create(e_type, tone_id);
     assert(p_dlg->tone_selected_);
+    abstract_tone_dump(p_dlg->tone_selected_, p_dlg->wav_preview_text_, WAV_PREVIEW_LENGTH);
+    SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
     return sender_handle_selecttone(p_dlg->sender_, p_dlg->tone_selected_);
 }
 
@@ -336,8 +290,46 @@ static int handle_close_tone(struct sender_dialog * p_dlg)
     sender_handle_deselecttone(p_dlg->sender_);
     abstract_tone_destroy(p_dlg->tone_selected_);
     p_dlg->tone_selected_ = NULL;
+    p_dlg->wav_preview_text_[0] = _T('\0');
+    SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
     return 1;
 } 
+
+/*!
+ * @brief Handler for WM_INITDIALOG message.
+ * @details This handler does as follows:
+ * \li Initializes the control handles
+ * \li Presents the settings on the UI
+ * @param[in] hwnd handle to the window that received WM_INITDIALOG message
+ * @param[in] hwndFocus handle to the Window that is to be got the keyboard focus upon dialog initalizing. 
+ * @param[in] lParam client specific parameter passed to DialogBoxParam function. This is a way to pass to the
+ * handler some client specific data.
+ * @param returns TRUE if the window indicated as hWndFocus is to get keyboard focus. Returns FALSE otherwise.
+ */
+static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
+{
+    int result;
+    struct sender_dialog * p_dlg;
+    p_dlg = (struct sender_dialog*)lParam;
+    SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)p_dlg);
+    assert(p_dlg);
+    p_dlg->hDlg_ = hwnd;
+    assert(p_dlg->hDlg_);
+    p_dlg->hMainMenu = GetMenu(hwnd);
+    assert(p_dlg->hMainMenu);
+    p_dlg->hWavPreview_ = GetDlgItem(hwnd, IDC_WAV_PREVIEW);
+    assert(p_dlg->hWavPreview_);
+    result = get_default_settings(&p_dlg->settings_);
+    assert(result);
+    p_dlg->sender_ = sender_create(&p_dlg->settings_);
+    assert(p_dlg->sender_);
+    result = handle_select_tone(p_dlg, EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
+    assert(result);
+    if (result)
+        p_dlg->ui_state_ = UI_SENDER_TESTTONE_SELECTED;
+    UpdateUI(hwnd);
+    return TRUE;
+}
 
 /**
  * @brief Sender dialog message processing routine.
@@ -369,8 +361,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                         case UI_SENDER_INITIAL:
                         case UI_SENDER_TESTTONE_SELECTED:
                         case UI_SENDER_EXTTONE_SELECTED:
-                            /* Open up the settings dialog with the MCAST settings parameters */
-                            if (sender_settings_from_dialog(hDlg, &p_dlg->settings_))
+                            if (sender_settings_from_dialog(hDlg, &p_dlg->settings_)) /* Open up the settings dialog with the MCAST settings parameters */
                             {
                                 if (p_dlg->sender_)
                                     sender_destroy(p_dlg->sender_);
@@ -379,7 +370,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                             }
                             break;
                         default:
-                            debug_outputln("%s %4.4u", __FILE__, __LINE__);
+                            assert(0);
                             break;
                     }
                     break;
