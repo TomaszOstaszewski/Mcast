@@ -1,0 +1,22 @@
+
+#include <windows.h>
+#include <commctrl.h>
+#include <richedit.h>
+#include "common-dialogs-res.h"
+
+
+// Version Information resources
+//
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+1 VERSIONINFO
+    FILEVERSION     0,0,4,10
+    PRODUCTVERSION  0,0,4,10
+    FILEOS          VOS_NT
+    FILETYPE        VFT_APP
+    FILESUBTYPE     VFT2_UNKNOWN
+    FILEFLAGSMASK   0x00000000
+    FILEFLAGS       0x00000000
+{
+    
+}
+
