@@ -139,9 +139,12 @@ struct val_2_combo {
  
 static struct val_2_combo sample_rate_values[] = {
     { 8000, 0 },
+    { 11025, 0 },
     { 16000, 0 },
+    { 22050, 0 },
     { 32000, 0 },
     { 44100, 0 },
+    { 48000, 0 },
     { 96000, 0 },
 };
 
