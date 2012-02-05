@@ -31,8 +31,8 @@
  * @date 04-Jan-2012
  */ 
 #include "pcc.h"
+#include "sender-sm-states.h"
 #include "mcast-sender-state-machine.h"
-
 #include "mcast_setup.h"
 #include "debug_helpers.h"
 #include "wave_utils.h"
@@ -280,93 +280,102 @@ void sender_destroy(struct mcast_sender * p_sender)
     HeapFree(GetProcessHeap(), 0, p_sender);
 }
 
+#if defined DEBUG
 sender_state_t sender_get_current_state(struct mcast_sender * p_sender)
 {
     return p_sender->state_;
 }
+#endif
 
-void sender_handle_mcastjoin(struct mcast_sender * p_sender)
+int sender_handle_mcastjoin(struct mcast_sender * p_sender)
 {
     assert(p_sender);
     if (SENDER_INITIAL == p_sender->state_ && sender_handle_mcastjoin_internal(p_sender))
     {
         p_sender->state_ = SENDER_MCAST_JOINED;
-        return;
+        return 1;
     }
     if (SENDER_TONE_SELECTED == p_sender->state_ && sender_handle_mcastjoin_internal(p_sender))
     {
         p_sender->state_ = SENDER_MCASTJOINED_TONESELECTED;
-        return;
+        return 1;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
+    return 0;
 }
 
-void sender_handle_mcastleave(struct mcast_sender * p_sender)
+int sender_handle_mcastleave(struct mcast_sender * p_sender)
 {
     assert(p_sender);
     if (SENDER_MCAST_JOINED == p_sender->state_ && sender_handle_mcastleave_internal(p_sender))
     {
         p_sender->state_ = SENDER_INITIAL;
-        return;
+        return 1;
     }
     if(SENDER_MCASTJOINED_TONESELECTED == p_sender->state_ && sender_handle_mcastleave_internal(p_sender))
     {
         p_sender->state_ = SENDER_TONE_SELECTED;
-        return;
+        return 1;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
+    return 0;
 }
 
-void sender_handle_selecttone(struct mcast_sender * p_sender, struct abstract_tone * p_tone)
+int sender_handle_selecttone(struct mcast_sender * p_sender, struct abstract_tone * p_tone)
 {
     assert(p_sender);
     if (SENDER_INITIAL == p_sender->state_ && sender_handle_selecttone_internal(p_sender, p_tone))
     {
         p_sender->state_ = SENDER_TONE_SELECTED;
-        return;
+        return 1;
     }
     if(SENDER_MCAST_JOINED == p_sender->state_ && sender_handle_selecttone_internal(p_sender, p_tone))
     {
         p_sender->state_ = SENDER_MCASTJOINED_TONESELECTED;
-        return;
+        return 1;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
+    return 0;
 }
 
-void sender_handle_deselecttone(struct mcast_sender * p_sender)
+int sender_handle_deselecttone(struct mcast_sender * p_sender)
 {
     assert(p_sender);
     if (SENDER_TONE_SELECTED == p_sender->state_ && sender_handle_deselecttone_internal(p_sender))
     {
         p_sender->state_ = SENDER_INITIAL;
-        return;
+        return 1;
     }
     if(SENDER_MCASTJOINED_TONESELECTED == p_sender->state_ && sender_handle_deselecttone_internal(p_sender))
     {
         p_sender->state_ = SENDER_MCAST_JOINED;
-        return;
+        return 1;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
+    return 0;
 }
 
-void sender_handle_startsending(struct mcast_sender * p_sender)
+int sender_handle_startsending(struct mcast_sender * p_sender)
 {
     assert(p_sender);
     if (SENDER_MCASTJOINED_TONESELECTED == p_sender->state_ && sender_handle_startsending_internal(p_sender))
     {
         p_sender->state_ = SENDER_SENDING;
-        return;
+        return 1;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
+    return 0;
 }
 
-void sender_handle_stopsending(struct mcast_sender * p_sender)
+int sender_handle_stopsending(struct mcast_sender * p_sender)
 {
     assert(p_sender);
     if (SENDER_SENDING == p_sender->state_ && sender_handle_stopsending_internal(p_sender))
     {
         p_sender->state_ = SENDER_MCASTJOINED_TONESELECTED;
+        return 1;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
+    return 0;
 }
 
