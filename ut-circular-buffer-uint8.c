@@ -40,6 +40,21 @@
 
 #define CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT (1<<CIRCULAR_BUFFER_DEFAULT_LEVEL)
 
+struct producer_consumer_params {
+	struct fifo_circular_buffer * p_fifo_;
+	unsigned int items_;
+	unsigned int producer_delay_;
+	unsigned int consumer_delay_;
+	unsigned int items_produced_;
+	unsigned int items_consumed_;
+};
+
+struct thread_data { 
+	HANDLE * events_;
+	unsigned int event_count_;
+	struct producer_consumer_params * p_params_;
+};
+
 static uint8_t  g_template_buffer[256];
 
 static void test_create_destroy_0(void)
@@ -258,21 +273,6 @@ static void test_default_queue_overflow(void)
     assert(0 == memcmp(&data_to_put[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2], &expected_data_to_fetch[0], CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2));
     fifo_circular_buffer_delete(p_circular_buffer);
 }
-
-struct producer_consumer_params {
-	struct fifo_circular_buffer * p_fifo_;
-	unsigned int items_;
-	unsigned int producer_delay_;
-	unsigned int consumer_delay_;
-	unsigned int items_produced_;
-	unsigned int items_consumed_;
-};
-
-struct thread_data { 
-	HANDLE * events_;
-	unsigned int event_count_;
-	struct producer_consumer_params * p_params_;
-};
 
 unsigned int produce_0(struct fifo_circular_buffer * p_fifo)
 {
