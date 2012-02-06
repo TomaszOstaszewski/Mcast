@@ -44,6 +44,11 @@ extern "C" {
 #define CIRCULAR_BUFFER_DEFAULT_LEVEL (16)
 
 /*!
+ * @brief Maximum number of items that the default queue can take.
+ */
+#define CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT (1<<CIRCULAR_BUFFER_DEFAULT_LEVEL)
+
+/*!
  * @brief Forward declaration.
  */
 struct fifo_circular_buffer;
