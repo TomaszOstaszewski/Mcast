@@ -29,29 +29,43 @@
 #include "pcc.h"
 #include "fifo-circular-buffer.h"
 
-/*!
- * @brief Maximum number of bytes to be placed into queue.
- * @details If more bytes will be placed into queue, they will overwrite the beginning of the queue.
+/*! 
+ * @brief
  */
-#define MAX_ITEMS (0x10000)
+struct fifo_circular_buffer_header
+{
+    uint32_t max_items_; /*!< Maximum number of items the queue can hold.*/
+    volatile uint32_t read_idx_; /*!< Current read index. */
+    volatile uint32_t write_idx_; /*!< Current read index.*/
+};
 
 /*!
  * @brief The circular buffer data structure
  */
 struct fifo_circular_buffer
 {
-    volatile uint32_t    read_idx_;                  /*!< Current read index. */
-    volatile uint32_t    write_idx_;                 /*!< Current read index.*/
-    uint8_t     data_buffer_[MAX_ITEMS];    /*!< Data buffer from which bytes are read/to which will be written. */
+    struct fifo_circular_buffer_header hdr_;
+    uint8_t data_buffer_[1];    /*!< Data buffer from which bytes are read/to which will be written. */
 };
 
-struct fifo_circular_buffer * fifo_circular_buffer_create(uint16_t level)
+struct fifo_circular_buffer *  fifo_circular_buffer_create_with_level(uint8_t level)
 {
-    struct fifo_circular_buffer * p_buffer;
-    p_buffer = malloc(sizeof(struct fifo_circular_buffer));
-    memset(p_buffer, 0, sizeof(struct fifo_circular_buffer));
-    assert(NULL != p_buffer);
-    return p_buffer;
+    if (level >= 2 && level <= 16)
+    {
+        struct fifo_circular_buffer * p_buffer;
+        p_buffer = malloc(sizeof(struct fifo_circular_buffer_header)+sizeof(uint8_t)*(1<<level));
+        assert(NULL != p_buffer);
+        p_buffer->hdr_.max_items_ = 1 << level;
+        p_buffer->hdr_.read_idx_ = 0;
+        p_buffer->hdr_.write_idx_ = 0;
+        return p_buffer;
+    }
+    return NULL;
+}
+
+struct fifo_circular_buffer * fifo_circular_buffer_create()
+{
+    return fifo_circular_buffer_create_with_level(CIRCULAR_BUFFER_DEFAULT_LEVEL);
 }
 
 void fifo_circular_buffer_delete(struct fifo_circular_buffer * p_circular_buffer)
@@ -61,32 +75,33 @@ void fifo_circular_buffer_delete(struct fifo_circular_buffer * p_circular_buffer
 
 uint32_t fifo_circular_buffer_get_capacity(struct fifo_circular_buffer const * p_circular_buffer)
 {
-    return MAX_ITEMS;
+    return p_circular_buffer->hdr_.max_items_;
 }
 
 uint32_t fifo_circular_buffer_get_items_count(struct fifo_circular_buffer const * p_circular_buffer)
 {
-    return p_circular_buffer->write_idx_ - p_circular_buffer->read_idx_;
+    return p_circular_buffer->hdr_.write_idx_ - p_circular_buffer->hdr_.read_idx_;
 }
 
 int fifo_circular_buffer_is_free_space(struct fifo_circular_buffer * p_circular_buffer)
 {
-    return (p_circular_buffer->write_idx_ - p_circular_buffer->read_idx_) < MAX_ITEMS;
+    return (p_circular_buffer->hdr_.write_idx_ - p_circular_buffer->hdr_.read_idx_) < p_circular_buffer->hdr_.max_items_;
 }
 
 int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_buffer, struct data_item const * p_item)
 {
-    uint16_t buffer_index = (MAX_ITEMS-1) & p_circular_buffer->write_idx_;
+    uint16_t buffer_index;
     uint16_t idx;
     for (idx = 0 
          ;idx != p_item->count_
-         ;++idx, ++p_circular_buffer->write_idx_, ++buffer_index) 
+         ;++idx, ++p_circular_buffer->hdr_.write_idx_) 
     {
-        assert(buffer_index < MAX_ITEMS);
+        buffer_index = (p_circular_buffer->hdr_.max_items_ -1) & p_circular_buffer->hdr_.write_idx_;
+        assert(buffer_index < p_circular_buffer->hdr_.max_items_);
         p_circular_buffer->data_buffer_[buffer_index] = p_item->data_[idx];
-        if (p_circular_buffer->write_idx_ - p_circular_buffer->read_idx_ == MAX_ITEMS)
+        if (p_circular_buffer->hdr_.write_idx_ - p_circular_buffer->hdr_.read_idx_ == p_circular_buffer->hdr_.max_items_)
         {
-            ++p_circular_buffer->read_idx_;
+            ++p_circular_buffer->hdr_.read_idx_;
         }
     }
     return 0;
@@ -96,10 +111,10 @@ int fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_circular_buf
 {
     uint16_t idx;
     for (idx = 0
-        ; idx != p_item->count_ && (p_circular_buffer->write_idx_ - p_circular_buffer->read_idx_) != 0
-        ; ++idx, ++p_circular_buffer->read_idx_)
+        ; idx != p_item->count_ && (p_circular_buffer->hdr_.write_idx_ - p_circular_buffer->hdr_.read_idx_) != 0
+        ; ++idx, ++p_circular_buffer->hdr_.read_idx_)
     {
-        p_item->data_[idx] = p_circular_buffer->data_buffer_[((MAX_ITEMS-1) & p_circular_buffer->read_idx_)];
+        p_item->data_[idx] = p_circular_buffer->data_buffer_[((p_circular_buffer->hdr_.max_items_-1) & p_circular_buffer->hdr_.read_idx_)];
     }
     p_item->count_ = idx;
     return 0;
@@ -107,6 +122,6 @@ int fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_circular_buf
 
 unsigned int fifo_circular_buffer_is_full(struct fifo_circular_buffer * p_fifo)
 {
-    return MAX_ITEMS == fifo_circular_buffer_get_items_count(p_fifo);
+    return p_fifo->hdr_.max_items_ == fifo_circular_buffer_get_items_count(p_fifo);
 }
 

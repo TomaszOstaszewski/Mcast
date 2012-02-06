@@ -46,6 +46,12 @@ typedef struct data_item {
 } data_item_t;
 
 /*!
+ * @brief Default queue level. 
+ * @details If a queue is created without any explicit arguments, then it can hold 2 to power that number items.
+ */
+#define CIRCULAR_BUFFER_DEFAULT_LEVEL (16)
+
+/*!
  * @brief Forward declaration.
  */
 struct fifo_circular_buffer;
@@ -57,7 +63,16 @@ struct fifo_circular_buffer;
  * @return returns a handle to a circular buffer, or NULL if creation failed.
  * @sa fifo_circular_buffer_delete
  */
-struct fifo_circular_buffer *  fifo_circular_buffer_create(uint16_t level);
+struct fifo_circular_buffer *  fifo_circular_buffer_create();
+
+/**
+ * @brief Create a circular buffer.
+ * @details <b>Fill me...</b>
+ * @param[in] level this is the exponent of the buffer size. Actual buffer, when successfully created, holds up to 2^level items without overwritting the oldest ones.
+ * @return returns a handle to a circular buffer, or NULL if creation failed.
+ * @sa fifo_circular_buffer_delete
+ */
+struct fifo_circular_buffer *  fifo_circular_buffer_create_with_level(uint8_t level);
 
 /**
  * @brief Destroys a circular buffer

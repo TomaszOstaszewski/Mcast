@@ -38,172 +38,225 @@
 #include "timeofday.h"
 #include "fifo-circular-buffer.h"
 
+#define CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT (1<<CIRCULAR_BUFFER_DEFAULT_LEVEL)
+
 static uint8_t  g_template_buffer[256];
 
-static void test_000(void)
+static void test_create_destroy_0(void)
 {
-    struct fifo_circular_buffer * p_circular_buffer = fifo_circular_buffer_create();
-    assert( NULL != p_circular_buffer);
+    const uint8_t levels[] = { 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+    size_t idx ;
+    for (idx = 0; idx < sizeof(levels)/sizeof(levels[0]); ++idx)
+    {
+        struct fifo_circular_buffer * p_circular_buffer = fifo_circular_buffer_create_with_level(levels[idx]);
+        assert( NULL != p_circular_buffer);
+        assert(0 == fifo_circular_buffer_get_items_count(p_circular_buffer));
+        assert(fifo_circular_buffer_is_free_space(p_circular_buffer));
+        assert(!fifo_circular_buffer_is_full(p_circular_buffer));
+        fifo_circular_buffer_delete(p_circular_buffer);
+    }
+}
+
+static void test_create_destroy_1(void)
+{
+    uint8_t idx ;
+    for (idx = 0; idx < 1; ++idx)
+    {
+        struct fifo_circular_buffer * p_circular_buffer = fifo_circular_buffer_create_with_level(idx);
+        assert( NULL == p_circular_buffer);
+    }
+    for (idx = 17; idx != 0; ++idx)
+    {
+        struct fifo_circular_buffer * p_circular_buffer = fifo_circular_buffer_create_with_level(idx);
+        assert( NULL == p_circular_buffer);
+    }
+}
+
+static void test_insert_4_elem_into_4_elem_circular_fifo(void)
+{
+    struct fifo_circular_buffer * p_circular_buffer;
+    uint8_t data_to_put[] = { 0, 1, 2, 3 };
+    struct data_item item;
+    int result;
+
+    p_circular_buffer = fifo_circular_buffer_create_with_level(2); /* 2^2 equals 4, so FIFO will hold at most 4 items */
+    assert(NULL != p_circular_buffer);
+    item.count_ = sizeof(data_to_put); 
+    item.data_ = &data_to_put[0];
+    result = fifo_circular_buffer_push_item(p_circular_buffer, &item);
+    assert(0 == result);
+    assert(sizeof(data_to_put)/sizeof(data_to_put[0]) == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
+    assert(fifo_circular_buffer_is_full(p_circular_buffer));
     fifo_circular_buffer_delete(p_circular_buffer);
 }
 
-static void test_001(void)
+static void test_insert_6_elem_into_4_elem_circular_fifo(void)
 {
-    unsigned int is_free;
-    unsigned int items_count;
-    struct fifo_circular_buffer * p_circular_buffer = fifo_circular_buffer_create();
-    assert( NULL != p_circular_buffer);
-    items_count = fifo_circular_buffer_get_items_count(p_circular_buffer);
-    assert(0==items_count);
-    is_free = fifo_circular_buffer_is_free_space(p_circular_buffer);
-    assert(is_free);
+    struct fifo_circular_buffer * p_circular_buffer;
+    uint8_t data_to_put[]                   = { 0, 1, 2, 3, 4, 5 };
+    uint8_t const expected_data_to_fetch[]  =       { 2, 3, 4, 5 };
+    struct data_item item;
+    int result;
+
+    p_circular_buffer = fifo_circular_buffer_create_with_level(2); /* 2^2 equals 4, so FIFO will hold at most 4 items */
+    assert(NULL != p_circular_buffer);
+    item.count_ = sizeof(data_to_put); 
+    item.data_ = &data_to_put[0];
+    result = fifo_circular_buffer_push_item(p_circular_buffer, &item);
+    assert(0 == result);
+    assert((1<<2) == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
+    assert(fifo_circular_buffer_is_full(p_circular_buffer));
+    item.count_ = fifo_circular_buffer_get_items_count(p_circular_buffer);
+    fifo_circular_buffer_fetch_item(p_circular_buffer, &item);
+    assert(0 == fifo_circular_buffer_get_items_count(p_circular_buffer));  
+    assert(4 == item.count_);
+    assert(0 == memcmp(item.data_, expected_data_to_fetch, sizeof(expected_data_to_fetch)));
     fifo_circular_buffer_delete(p_circular_buffer);
 }
 
-/**
- * @test Test queue normal operation (no overflow)
- */
-static void test_002(void)
+static void test_fetch_from_empty_queue(void)
 {
-	int result;
-	size_t idx;
-	unsigned int is_free;
-	unsigned int items_count;
-	struct fifo_circular_buffer * p_circular_buffer;
-	struct data_item an_item;
-	struct data_item * items[256];
-	struct data_item  a_rec_item;
-	uint8_t const * p_idx; 
-	uint16_t page_count;
-
-	an_item.count_= sizeof(g_template_buffer)/sizeof(g_template_buffer[0]);
-	an_item.data_ = g_template_buffer;
-
-	for (idx = 0; idx < sizeof(items)/sizeof(items[0]); ++idx)
-	{
-		items[idx] = &an_item;
-	}
-
-	p_circular_buffer = fifo_circular_buffer_create();
-	assert( NULL != p_circular_buffer);
-	items_count = fifo_circular_buffer_get_items_count(p_circular_buffer);
-	assert(0==items_count);
-	is_free = fifo_circular_buffer_is_free_space(p_circular_buffer);
-	assert(is_free);
-	/* Insert 65536 bytes of data in 256 chunks of 256 bytes each */
-	for (idx = 0; idx < sizeof(items)/sizeof(items[0]); ++idx)
-	{
-		result = fifo_circular_buffer_push_item(p_circular_buffer, items[idx]);
-		assert(0 == result);
-	}
-	items_count = fifo_circular_buffer_get_items_count(p_circular_buffer);
-	assert(0x10000==items_count);
-	/* Retrive data */
-	{
-		a_rec_item.data_ = (uint8_t *)malloc(sizeof(uint8_t)*items_count);
-		a_rec_item.count_ = items_count;
-		result = fifo_circular_buffer_fetch_item(p_circular_buffer, &a_rec_item);
-		items_count = fifo_circular_buffer_get_items_count(p_circular_buffer);
-		printf("%s %5.5d : %u\n", __FILE__, __LINE__, items_count);
-		assert(0 == items_count);
-		/* Check if what we got is what we put into */
-		p_idx = a_rec_item.data_; 
-		for (page_count = 0; page_count != 256; ++page_count, p_idx += 256)
-		{
-			printf("%s %5.5d : %6.6d %2.2hhx%2.2hhx%2.2hhx..  %2.2hhx%2.2hhx%2.2hhx\n",
-					__FILE__, __LINE__,
-					page_count,
-					p_idx[0], p_idx[1], p_idx[2],
-					g_template_buffer[0], g_template_buffer[1], g_template_buffer[2]);
-			assert(0 == memcmp(p_idx, g_template_buffer, sizeof(g_template_buffer)));
-		}
-	}
-	fifo_circular_buffer_delete(p_circular_buffer);
+    const uint8_t levels[] = { 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+    size_t idx ;
+    for (idx = 0; idx < sizeof(levels)/sizeof(levels[0]); ++idx)
+    {
+        int result;
+        uint8_t container[2];
+        struct data_item item;
+        struct fifo_circular_buffer * p_circular_buffer = fifo_circular_buffer_create_with_level(levels[idx]);
+        assert( NULL != p_circular_buffer);
+        assert(0 == fifo_circular_buffer_get_items_count(p_circular_buffer));
+        item.count_ = sizeof(container)/sizeof(container[0]);
+        item.data_ = container;
+        result = fifo_circular_buffer_fetch_item(p_circular_buffer, &item);   
+        assert(0 == item.count_);
+        fifo_circular_buffer_delete(p_circular_buffer);
+    }
 }
 
-/**
- * @test Test queue overflow conditions.
- */
-static void test_003(void)
+static void test_default_queue(void)
 {
-	int result;
-	size_t idx;
-	unsigned int is_free;
-	unsigned int items_count;
-	struct fifo_circular_buffer * p_circular_buffer;
-	struct data_item an_item;
-	struct data_item * items[256];
-	uint8_t zero_data[256];
-	struct data_item  a_rec_item;
-	uint16_t page_count;
-	an_item.count_ = sizeof(g_template_buffer)/sizeof(g_template_buffer[0]);
-	an_item.data_ = g_template_buffer;
-	for (idx = 0; idx < sizeof(items)/sizeof(items[0]); ++idx)
-	{
-		items[idx] = &an_item;
-	}
-	p_circular_buffer = fifo_circular_buffer_create();
-	assert( NULL != p_circular_buffer);
-	items_count = fifo_circular_buffer_get_items_count(p_circular_buffer);
-	assert(0==items_count);
-	is_free = fifo_circular_buffer_is_free_space(p_circular_buffer);
-	assert(is_free);
-	/* Insert 65536+256 bytes of data in 256 chunks of 256 bytes each */
-	for (idx = 0; idx < sizeof(items)/sizeof(items[0]); ++idx)
-	{
-		result = fifo_circular_buffer_push_item(p_circular_buffer, items[idx]);
-		assert(0 == result);
-	}
-	memset(zero_data, 0, sizeof(zero_data));
-	an_item.count_ = sizeof(zero_data);
-	an_item.data_ = &zero_data[0];
-	result = fifo_circular_buffer_push_item(p_circular_buffer, &an_item);
-	assert(0 == result);
+    struct fifo_circular_buffer * p_circular_buffer;
+    uint8_t data_to_put[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT];
+    uint8_t expected_data_to_fetch[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT];
+    struct data_item item;
+    int result;
+    /* Fill arrays with random data */
+    {
+        size_t idx;
+        srand(time(NULL));
+        for (idx = 0; idx < CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT; ++idx)
+        {
+            data_to_put[idx] = expected_data_to_fetch[idx] = (uint8_t)rand();
+        }
+    }
+    p_circular_buffer = fifo_circular_buffer_create();
+    assert(NULL != p_circular_buffer);
+    item.count_ = sizeof(data_to_put) - 1; 
+    item.data_ = &data_to_put[0];
+    result = fifo_circular_buffer_push_item(p_circular_buffer, &item);
+    assert(0 == result);
+    assert(sizeof(data_to_put) - 1 == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
 
-	items_count = fifo_circular_buffer_get_items_count(p_circular_buffer);
-	assert(0x10000==items_count);
-	/* Retrive data */
-	a_rec_item.data_ = (uint8_t *)malloc(sizeof(g_template_buffer));
-	a_rec_item.count_ = sizeof(g_template_buffer);
-	/* First 255 pages will be the very same as template data */
-	for (page_count = 0; page_count != 255; ++page_count)
-	{
-		a_rec_item.data_ = (uint8_t *)malloc(sizeof(uint8_t)*items_count);
-		a_rec_item.count_ = 256;
-		result = fifo_circular_buffer_fetch_item(p_circular_buffer, &a_rec_item);
-		printf("%s %5.5d : %6.6d %2.2hhx%2.2hhx%2.2hhx..  %2.2hhx%2.2hhx%2.2hhx\n",
-				__FILE__, __LINE__,
-				page_count,
-				a_rec_item.data_[0], a_rec_item.data_[1], a_rec_item.data_[2],
-				g_template_buffer[0], g_template_buffer[1], g_template_buffer[2]);
-		assert(0 == memcmp(a_rec_item.data_, g_template_buffer, sizeof(g_template_buffer)));
-	}
-	/* Last page shall be all zeros */
-	items_count = fifo_circular_buffer_get_items_count(p_circular_buffer);
-	printf("%s %5.5d : %u\n", __FILE__, __LINE__, items_count);
-	assert(256 == items_count);
-	result = fifo_circular_buffer_fetch_item(p_circular_buffer, &a_rec_item);
-	printf("%s %5.5d : %6.6d %2.2hhx%2.2hhx%2.2hhx..  %2.2hhx%2.2hhx%2.2hhx\n",
-			__FILE__, __LINE__,
-			page_count,
-			a_rec_item.data_[0], a_rec_item.data_[1], a_rec_item.data_[2],
-			zero_data[0], zero_data[1], zero_data[2]);
-	assert(0 == memcmp(a_rec_item.data_, zero_data, sizeof(zero_data)));
-	items_count = fifo_circular_buffer_get_items_count(p_circular_buffer);
-	assert(0 == items_count);
-	fifo_circular_buffer_delete(p_circular_buffer);
+    item.count_ = 1;
+    item.data_ = &data_to_put[sizeof(data_to_put)-1];
+    result = fifo_circular_buffer_push_item(p_circular_buffer, &item);
+    assert(0 == result);
+    assert(sizeof(data_to_put) == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
+    assert(fifo_circular_buffer_is_full(p_circular_buffer));
+
+    item.count_ = sizeof(data_to_put)-1;
+    item.data_ = &data_to_put[0];
+    result = fifo_circular_buffer_fetch_item(p_circular_buffer, &item);
+    assert(0 == result);
+    item.count_ = 1;
+    item.data_ = &data_to_put[sizeof(data_to_put)-1];    
+    result = fifo_circular_buffer_fetch_item(p_circular_buffer, &item);
+    assert(0 == result);
+
+    assert(0 == fifo_circular_buffer_get_items_count(p_circular_buffer));
+#if 0
+    {
+        uint8_t const * p_data;
+        p_data = &data_to_put[0];
+        fprintf(stderr, "%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", p_data[0], p_data[1], p_data[2], p_data[3]);   
+        p_data = &expected_data_to_fetch[0];
+        fprintf(stderr, "%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", p_data[0], p_data[1], p_data[2], p_data[3]);   
+        p_data = &data_to_put[65535-3];
+        fprintf(stderr, "%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", p_data[0], p_data[1], p_data[2], p_data[3]);   
+        p_data = &expected_data_to_fetch[65535-3];
+        fprintf(stderr, "%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", p_data[0], p_data[1], p_data[2], p_data[3]);   
+    }
+#endif
+    assert(0 == memcmp(data_to_put, expected_data_to_fetch, sizeof(expected_data_to_fetch)));
+    fifo_circular_buffer_delete(p_circular_buffer);
 }
 
-static void test_004(void)
+static void test_default_queue_overflow(void)
 {
-}
+    struct fifo_circular_buffer * p_circular_buffer;
+    uint8_t data_to_put[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT];
+    uint8_t expected_data_to_fetch[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT];
+    struct data_item item;
+    int result;
+    /* Fill arrays with random data */
+    {
+        size_t idx;
+        srand(time(NULL));
+        for (idx = 0; idx < CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT; ++idx)
+        {
+            data_to_put[idx] = expected_data_to_fetch[idx] = (uint8_t)rand();
+        }
+    }
 
-/**
- * @brief Add 128k items and see if it still works the same.
- * @details 
- */
-static void test_005(void)
-{
+    p_circular_buffer = fifo_circular_buffer_create();
+    assert(NULL != p_circular_buffer);
+    item.count_ = sizeof(data_to_put) - 1; 
+    item.data_ = &data_to_put[0];
+    result = fifo_circular_buffer_push_item(p_circular_buffer, &item);
+    assert(0 == result);
+    assert(sizeof(data_to_put) - 1 == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
+
+    item.count_ = 1;
+    item.data_ = &data_to_put[sizeof(data_to_put)-1];
+    result = fifo_circular_buffer_push_item(p_circular_buffer, &item);
+    assert(0 == result);
+    assert(sizeof(data_to_put) == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
+    assert(fifo_circular_buffer_is_full(p_circular_buffer));
+
+    item.count_ = CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT / 2;
+    item.data_ = &data_to_put[0];
+    result = fifo_circular_buffer_push_item(p_circular_buffer, &item);
+    assert(0 == result);
+    assert(sizeof(data_to_put) == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
+    assert(fifo_circular_buffer_is_full(p_circular_buffer));
+     
+    item.count_ = sizeof(data_to_put)-1;
+    item.data_ = &data_to_put[0];
+    result = fifo_circular_buffer_fetch_item(p_circular_buffer, &item);
+    assert(0 == result);
+    item.count_ = 1;
+    item.data_ = &data_to_put[sizeof(data_to_put)-1];    
+    result = fifo_circular_buffer_fetch_item(p_circular_buffer, &item);
+    assert(0 == result);
+
+    assert(0 == fifo_circular_buffer_get_items_count(p_circular_buffer));
+#if 0
+    {
+        uint8_t const * p_data;
+        p_data = &data_to_put[0];
+        fprintf(stderr, "%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", p_data[0], p_data[1], p_data[2], p_data[3]);   
+        p_data = &expected_data_to_fetch[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2];
+        fprintf(stderr, "%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", p_data[0], p_data[1], p_data[2], p_data[3]);   
+        p_data = &data_to_put[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2];
+        fprintf(stderr, "%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", p_data[0], p_data[1], p_data[2], p_data[3]);   
+        p_data = &expected_data_to_fetch[0];
+        fprintf(stderr, "%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", p_data[0], p_data[1], p_data[2], p_data[3]);   
+    }
+#endif
+    assert(0 == memcmp(&data_to_put, &expected_data_to_fetch[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2], CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2));
+    assert(0 == memcmp(&data_to_put[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2], &expected_data_to_fetch[0], CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2));
+    fifo_circular_buffer_delete(p_circular_buffer);
 }
 
 struct producer_consumer_params {
@@ -329,32 +382,16 @@ static void test_007(void)
 	fifo_circular_buffer_delete(param.p_fifo_);
 }
 
-#define SHR_BYTE(value,shift) ((uint8_t)(value>>shift))
-#define SHL_BYTE(value,shift) ((uint8_t)(value<<shift))
-
 int main(int argc, char ** argv)
 {
-	uint16_t idx; 
-	for (idx = 0; idx != 256; ++idx)
-	{
-		g_template_buffer[idx] = (uint8_t)(idx & 0xff);
-	}
-#if 0
-	uint8_t ubase = (uint8_t)(-1);
-	int8_t sbase = (int8_t)-1;
-	int8_t sbase2 = (int8_t)1;
-	printf("%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", SHL_BYTE(ubase,0), SHL_BYTE(ubase,1), SHL_BYTE(ubase,2), SHL_BYTE(ubase,3));
-	printf("%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", SHR_BYTE(ubase,0), SHR_BYTE(ubase,1), SHR_BYTE(ubase,2), SHR_BYTE(ubase,3));
-	printf("%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", SHL_BYTE(sbase,0), SHL_BYTE(sbase,1), SHL_BYTE(sbase,2), SHL_BYTE(sbase,3));
-	printf("%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", SHR_BYTE(sbase,0), SHR_BYTE(sbase,1), SHR_BYTE(sbase,2), SHR_BYTE(sbase,3));
-	printf("%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", SHL_BYTE(sbase2,0), SHL_BYTE(sbase2,1), SHL_BYTE(sbase2,2), SHL_BYTE(sbase2,3));
-#endif
-    test_000();
-    test_001();
-    test_002();
-    test_003();
-    //test_004();
-    //test_005();
+    test_create_destroy_0();
+    test_create_destroy_1();
+    test_insert_4_elem_into_4_elem_circular_fifo();
+    test_insert_6_elem_into_4_elem_circular_fifo();
+    test_fetch_from_empty_queue();
+    test_default_queue();
+    test_default_queue_overflow();
+    //test_003();
     //test_006();
     //test_007();
     return 0;
