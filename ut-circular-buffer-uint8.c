@@ -1,7 +1,7 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 
 /**
- * @file ut-fifo-circular-buffer.c
+ * @file ut-circular-buffer-uint8.c
  * @author T.Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
@@ -36,7 +36,7 @@
 #include <assert.h>
 #include <time.h>
 #include "timeofday.h"
-#include "fifo-circular-buffer.h"
+#include "circular-buffer-uint8.h"
 
 #define CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT (1<<CIRCULAR_BUFFER_DEFAULT_LEVEL)
 
@@ -391,7 +391,6 @@ int main(int argc, char ** argv)
     test_fetch_from_empty_queue();
     test_default_queue();
     test_default_queue_overflow();
-    //test_003();
     //test_006();
     //test_007();
     return 0;

@@ -68,7 +68,7 @@
 #include "debug_helpers.h"
 #include "dsoundplay.h"
 #include "wave_utils.h"
-#include "fifo-circular-buffer.h"
+#include "circular-buffer-uint8.h"
 #include "input-buffer.h"
 #include "receiver-settings.h"
 #include "perf-counter-itf.h"

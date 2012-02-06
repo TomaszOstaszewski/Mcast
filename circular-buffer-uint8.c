@@ -27,7 +27,7 @@
  * @endcode
  */
 #include "pcc.h"
-#include "fifo-circular-buffer.h"
+#include "circular-buffer-uint8.h"
 
 /*! 
  * @brief

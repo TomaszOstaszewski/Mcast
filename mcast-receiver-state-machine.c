@@ -36,7 +36,7 @@
 #include "mcast_setup.h"
 #include "debug_helpers.h"
 #include "dsoundplay.h"
-#include "fifo-circular-buffer.h"
+#include "circular-buffer-uint8.h"
 #include "wave_utils.h"
 
 /*!
