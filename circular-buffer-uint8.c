@@ -1,6 +1,6 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /**
- * @file fifo-circular-buffer.c
+ * @file circular-buffer-uint8.c
  * @brief A circular buffer implementation.
  * @details 
  * @date 04-Jan-2012
@@ -30,7 +30,10 @@
 #include "circular-buffer-uint8.h"
 
 /*! 
- * @brief
+ * @brief Header of the queue. 
+ * @details This is the fixed length part of the circular buffer. The rest of the circular
+ * buffer varies with ciruclar buffer length. To avoid some mishaps in calculations, the header
+ * is treated as a separate data structure. 
  */
 struct fifo_circular_buffer_header
 {
@@ -44,7 +47,7 @@ struct fifo_circular_buffer_header
  */
 struct fifo_circular_buffer
 {
-    struct fifo_circular_buffer_header hdr_;
+    struct fifo_circular_buffer_header hdr_; /*!< Queue header - fixed length part. */
     uint8_t data_buffer_[1];    /*!< Data buffer from which bytes are read/to which will be written. */
 };
 
@@ -88,10 +91,10 @@ int fifo_circular_buffer_is_free_space(struct fifo_circular_buffer * p_circular_
     return (p_circular_buffer->hdr_.write_idx_ - p_circular_buffer->hdr_.read_idx_) < p_circular_buffer->hdr_.max_items_;
 }
 
-int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_buffer, uint8_t const * p_data, uint32_t count)
+ssize_t fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_buffer, uint8_t const * p_data, uint32_t count)
 {
     uint32_t buffer_index;
-    uint32_t idx;
+    ssize_t idx;
     for (idx = 0; idx != count; ++idx, ++p_circular_buffer->hdr_.write_idx_) 
     {
         buffer_index = (p_circular_buffer->hdr_.max_items_ -1) & p_circular_buffer->hdr_.write_idx_;
@@ -102,12 +105,12 @@ int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_buff
             ++p_circular_buffer->hdr_.read_idx_;
         }
     }
-    return 0;
+    return idx;
 }
 
-int fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_circular_buffer, uint8_t * p_data, uint32_t * p_req_count)
+ssize_t fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_circular_buffer, uint8_t * p_data, uint32_t * p_req_count)
 {
-    uint32_t idx;
+    ssize_t idx;
     for (idx = 0
         ; idx < *p_req_count && (p_circular_buffer->hdr_.write_idx_ - p_circular_buffer->hdr_.read_idx_) != 0
         ; ++idx, ++p_circular_buffer->hdr_.read_idx_)
@@ -115,7 +118,7 @@ int fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_circular_buf
         p_data[idx] = p_circular_buffer->data_buffer_[((p_circular_buffer->hdr_.max_items_-1) & p_circular_buffer->hdr_.read_idx_)];
     }
     *p_req_count = idx;
-    return 0;
+    return idx;
 }
 
 unsigned int fifo_circular_buffer_is_full(struct fifo_circular_buffer * p_fifo)
