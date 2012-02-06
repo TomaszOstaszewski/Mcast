@@ -41,7 +41,7 @@ extern "C" {
  * @brief Helper structure to fetch/put data from/into queue.
  */
 typedef struct data_item {
-    uint16_t    	count_; /*!< Number of items to fetch/put */
+    uint32_t    	count_; /*!< Number of items to fetch/put */
     uint8_t     *	data_; /*!< Array in which data will be placed/from where it will be retrieved. */
 } data_item_t;
 

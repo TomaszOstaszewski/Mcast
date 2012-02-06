@@ -167,25 +167,15 @@ static void test_default_queue(void)
     }
     p_circular_buffer = fifo_circular_buffer_create();
     assert(NULL != p_circular_buffer);
-    item.count_ = sizeof(data_to_put) - 1; 
+    item.count_ = sizeof(data_to_put); 
     item.data_ = &data_to_put[0];
-    result = fifo_circular_buffer_push_item(p_circular_buffer, &item);
-    assert(0 == result);
-    assert(sizeof(data_to_put) - 1 == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
-
-    item.count_ = 1;
-    item.data_ = &data_to_put[sizeof(data_to_put)-1];
     result = fifo_circular_buffer_push_item(p_circular_buffer, &item);
     assert(0 == result);
     assert(sizeof(data_to_put) == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
     assert(fifo_circular_buffer_is_full(p_circular_buffer));
 
-    item.count_ = sizeof(data_to_put)-1;
+    item.count_ = sizeof(data_to_put);
     item.data_ = &data_to_put[0];
-    result = fifo_circular_buffer_fetch_item(p_circular_buffer, &item);
-    assert(0 == result);
-    item.count_ = 1;
-    item.data_ = &data_to_put[sizeof(data_to_put)-1];    
     result = fifo_circular_buffer_fetch_item(p_circular_buffer, &item);
     assert(0 == result);
 
@@ -211,7 +201,7 @@ static void test_default_queue_overflow(void)
 {
     struct fifo_circular_buffer * p_circular_buffer;
     uint8_t data_to_put[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT];
-    uint8_t expected_data_to_fetch[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT];
+    uint8_t fetched_data[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT];
     struct data_item item;
     int result;
     /* Fill arrays with random data */
@@ -220,57 +210,60 @@ static void test_default_queue_overflow(void)
         srand(time(NULL));
         for (idx = 0; idx < CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT; ++idx)
         {
-            data_to_put[idx] = expected_data_to_fetch[idx] = (uint8_t)rand();
+            data_to_put[idx] = (uint8_t)rand();
         }
     }
 
     p_circular_buffer = fifo_circular_buffer_create();
     assert(NULL != p_circular_buffer);
-    item.count_ = sizeof(data_to_put) - 1; 
+
+    /* Put the entire buffer into queue. */
+    item.count_ = CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT; 
     item.data_ = &data_to_put[0];
     result = fifo_circular_buffer_push_item(p_circular_buffer, &item);
     assert(0 == result);
-    assert(sizeof(data_to_put) - 1 == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
 
-    item.count_ = 1;
-    item.data_ = &data_to_put[sizeof(data_to_put)-1];
-    result = fifo_circular_buffer_push_item(p_circular_buffer, &item);
-    assert(0 == result);
     assert(sizeof(data_to_put) == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
     assert(fifo_circular_buffer_is_full(p_circular_buffer));
 
+    /* Put the half of the buffer */
     item.count_ = CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT / 2;
     item.data_ = &data_to_put[0];
+    result = fifo_circular_buffer_push_item(p_circular_buffer, &item);
+    assert(0 == result);
+
+    assert(sizeof(data_to_put) == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
+    assert(fifo_circular_buffer_is_full(p_circular_buffer));
+
     result = fifo_circular_buffer_push_item(p_circular_buffer, &item);
     assert(0 == result);
     assert(sizeof(data_to_put) == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
     assert(fifo_circular_buffer_is_full(p_circular_buffer));
      
-    item.count_ = sizeof(data_to_put)-1;
-    item.data_ = &data_to_put[0];
-    result = fifo_circular_buffer_fetch_item(p_circular_buffer, &item);
-    assert(0 == result);
-    item.count_ = 1;
-    item.data_ = &data_to_put[sizeof(data_to_put)-1];    
+    /* Fetch the entire buffer - this should be swapped. */
+    item.count_ = CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT;
+    item.data_ = &fetched_data[0];
     result = fifo_circular_buffer_fetch_item(p_circular_buffer, &item);
     assert(0 == result);
 
     assert(0 == fifo_circular_buffer_get_items_count(p_circular_buffer));
-#if 0
+#if 1
     {
         uint8_t const * p_data;
+
         p_data = &data_to_put[0];
-        fprintf(stderr, "%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", p_data[0], p_data[1], p_data[2], p_data[3]);   
-        p_data = &expected_data_to_fetch[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2];
-        fprintf(stderr, "%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", p_data[0], p_data[1], p_data[2], p_data[3]);   
+        fprintf(stderr, "%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx \n", p_data[0], p_data[1], p_data[2], p_data[3], p_data[4], p_data[5], p_data[6], p_data[7]);   
+        p_data = &fetched_data[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2];
+        fprintf(stderr, "%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx \n", p_data[0], p_data[1], p_data[2], p_data[3], p_data[4], p_data[5], p_data[6], p_data[7]);   
+
         p_data = &data_to_put[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2];
-        fprintf(stderr, "%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", p_data[0], p_data[1], p_data[2], p_data[3]);   
-        p_data = &expected_data_to_fetch[0];
-        fprintf(stderr, "%2.2hhx %2.2hhx %2.2hhx %2.2hhx\n", p_data[0], p_data[1], p_data[2], p_data[3]);   
+        fprintf(stderr, "%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx \n", p_data[0], p_data[1], p_data[2], p_data[3], p_data[4], p_data[5], p_data[6], p_data[7]);   
+        p_data = &fetched_data[0];
+        fprintf(stderr, "%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx%2.2hhx \n", p_data[0], p_data[1], p_data[2], p_data[3], p_data[4], p_data[5], p_data[6], p_data[7]);   
     }
 #endif
-    assert(0 == memcmp(&data_to_put, &expected_data_to_fetch[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2], CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2));
-    assert(0 == memcmp(&data_to_put[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2], &expected_data_to_fetch[0], CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2));
+    //assert(0 == memcmp(&fetched_data[0], &expected_data_to_fetch[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2], CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2));
+    assert(0 == memcmp(&fetched_data[CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2], &data_to_put[0], CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT/2));
     fifo_circular_buffer_delete(p_circular_buffer);
 }
 

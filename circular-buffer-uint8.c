@@ -90,8 +90,8 @@ int fifo_circular_buffer_is_free_space(struct fifo_circular_buffer * p_circular_
 
 int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_buffer, struct data_item const * p_item)
 {
-    uint16_t buffer_index;
-    uint16_t idx;
+    uint32_t buffer_index;
+    uint32_t idx;
     for (idx = 0 
          ;idx != p_item->count_
          ;++idx, ++p_circular_buffer->hdr_.write_idx_) 
@@ -109,7 +109,7 @@ int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_buff
 
 int fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_circular_buffer, struct data_item * p_item)
 {
-    uint16_t idx;
+    uint32_t idx;
     for (idx = 0
         ; idx != p_item->count_ && (p_circular_buffer->hdr_.write_idx_ - p_circular_buffer->hdr_.read_idx_) != 0
         ; ++idx, ++p_circular_buffer->hdr_.read_idx_)
