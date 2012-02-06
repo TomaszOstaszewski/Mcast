@@ -62,6 +62,7 @@ void sender_destroy(struct mcast_sender * p_sender);
  * SENDER_MCAST_JOINED state. Otherwise, i.e. the sender state is different than SENDER_INITIAL, this handler does nothing.
  * While in the SENDER_MCAST_JOINED state, the sender maintains a membership to the multicast group.
  * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
+ * @return returns non-zero on success, a zero value otherwise. 
  * @sa sender_create()
  */
 int sender_handle_mcastjoin(struct mcast_sender * p_sender);
@@ -72,6 +73,7 @@ int sender_handle_mcastjoin(struct mcast_sender * p_sender);
  * Otherwise, does nothing. While in the SENDER_INITIAL state, 
  * the sender is virtually idle, i.e. it does not maintain a multicast group membership neither it does send any data.
  * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
+ * @return returns non-zero on success, a zero value otherwise. 
  * @sa sender_create()
  */
 int sender_handle_mcastleave(struct mcast_sender * p_sender);
@@ -80,6 +82,7 @@ int sender_handle_mcastleave(struct mcast_sender * p_sender);
  * @brief Selects a particular tone to be send via multicast.
  * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
  * @param[in] p_tone handle of the tone whose to be selected to send.
+ * @return returns non-zero on success, a zero value otherwise. 
  * @sa sender_handle_deselecttone()
  */
 int sender_handle_selecttone(struct mcast_sender * p_sender, struct abstract_tone * p_tone);
@@ -87,6 +90,7 @@ int sender_handle_selecttone(struct mcast_sender * p_sender, struct abstract_ton
 /*! 
  * @brief Indicates, that the tone shall no longer be send onto the multicast group.
  * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
+ * @return returns non-zero on success, a zero value otherwise. 
  * @sa sender_handle_selecttone()
  */
 int sender_handle_deselecttone(struct mcast_sender * p_sender);
@@ -98,6 +102,7 @@ int sender_handle_deselecttone(struct mcast_sender * p_sender);
  * the sender runs a background thread that sends the WAV file over and over again to the
  * multicast group.
  * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
+ * @return returns non-zero on success, a zero value otherwise. 
  * @sa sender_create()
  */
 int sender_handle_startsending(struct mcast_sender * p_sender);
@@ -107,6 +112,7 @@ int sender_handle_startsending(struct mcast_sender * p_sender);
  * @details If the sender is in the SENDER_SENDING state, then it transits to the
  * SENDER_MCAST_JOINED state. Otherwise, does nothing.
  * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
+ * @return returns non-zero on success, a zero value otherwise. 
  * @sa sender_create()
  */
 int sender_handle_stopsending(struct mcast_sender * p_sender);
