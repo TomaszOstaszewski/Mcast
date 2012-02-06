@@ -218,7 +218,7 @@ static void test_default_queue_overflow(void)
     assert(CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT  == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
     assert(fifo_circular_buffer_is_full(p_circular_buffer));
 
-    /* Put the half of the buffer */
+    /* Put the extra half of the buffer */
     req_count = extra_count;
     result = fifo_circular_buffer_push_item(p_circular_buffer, &data_to_put[0], req_count);
     assert(0 == result);
@@ -232,6 +232,9 @@ static void test_default_queue_overflow(void)
     assert(0 == result);
 
     assert(0 == fifo_circular_buffer_get_items_count(p_circular_buffer));
+    /* Now, we did put something like 'ABA' into a buffer that can fit only 2 letters. 
+     * Thus, the first letter have been pushed out and what we are left is the 'BA' string.
+     */
 #if 0
     {
         uint8_t const * p_data;
