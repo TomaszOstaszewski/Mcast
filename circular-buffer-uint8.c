@@ -88,17 +88,15 @@ int fifo_circular_buffer_is_free_space(struct fifo_circular_buffer * p_circular_
     return (p_circular_buffer->hdr_.write_idx_ - p_circular_buffer->hdr_.read_idx_) < p_circular_buffer->hdr_.max_items_;
 }
 
-int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_buffer, struct data_item const * p_item)
+int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_buffer, uint8_t const * p_data, uint32_t count)
 {
     uint32_t buffer_index;
     uint32_t idx;
-    for (idx = 0 
-         ;idx != p_item->count_
-         ;++idx, ++p_circular_buffer->hdr_.write_idx_) 
+    for (idx = 0; idx != count; ++idx, ++p_circular_buffer->hdr_.write_idx_) 
     {
         buffer_index = (p_circular_buffer->hdr_.max_items_ -1) & p_circular_buffer->hdr_.write_idx_;
         assert(buffer_index < p_circular_buffer->hdr_.max_items_);
-        p_circular_buffer->data_buffer_[buffer_index] = p_item->data_[idx];
+        p_circular_buffer->data_buffer_[buffer_index] = p_data[idx];
         if (p_circular_buffer->hdr_.write_idx_ - p_circular_buffer->hdr_.read_idx_ == p_circular_buffer->hdr_.max_items_)
         {
             ++p_circular_buffer->hdr_.read_idx_;
@@ -107,16 +105,16 @@ int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_buff
     return 0;
 }
 
-int fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_circular_buffer, struct data_item * p_item)
+int fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_circular_buffer, uint8_t * p_data, uint32_t * p_req_count)
 {
     uint32_t idx;
     for (idx = 0
-        ; idx != p_item->count_ && (p_circular_buffer->hdr_.write_idx_ - p_circular_buffer->hdr_.read_idx_) != 0
+        ; idx < *p_req_count && (p_circular_buffer->hdr_.write_idx_ - p_circular_buffer->hdr_.read_idx_) != 0
         ; ++idx, ++p_circular_buffer->hdr_.read_idx_)
     {
-        p_item->data_[idx] = p_circular_buffer->data_buffer_[((p_circular_buffer->hdr_.max_items_-1) & p_circular_buffer->hdr_.read_idx_)];
+        p_data[idx] = p_circular_buffer->data_buffer_[((p_circular_buffer->hdr_.max_items_-1) & p_circular_buffer->hdr_.read_idx_)];
     }
-    p_item->count_ = idx;
+    *p_req_count = idx;
     return 0;
 }
 

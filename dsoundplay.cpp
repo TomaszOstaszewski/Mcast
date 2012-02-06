@@ -413,12 +413,11 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
     hr = p_ds_data->p_secondary_sound_buffer_->GetCurrentPosition(&dwRead, &dwWrite);
     if (SUCCEEDED(hr))
     {
-        struct data_item data;
+        uint8_t * p_data = (uint8_t*)alloca(p_ds_data->nSingleBufferSize_);
+        uint32_t size = p_ds_data->nSingleBufferSize_;
         struct buffer_desc buf_desc;
         unsigned int read_buf_index, write_buf_index;
-        data.data_ = (uint8_t*)alloca(p_ds_data->nSingleBufferSize_);
-        data.count_ = p_ds_data->nSingleBufferSize_;
-        buf_desc.p_begin_ = data.data_;
+        buf_desc.p_begin_ = p_data;
         buf_desc.nMaxOffset_ = p_ds_data->nSingleBufferSize_;
         buf_desc.nCurrentOffset_ = 0;
         read_buf_index = dwRead / p_ds_data->nSingleBufferSize_;
@@ -433,11 +432,11 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
             {
                 if (fifo_circular_buffer_get_items_count(p_ds_data->fifo_)>0)
                 {
-                    fifo_circular_buffer_fetch_item(p_ds_data->fifo_, &data);
+                    fifo_circular_buffer_fetch_item(p_ds_data->fifo_, p_data, &size);
                 }
                 else
                 {
-                    memset(data.data_, 0, sizeof(uint8_t)*data.count_);
+                    memset(p_data, 0, sizeof(uint8_t)*size);
                 }
                 hr = fill_buffer(next_buf_index * (p_ds_data->nSingleBufferSize_), p_ds_data->nSingleBufferSize_, p_ds_data->p_secondary_sound_buffer_, &buf_desc);
                 p_ds_data->buffer_markers_[next_buf_index] = BUFFER_FILLED;

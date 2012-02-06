@@ -70,7 +70,8 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
     uint32_t count;
     uint32_t stop = 0;
     struct mcast_receiver * p_receiver;
-    struct data_item item;
+    uint8_t * p_data;
+    size_t req_count;
     DWORD dwWaitTimeout;
     int bytes_recevied;
     DWORD dwWaitResult;
@@ -80,8 +81,8 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
     assert(p_receiver->conn_);
     assert(p_receiver->fifo_);
     sock_addr_size  = sizeof(struct sockaddr_in);
-    item.data_      = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, DEFAULT_UDP_PACKET_CHUNK);
-    item.count_     = DEFAULT_UDP_PACKET_CHUNK;
+    p_data = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, DEFAULT_UDP_PACKET_CHUNK);
+    req_count = DEFAULT_UDP_PACKET_CHUNK;
     dwWaitTimeout   = p_receiver->settings_.poll_sleep_time_;
     for (count = 0; !stop; ++count)
     {
@@ -92,15 +93,15 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
                  * It is a non-blocking socket, so this call may well yield WSAEWOULDBLOCK - indicating that there
                  * is nothing to receive. We ignore those errors.
                  */
-                bytes_recevied = mcast_recvfrom(p_receiver->conn_, item.data_, item.count_);
+                bytes_recevied = mcast_recvfrom(p_receiver->conn_, p_data, req_count);
                 if (SOCKET_ERROR != bytes_recevied)
                 {
-                    item.count_ = bytes_recevied;
-                    fifo_circular_buffer_push_item(p_receiver->fifo_, &item);
+                    req_count = bytes_recevied;
+                    fifo_circular_buffer_push_item(p_receiver->fifo_, &p_data[0], req_count);
                     break;
                 }
-                item.data_ = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, item.data_, item.count_ + DEFAULT_UDP_PACKET_CHUNK);
-                item.count_ += DEFAULT_UDP_PACKET_CHUNK;
+                p_data = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, p_data, req_count + DEFAULT_UDP_PACKET_CHUNK);
+                req_count += DEFAULT_UDP_PACKET_CHUNK;
             } while (WSAGetLastError() == WSAEMSGSIZE);
         }
         dwWaitResult = WaitForSingleObject(p_receiver->hStopEventThread_, 0);
@@ -118,7 +119,7 @@ static DWORD WINAPI ReceiverThreadProc(LPVOID param)
     }
     CloseHandle(p_receiver->hStopEventThread_);
     p_receiver->hStopEventThread_ = NULL;
-    HeapFree(GetProcessHeap(), 0, item.data_);
+    HeapFree(GetProcessHeap(), 0, p_data);
     return 0;
 }
 

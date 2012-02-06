@@ -38,14 +38,6 @@ extern "C" {
 #include "std-int.h"
 
 /*!
- * @brief Helper structure to fetch/put data from/into queue.
- */
-typedef struct data_item {
-    uint32_t    	count_; /*!< Number of items to fetch/put */
-    uint8_t     *	data_; /*!< Array in which data will be placed/from where it will be retrieved. */
-} data_item_t;
-
-/*!
  * @brief Default queue level. 
  * @details If a queue is created without any explicit arguments, then it can hold 2 to power that number items.
  */
@@ -119,7 +111,7 @@ unsigned int fifo_circular_buffer_is_full(struct fifo_circular_buffer * p_fifo);
  * @param[in] p_item descriptor of the data. Describes from where data will be fetched and how many bytes to put into queue.
  * @return returns ... on success, ... otherwise.
  */
-int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_fifo, struct data_item const * p_item);
+int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_fifo, uint8_t const * p_data, uint32_t count);
 
 /**
  * @brief Removes data from the queue.
@@ -127,7 +119,7 @@ int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_fifo, struct 
  * @param[in] p_item descriptor of the data. Describes where the data will be placed and how many bytes to get.
  * @return returns ... on success, ... otherwise.
  */
-int fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_fifo, struct data_item * p_item);
+int fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_fifo, uint8_t * p_data, uint32_t * p_req_count);
 
 #if defined __cplusplus
 }
