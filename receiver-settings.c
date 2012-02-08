@@ -78,10 +78,7 @@ int receiver_settings_validate(struct receiver_settings const * p_settings)
 	if (p_settings->poll_sleep_time_ > 1000)
 		return 0;	
     if (p_settings->circular_buffer_level_ > MAXIMUM_CIRCULAR_BUFFER_LEVEL || p_settings->circular_buffer_level_  < MINIMUM_CIRCULAR_BUFFER_LEVEL)
-    {
-        debug_outputln("%s %d : %d", __FILE__, __LINE__, p_settings->circular_buffer_level_);
         return 0;
-    }
     if (!mcast_settings_validate(&p_settings->mcast_settings_))
         return 0;
     if (!play_settings_validate(&p_settings->play_settings_))

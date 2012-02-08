@@ -63,7 +63,7 @@ struct fifo_circular_buffer;
 struct fifo_circular_buffer *  circular_buffer_create();
 
 /**
- * @brief Create a circular buffer.
+ * @brief Creates a circular buffer, specifies its size.
  * @details <b>Fill me...</b>
  * @param[in] level this is the exponent of the buffer size. Actual buffer, when successfully created, holds up to 2^level items without overwritting the oldest ones.
  * @return returns a handle to a circular buffer, or NULL if creation failed.
