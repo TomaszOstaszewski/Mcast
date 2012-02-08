@@ -6,7 +6,9 @@ OUTDIR_PCC=$(OUTDIR)\pcc
 #----- OUTDIR_OBJ is defined in WIN32.MAK This is the name of the destination directory-------
         
 all: $(OUTDIR)\dsoundplay.lib $(OUTDIR)\ex-perf-counter.exe $(OUTDIR)\ut-circular-buffer-uint8.exe $(OUTDIR)\ut-input-buffer.exe $(OUTDIR)\ut-abstract-tone.exe $(OUTDIR)\sender.exe $(OUTDIR)\receiver.exe
+	@echo $(OUTDIR)\ut-circular-buffer-uint8.exe
 	@$(OUTDIR)\ut-circular-buffer-uint8.exe
+	@echo $(OUTDIR)\ut-input-buffer.exe
 	@$(OUTDIR)\ut-input-buffer.exe
 	
 DXLIB="$(PROGRAMFILES)\Microsoft DirectX SDK (June 2010)\Lib\x86"

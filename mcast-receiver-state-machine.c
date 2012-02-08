@@ -289,7 +289,7 @@ struct mcast_receiver * receiver_create(struct receiver_settings const * p_setti
     assert(p_receiver);
     assert(p_settings);
     receiver_settings_copy(&p_receiver->settings_, p_settings);
-    p_receiver->fifo_ = fifo_circular_buffer_create();
+    p_receiver->fifo_ = circular_buffer_create_with_size((uint8_t)p_settings->circular_buffer_level_);
     return p_receiver;
 }
 

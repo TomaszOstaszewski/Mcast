@@ -51,7 +51,7 @@ struct fifo_circular_buffer
     uint8_t data_buffer_[1];    /*!< Data buffer from which bytes are read/to which will be written. */
 };
 
-struct fifo_circular_buffer *  fifo_circular_buffer_create_with_level(uint8_t level)
+struct fifo_circular_buffer * circular_buffer_create_with_size(uint8_t level)
 {
     if (level >= 2 && level <= 16)
     {
@@ -66,9 +66,9 @@ struct fifo_circular_buffer *  fifo_circular_buffer_create_with_level(uint8_t le
     return NULL;
 }
 
-struct fifo_circular_buffer * fifo_circular_buffer_create()
+struct fifo_circular_buffer * circular_buffer_create()
 {
-    return fifo_circular_buffer_create_with_level(CIRCULAR_BUFFER_DEFAULT_LEVEL);
+    return circular_buffer_create_with_size(CIRCULAR_BUFFER_DEFAULT_LEVEL);
 }
 
 void fifo_circular_buffer_delete(struct fifo_circular_buffer * p_circular_buffer)
@@ -91,10 +91,10 @@ int fifo_circular_buffer_is_free_space(struct fifo_circular_buffer * p_circular_
     return (p_circular_buffer->hdr_.write_idx_ - p_circular_buffer->hdr_.read_idx_) < p_circular_buffer->hdr_.max_items_;
 }
 
-ssize_t fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_buffer, uint8_t const * p_data, uint32_t count)
+size_t fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_buffer, uint8_t const * p_data, uint32_t count)
 {
     uint32_t buffer_index;
-    ssize_t idx;
+    size_t idx;
     for (idx = 0; idx != count; ++idx, ++p_circular_buffer->hdr_.write_idx_) 
     {
         buffer_index = (p_circular_buffer->hdr_.max_items_ -1) & p_circular_buffer->hdr_.write_idx_;
@@ -108,9 +108,9 @@ ssize_t fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_circular_
     return idx;
 }
 
-ssize_t fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_circular_buffer, uint8_t * p_data, uint32_t * p_req_count)
+size_t fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_circular_buffer, uint8_t * p_data, uint32_t * p_req_count)
 {
-    ssize_t idx;
+    size_t idx;
     for (idx = 0
         ; idx < *p_req_count && (p_circular_buffer->hdr_.write_idx_ - p_circular_buffer->hdr_.read_idx_) != 0
         ; ++idx, ++p_circular_buffer->hdr_.read_idx_)

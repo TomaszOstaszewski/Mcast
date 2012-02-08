@@ -42,6 +42,7 @@ extern "C" {
 struct receiver_settings {
 	WAVEFORMATEX wfex_;
 	UINT   poll_sleep_time_;
+    UINT   circular_buffer_level_; /*!< A parameter that determines the size of the circular buffer */
     struct play_settings play_settings_;
 	struct mcast_settings mcast_settings_;
 };

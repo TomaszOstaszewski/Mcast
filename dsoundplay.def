@@ -5,18 +5,19 @@ EXPORTS
 	dsoundplayer_play @3 
 	dsoundplayer_pause @4 
 	dsoundplayer_stop @5 
-	fifo_circular_buffer_create @6 
-	fifo_circular_buffer_delete @7 
-	fifo_circular_buffer_get_capacity @8 
-	fifo_circular_buffer_get_items_count @9 
-	fifo_circular_buffer_is_free_space @10 
-	fifo_circular_buffer_is_full @11 
-	fifo_circular_buffer_push_item @12 
-	fifo_circular_buffer_fetch_item @13 
-	debug_outputln @14 
-	debug_output_flush @15 
-	debug_outputln_buffered @16 
-	dump_pcmwaveformat @17 
- 	copy_pcmwaveformat_2_WAVEFORMATEX @18 
-	waveformat_normalize @19 
-	init_master_riff @20 
+	circular_buffer_create @10
+	circular_buffer_create_with_size @11
+	fifo_circular_buffer_delete @12
+	fifo_circular_buffer_get_capacity @13
+	fifo_circular_buffer_get_items_count @14
+	fifo_circular_buffer_is_free_space @15
+	fifo_circular_buffer_is_full @16
+	fifo_circular_buffer_push_item @17
+	fifo_circular_buffer_fetch_item @18
+	debug_outputln @30
+	debug_output_flush @31
+	debug_outputln_buffered @32
+	dump_pcmwaveformat @33
+ 	copy_pcmwaveformat_2_WAVEFORMATEX @34
+	waveformat_normalize @35
+	init_master_riff @36

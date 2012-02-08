@@ -40,9 +40,27 @@
  */
 #define DEFAULT_NETPOLL_SLEEP_TIME (1)
 
+/*!
+ * @brief Default level for the circular buffer.
+ * @details The default level of N gives 2^N items to be stored in the circular buffer.
+ */
+#define DEFAULT_CIRCULAR_BUFFER_LEVEL (12)
+
+/*!
+ * @brief Maximum level for the circular buffer.
+ */
+#define MAXIMUM_CIRCULAR_BUFFER_LEVEL (16)
+
+/*!
+ * @brief Minimum level for the circular buffer.
+ */
+#define MINIMUM_CIRCULAR_BUFFER_LEVEL (5)
+
+
 int receiver_settings_get_default(struct receiver_settings * p_settings)
 {
     p_settings->poll_sleep_time_        = DEFAULT_NETPOLL_SLEEP_TIME;
+    p_settings->circular_buffer_level_  = DEFAULT_CIRCULAR_BUFFER_LEVEL;
     p_settings->wfex_.wFormatTag        = WAVE_FORMAT_PCM;
     p_settings->wfex_.nChannels         = 1;
     p_settings->wfex_.nSamplesPerSec    = 8000;
@@ -59,6 +77,11 @@ int receiver_settings_validate(struct receiver_settings const * p_settings)
 {
 	if (p_settings->poll_sleep_time_ > 1000)
 		return 0;	
+    if (p_settings->circular_buffer_level_ > MAXIMUM_CIRCULAR_BUFFER_LEVEL || p_settings->circular_buffer_level_  < MINIMUM_CIRCULAR_BUFFER_LEVEL)
+    {
+        debug_outputln("%s %d : %d", __FILE__, __LINE__, p_settings->circular_buffer_level_);
+        return 0;
+    }
     if (!mcast_settings_validate(&p_settings->mcast_settings_))
         return 0;
     if (!play_settings_validate(&p_settings->play_settings_))

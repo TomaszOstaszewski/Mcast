@@ -124,6 +124,10 @@ struct receiver_settings_dlg_controls
      */
     HWND channels_combo_;
     /*!
+     * @brief Handle to the 'Circular buffer size' combo box.
+     */
+    HWND circularbuffer_combo_;
+    /*!
      * @brief Handle to the Multimedit timer timeout spin control.
      */
     HWND btok_;
@@ -137,6 +141,15 @@ struct val_2_combo {
     int combo_idx_; /*!< Combo box item number */
 };
  
+/*!
+ * @brief Structure used to associate a number with a combo box item.
+ */
+struct pair_2_combo {
+    unsigned int el1_; /*!< Value to be associated with combo box. */
+    unsigned int el2_; /*!< Value to be associated with combo box. */
+    int combo_idx_; /*!< Combo box item number */
+};
+
 static struct val_2_combo sample_rate_values[] = {
     { 8000 },
     { 11025 },
@@ -147,6 +160,22 @@ static struct val_2_combo sample_rate_values[] = {
     { 48000 },
     { 96000 },
 };
+
+static struct pair_2_combo circularbuffer_size_values[] = {
+    { 32, 5 },
+    { 64, 6 },
+    { 128, 7 },
+    { 256, 8 },
+    { 512, 9 },
+    { 1024, 10 },
+    { 2048, 11 },
+    { 4096, 12 },
+    { 8192, 13 },
+    { 16384, 14 },
+    { 32768, 15 },
+    { 65536, 16 },
+};
+
 
 static struct val_2_combo bits_per_sample_values[] = {
     { 8 },
@@ -179,6 +208,22 @@ static void fill_combo(HWND hCombo, struct val_2_combo * values, unsigned int co
     }
 }
 
+static void fill_combo_with_pair(HWND hCombo, struct pair_2_combo * values, unsigned int count)
+{
+    static TCHAR text_buffer[8] = {0};
+    size_t index;
+    for (index = 0; index < count; ++index)
+    {
+        int combo_idx, set_item_ptr_result;
+        StringCchPrintf(text_buffer, 8, "%u", values[index].el1_);
+        combo_idx = ComboBox_InsertString(hCombo, -1, text_buffer);
+        assert(CB_ERR != combo_idx);
+        set_item_ptr_result = ComboBox_SetItemData(hCombo, combo_idx, index);
+        assert(CB_ERR != set_item_ptr_result);
+        values[index].combo_idx_ = combo_idx;
+    }
+}
+
 /*!
  * @brief For given combo and given value, selects the combo box item so it matches the value.
  */
@@ -191,6 +236,22 @@ static void select_combo_value(struct val_2_combo const * val_table, size_t tabl
         if (value == val_table[idx].val_)
         {
             ComboBox_SetCurSel(combo, val_table[idx].combo_idx_);
+            break;
+        }
+    }
+    assert(idx < table_size);
+}
+
+static void select_combo_value_pair(struct pair_2_combo const * val_table, size_t table_size, HWND combo, const unsigned int value)
+{
+    size_t idx;
+    /* Find the sample rate that matches the combo box items */
+    for (idx = 0; idx < table_size; ++idx)
+    {
+        if (value == val_table[idx].el2_)
+        {
+            ComboBox_SetCurSel(combo, val_table[idx].combo_idx_);
+            debug_outputln("%s %d : %d %d", __FILE__, __LINE__, val_table[idx].el1_, val_table[idx].el2_);
             break;
         }
     }
@@ -211,6 +272,7 @@ static void data_to_controls(struct receiver_settings const * p_settings, struct
     select_combo_value(sample_rate_values, sizeof(sample_rate_values)/sizeof(sample_rate_values[0]), p_controls->sample_rate_combo_, p_settings->wfex_.nSamplesPerSec);
     select_combo_value(bits_per_sample_values, sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]), p_controls->bits_per_sample_combo_, p_settings->wfex_.wBitsPerSample);
     select_combo_value(channel_values, sizeof(channel_values)/sizeof(channel_values[0]), p_controls->channels_combo_, p_settings->wfex_.nChannels);
+    select_combo_value_pair(circularbuffer_size_values, sizeof(circularbuffer_size_values)/sizeof(circularbuffer_size_values[0]), p_controls->circularbuffer_combo_, p_settings->circular_buffer_level_);
 }
 
 /*!
@@ -257,6 +319,7 @@ static int combo_controls_to_data(struct receiver_settings * p_settings, struct 
     WORD wBitsPerSample;
     WORD nChannels;
     DWORD nSamplesPerSec;
+    UINT nCircularBufferLevel;
     unsigned int combo_data_item;
     /* Get a value from sample rate combo control */
     result = ComboBox_GetCurSel(p_controls->sample_rate_combo_);
@@ -306,10 +369,28 @@ static int combo_controls_to_data(struct receiver_settings * p_settings, struct 
         goto error;
     }
     nChannels = channel_values[combo_data_item].val_;
+    /* Get value form 'circular buffer size' combo */
+    result = ComboBox_GetCurSel(p_controls->circularbuffer_combo_);
+    assert(CB_ERR != result);
+    if (CB_ERR == result)
+    {
+        debug_outputln("%s %d", __FILE__, __LINE__);
+        goto error;
+    }
+    combo_data_item = ComboBox_GetItemData(p_controls->circularbuffer_combo_, result);
+    assert(combo_data_item < sizeof(circularbuffer_size_values)/sizeof(circularbuffer_size_values[0]));
+    if(combo_data_item >= sizeof(circularbuffer_size_values)/sizeof(circularbuffer_size_values[0]))
+    {
+        debug_outputln("%s %d : %d %u", __FILE__, __LINE__, combo_data_item, sizeof(circularbuffer_size_values)/sizeof(circularbuffer_size_values));
+        goto error;
+    }
+    nCircularBufferLevel = circularbuffer_size_values[combo_data_item].el2_;
+
 
     p_settings->wfex_.nChannels      = nChannels;
     p_settings->wfex_.wBitsPerSample = wBitsPerSample;
     p_settings->wfex_.nSamplesPerSec = nSamplesPerSec;
+    p_settings->circular_buffer_level_ = nCircularBufferLevel;
     return 1;
 error:
     return 0;
@@ -347,6 +428,8 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(g_controls->num_of_chunks_spin_);
     g_controls->channels_combo_ = GetDlgItem(hwnd, IDC_WAV_CHANNELS);
     assert(g_controls->channels_combo_);
+    g_controls->circularbuffer_combo_ = GetDlgItem(hwnd, IDC_CIRCBUFFER_COMBO);
+    assert(g_controls->circularbuffer_combo_);
     SendMessage(g_controls->poll_sleep_time_spin_, UDM_SETBUDDY, (WPARAM)g_controls->poll_sleep_time_edit_, (LPARAM)0);
     SendMessage(g_controls->play_buffer_size_spin_, UDM_SETBUDDY, (WPARAM)g_controls->play_buffer_size_edit_, (LPARAM)0);
     SendMessage(g_controls->mmtimer_spin_, UDM_SETBUDDY, (WPARAM)g_controls->mmtimer_edit_, (LPARAM)0);
@@ -357,6 +440,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     fill_combo(g_controls->sample_rate_combo_, sample_rate_values, sizeof(sample_rate_values)/sizeof(sample_rate_values[0]));
     fill_combo(g_controls->bits_per_sample_combo_, bits_per_sample_values, sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]));
     fill_combo(g_controls->channels_combo_, channel_values, sizeof(channel_values)/sizeof(channel_values[0]));
+    fill_combo_with_pair(g_controls->circularbuffer_combo_, circularbuffer_size_values, sizeof(circularbuffer_size_values)/sizeof(circularbuffer_size_values[0]));
     data_to_controls(&g_controls->settings_, g_controls);
     return TRUE;
 } 
@@ -443,6 +527,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                 case IDC_WAV_SAMPLE_RATE:
                 case IDC_WAV_BITS_PER_SAMPLE:
                 case IDC_WAV_CHANNELS:
+                case IDC_CIRCBUFFER_COMBO:
                     switch (HIWORD(wParam))
                     {
                         case CBN_SELCHANGE:

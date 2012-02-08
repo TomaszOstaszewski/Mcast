@@ -233,39 +233,39 @@ static void UpdateUI(HWND hwnd)
 static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
     int result;
-    struct reciever_dialog * p_dialog;
-    p_dialog = (struct reciever_dialog *)lParam;
-    assert(p_dialog);
-    SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)p_dialog); 
-    result = receiver_settings_get_default(&p_dialog->settings_);
+    struct reciever_dialog * p_dlg;
+    p_dlg = (struct reciever_dialog *)lParam;
+    assert(p_dlg);
+    SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)p_dlg); 
+    result = receiver_settings_get_default(&p_dlg->settings_);
     assert(result);
     if (result)
     {
-        p_dialog->receiver_ = receiver_create(&p_dialog->settings_);
-        assert(p_dialog->receiver_);
-        p_dialog->hDlg_ = hwnd;
-        p_dialog->hSettingsBtn = GetDlgItem(hwnd, ID_RECEIVER_SETTINGS);    
-        p_dialog->hJoinMcastBtn = GetDlgItem(hwnd, ID_RECEIVER_JOINMCAST);  
-        p_dialog->hPlay = GetDlgItem(hwnd, ID_RECEIVER_PLAY);    
-        p_dialog->hStop = GetDlgItem(hwnd, ID_RECEIVER_STOP);  
-        p_dialog->hLeaveMcast = GetDlgItem(hwnd, ID_RECEIVER_LEAVEMCAST);
-        p_dialog->hStopRcv = GetDlgItem(hwnd, ID_RECEIVER_STOPRCV);
-        p_dialog->hStartRcv = GetDlgItem(hwnd, ID_RECEIVER_STARTRCV);
-        p_dialog->hProgressBar = GetDlgItem(hwnd, IDC_RECEIVER_BUFFER_FILL);
-        p_dialog->hBufferBytesEdit = GetDlgItem(hwnd, IDC_BUFFER_BYTES_EDIT);
-        p_dialog->hMainMenu = GetMenu(hwnd);
-        assert(p_dialog->hSettingsBtn);
-        assert(p_dialog->hJoinMcastBtn);
-        assert(p_dialog->hPlay);
-        assert(p_dialog->hStop);
-        assert(p_dialog->hLeaveMcast);
-        assert(p_dialog->hStopRcv);
-        assert(p_dialog->hStartRcv);
-        assert(p_dialog->hProgressBar);
-        assert(p_dialog->hBufferBytesEdit);
-        assert(p_dialog->hMainMenu);
-        SendMessage(p_dialog->hProgressBar, PBM_SETRANGE32, 0, fifo_circular_buffer_get_capacity(receiver_get_fifo(p_dialog->receiver_)));
-        SendMessage(p_dialog->hBufferBytesEdit, EM_SETLIMITTEXT, (WPARAM)BUFFER_BYTES_EDIT_TEXT_LIMIT, (LPARAM)0);
+        p_dlg->receiver_ = receiver_create(&p_dlg->settings_);
+        assert(p_dlg->receiver_);
+        p_dlg->hDlg_ = hwnd;
+        p_dlg->hSettingsBtn = GetDlgItem(hwnd, ID_RECEIVER_SETTINGS);    
+        p_dlg->hJoinMcastBtn = GetDlgItem(hwnd, ID_RECEIVER_JOINMCAST);  
+        p_dlg->hPlay = GetDlgItem(hwnd, ID_RECEIVER_PLAY);    
+        p_dlg->hStop = GetDlgItem(hwnd, ID_RECEIVER_STOP);  
+        p_dlg->hLeaveMcast = GetDlgItem(hwnd, ID_RECEIVER_LEAVEMCAST);
+        p_dlg->hStopRcv = GetDlgItem(hwnd, ID_RECEIVER_STOPRCV);
+        p_dlg->hStartRcv = GetDlgItem(hwnd, ID_RECEIVER_STARTRCV);
+        p_dlg->hProgressBar = GetDlgItem(hwnd, IDC_RECEIVER_BUFFER_FILL);
+        p_dlg->hBufferBytesEdit = GetDlgItem(hwnd, IDC_BUFFER_BYTES_EDIT);
+        p_dlg->hMainMenu = GetMenu(hwnd);
+        assert(p_dlg->hSettingsBtn);
+        assert(p_dlg->hJoinMcastBtn);
+        assert(p_dlg->hPlay);
+        assert(p_dlg->hStop);
+        assert(p_dlg->hLeaveMcast);
+        assert(p_dlg->hStopRcv);
+        assert(p_dlg->hStartRcv);
+        assert(p_dlg->hProgressBar);
+        assert(p_dlg->hBufferBytesEdit);
+        assert(p_dlg->hMainMenu);
+        SendMessage(p_dlg->hProgressBar, PBM_SETRANGE32, 0, fifo_circular_buffer_get_capacity(receiver_get_fifo(p_dlg->receiver_)));
+        SendMessage(p_dlg->hBufferBytesEdit, EM_SETLIMITTEXT, (WPARAM)BUFFER_BYTES_EDIT_TEXT_LIMIT, (LPARAM)0);
         SetTimer(hwnd, IDT_TIMER_1, UI_UPDATE_TIMER_MS , NULL);
     }
     else 
@@ -307,6 +307,9 @@ static INT_PTR CALLBACK ReceiverDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam,
                         {
                             p_dlg->receiver_ = receiver_create(&p_dlg->settings_);
                             assert(p_dlg->receiver_);
+                            debug_outputln("%s %5.5d : %d", __FILE__, __LINE__, fifo_circular_buffer_get_capacity(receiver_get_fifo(p_dlg->receiver_)));
+                            SendMessage(p_dlg->hProgressBar, PBM_SETRANGE32, 0, fifo_circular_buffer_get_capacity(receiver_get_fifo(p_dlg->receiver_)));
+                            SendMessage(p_dlg->hProgressBar, PBM_SETPOS, 0, 0);
                         }
                     }
                     else

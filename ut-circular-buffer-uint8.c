@@ -48,7 +48,7 @@ static void test_create_destroy_0(void)
     size_t idx ;
     for (idx = 0; idx < sizeof(levels)/sizeof(levels[0]); ++idx)
     {
-        struct fifo_circular_buffer * p_circular_buffer = fifo_circular_buffer_create_with_level(levels[idx]);
+        struct fifo_circular_buffer * p_circular_buffer = circular_buffer_create_with_size(levels[idx]);
         MY_ASSERT( NULL != p_circular_buffer);
         MY_ASSERT(0 == fifo_circular_buffer_get_items_count(p_circular_buffer));
         MY_ASSERT(fifo_circular_buffer_is_free_space(p_circular_buffer));
@@ -62,13 +62,50 @@ static void test_create_destroy_1(void)
     uint8_t idx ;
     for (idx = 0; idx < 1; ++idx)
    {
-        struct fifo_circular_buffer * p_circular_buffer = fifo_circular_buffer_create_with_level(idx);
+        struct fifo_circular_buffer * p_circular_buffer = circular_buffer_create_with_size(idx);
         MY_ASSERT( NULL == p_circular_buffer);
     }
     for (idx = 17; idx != 0; ++idx)
     {
-        struct fifo_circular_buffer * p_circular_buffer = fifo_circular_buffer_create_with_level(idx);
+        struct fifo_circular_buffer * p_circular_buffer = circular_buffer_create_with_size(idx);
         MY_ASSERT( NULL == p_circular_buffer);
+    }
+}
+
+static void test_create_destroy_2(void)
+{
+    struct pair {
+        uint8_t el1_;
+        uint32_t el2_;
+    };
+#define MAKE_PAIR(x) {x, 1<<x}
+    const struct pair levels[] = { 
+        MAKE_PAIR(2),
+        MAKE_PAIR(3),
+        MAKE_PAIR(4),
+        MAKE_PAIR(5),
+        MAKE_PAIR(6),
+        MAKE_PAIR(7),
+        MAKE_PAIR(8),
+        MAKE_PAIR(9),
+        MAKE_PAIR(10),
+        MAKE_PAIR(11),
+        MAKE_PAIR(12),
+        MAKE_PAIR(13),
+        MAKE_PAIR(14),
+        MAKE_PAIR(15),
+        MAKE_PAIR(16),
+    };
+    size_t idx ;
+    for (idx = 0; idx < sizeof(levels)/sizeof(levels[0]); ++idx)
+    {
+        struct fifo_circular_buffer * p_circular_buffer = circular_buffer_create_with_size(levels[idx].el1_);
+        MY_ASSERT( NULL != p_circular_buffer);
+        MY_ASSERT(0 == fifo_circular_buffer_get_items_count(p_circular_buffer));
+        MY_ASSERT(fifo_circular_buffer_is_free_space(p_circular_buffer));
+        MY_ASSERT(!fifo_circular_buffer_is_full(p_circular_buffer));
+        MY_ASSERT(levels[idx].el2_ == fifo_circular_buffer_get_capacity(p_circular_buffer));
+        fifo_circular_buffer_delete(p_circular_buffer);
     }
 }
 
@@ -78,10 +115,10 @@ static void test_insert_4_elem_into_4_elem_circular_fifo(void)
     uint8_t data_to_put[] = { 0, 1, 2, 3 };
     int result;
 
-    p_circular_buffer = fifo_circular_buffer_create_with_level(2); /* 2^2 equals 4, so FIFO will hold at most 4 items */
+    p_circular_buffer = circular_buffer_create_with_size(2); /* 2^2 equals 4, so FIFO will hold at most 4 items */
     MY_ASSERT(NULL != p_circular_buffer);
     result = fifo_circular_buffer_push_item(p_circular_buffer, &data_to_put[0], sizeof(data_to_put));
-    MY_ASSERT(0 == result);
+    MY_ASSERT(result);
     MY_ASSERT(sizeof(data_to_put)/sizeof(data_to_put[0]) == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
     MY_ASSERT(fifo_circular_buffer_is_full(p_circular_buffer));
     fifo_circular_buffer_delete(p_circular_buffer);
@@ -95,10 +132,10 @@ static void test_insert_6_elem_into_4_elem_circular_fifo(void)
     int result;
     size_t count;
 
-    p_circular_buffer = fifo_circular_buffer_create_with_level(2); /* 2^2 equals 4, so FIFO will hold at most 4 items */
+    p_circular_buffer = circular_buffer_create_with_size(2); /* 2^2 equals 4, so FIFO will hold at most 4 items */
     MY_ASSERT(NULL != p_circular_buffer);
     result = fifo_circular_buffer_push_item(p_circular_buffer, &data_to_put[0], sizeof(data_to_put));
-    MY_ASSERT(0 == result);
+    MY_ASSERT(result);
     MY_ASSERT((1<<2) == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
     MY_ASSERT(fifo_circular_buffer_is_full(p_circular_buffer));
     count = fifo_circular_buffer_get_items_count(p_circular_buffer);
@@ -118,7 +155,7 @@ static void test_fetch_from_empty_queue(void)
         int result;
         uint8_t container[2];
         size_t req_count = 2;
-        struct fifo_circular_buffer * p_circular_buffer = fifo_circular_buffer_create_with_level(levels[idx]);
+        struct fifo_circular_buffer * p_circular_buffer = circular_buffer_create_with_size(levels[idx]);
         MY_ASSERT( NULL != p_circular_buffer);
         MY_ASSERT(0 == fifo_circular_buffer_get_items_count(p_circular_buffer));
         result = fifo_circular_buffer_fetch_item(p_circular_buffer, &container[0], &req_count);   
@@ -142,12 +179,12 @@ static void test_default_queue(void)
             data_to_put[idx] = (uint8_t)rand();
         }
     }
-    p_circular_buffer = fifo_circular_buffer_create();
+    p_circular_buffer = circular_buffer_create();
     MY_ASSERT(NULL != p_circular_buffer);
 
     req_count = CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT; 
     result = fifo_circular_buffer_push_item(p_circular_buffer, &data_to_put[0], req_count);
-    MY_ASSERT(0 == result);
+    MY_ASSERT(result);
 
     MY_ASSERT(req_count == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
     MY_ASSERT(fifo_circular_buffer_is_full(p_circular_buffer));
@@ -155,7 +192,7 @@ static void test_default_queue(void)
     req_count = CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT;
     result = fifo_circular_buffer_fetch_item(p_circular_buffer, &fetched_data[0], &req_count);
     MY_ASSERT(CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT == req_count);
-    MY_ASSERT(0 == result);
+    MY_ASSERT(result);
 
     MY_ASSERT(0 == fifo_circular_buffer_get_items_count(p_circular_buffer));
 #if 0
@@ -192,13 +229,13 @@ static void test_default_queue_overflow(void)
         }
     }
 
-    p_circular_buffer = fifo_circular_buffer_create();
+    p_circular_buffer = circular_buffer_create();
     MY_ASSERT(NULL != p_circular_buffer);
 
     /* Put the entire buffer into queue. */
     req_count = CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT; 
     result = fifo_circular_buffer_push_item(p_circular_buffer, &data_to_put[0], req_count);
-    MY_ASSERT(0 == result);
+    MY_ASSERT(result);
 
     MY_ASSERT(CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT  == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
     MY_ASSERT(fifo_circular_buffer_is_full(p_circular_buffer));
@@ -206,7 +243,7 @@ static void test_default_queue_overflow(void)
     /* Put the extra half of the buffer */
     req_count = extra_count;
     result = fifo_circular_buffer_push_item(p_circular_buffer, &data_to_put[0], req_count);
-    MY_ASSERT(0 == result);
+    MY_ASSERT(result);
 
     MY_ASSERT(CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT == fifo_circular_buffer_get_items_count(p_circular_buffer)); 
     MY_ASSERT(fifo_circular_buffer_is_full(p_circular_buffer));
@@ -214,7 +251,7 @@ static void test_default_queue_overflow(void)
     /* Fetch the entire buffer. */
     req_count = fifo_circular_buffer_get_items_count(p_circular_buffer);
     result = fifo_circular_buffer_fetch_item(p_circular_buffer, &fetched_data[0], &req_count);
-    MY_ASSERT(0 == result);
+    MY_ASSERT(result);
 
     MY_ASSERT(0 == fifo_circular_buffer_get_items_count(p_circular_buffer));
     /* Now, we did put something like 'ABA' into a buffer that can fit only 2 letters. 
@@ -245,6 +282,7 @@ int main(int argc, char ** argv)
     srand(time(NULL));
     test_create_destroy_0();
     test_create_destroy_1();
+    test_create_destroy_2();
     test_insert_4_elem_into_4_elem_circular_fifo();
     test_insert_6_elem_into_4_elem_circular_fifo();
     test_fetch_from_empty_queue();
