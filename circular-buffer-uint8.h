@@ -1,7 +1,7 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 
 /**
-* @file fifo-circular-buffer.h
+ * @file circular-buffer-uint8.h
  * @author T.Ostaszewski
  * @brief A circular buffer interface.
  * @details This file contains forward declarations of circular buffer functions. The circular buffer is 
@@ -36,14 +36,18 @@ extern "C" {
 #endif
 
 #include "std-int.h"
+#include <stddef.h>
 
 /*!
- * @brief Helper structure to fetch/put data from/into queue.
+ * @brief Default queue level. 
+ * @details If a queue is created without any explicit arguments, then it can hold 2 to power that number items.
  */
-typedef struct data_item {
-    uint16_t    	count_; /*!< Number of items to fetch/put */
-    uint8_t     *	data_; /*!< Array in which data will be placed/from where it will be retrieved. */
-} data_item_t;
+#define CIRCULAR_BUFFER_DEFAULT_LEVEL (16)
+
+/*!
+ * @brief Maximum number of items that the default queue can take.
+ */
+#define CIRCULAR_BUFFER_DEFAULT_ITEMS_COUNT (1<<CIRCULAR_BUFFER_DEFAULT_LEVEL)
 
 /*!
  * @brief Forward declaration.
@@ -52,23 +56,32 @@ struct fifo_circular_buffer;
 
 /**
  * @brief Create a circular buffer.
- * @details Fill me...
+ * @details <b>Fill me...</b>
  * @return returns a handle to a circular buffer, or NULL if creation failed.
  * @sa fifo_circular_buffer_delete
  */
-struct fifo_circular_buffer *  fifo_circular_buffer_create(void);
+struct fifo_circular_buffer *  circular_buffer_create();
+
+/**
+ * @brief Creates a circular buffer, specifies its size.
+ * @details <b>Fill me...</b>
+ * @param[in] level this is the exponent of the buffer size. Actual buffer, when successfully created, holds up to 2^level items without overwritting the oldest ones.
+ * @return returns a handle to a circular buffer, or NULL if creation failed.
+ * @sa fifo_circular_buffer_delete
+ */
+struct fifo_circular_buffer * circular_buffer_create_with_size(uint8_t level);
 
 /**
  * @brief Destroys a circular buffer
- * @param[in] p_fifo a handle to the circular buffer obtained via call to fifo_circular_buffer_create
- * @sa fifo_circular_buffer_create
+ * @param[in] p_fifo a handle to the circular buffer obtained via call to circular_buffer_create
+ * @sa circular_buffer_create
  */
 void fifo_circular_buffer_delete(struct fifo_circular_buffer * p_fifo);
 
 /**
  * @brief Returns total number of items that can be stored in the buffer.
  * @details The total number of items is maximum of what can be stored without the risk of overwriting last recently written items.
- * @param[in] p_fifo a handle to the circular buffer obtained via call to fifo_circular_buffer_create
+ * @param[in] p_fifo a handle to the circular buffer obtained via call to circular_buffer_create
  * @return number of items that can be stored
  */
 uint32_t fifo_circular_buffer_get_capacity(struct fifo_circular_buffer const * p_fifo);
@@ -76,7 +89,7 @@ uint32_t fifo_circular_buffer_get_capacity(struct fifo_circular_buffer const * p
 /**
  * @brief Returns actual number of items that can be stored in the buffer.
  * @details
- * @param[in] p_fifo a handle to the circular buffer obtained via call to fifo_circular_buffer_create
+ * @param[in] p_fifo a handle to the circular buffer obtained via call to circular_buffer_create
  * @return actual number of items that can be stored in the buffer
  */
 uint32_t fifo_circular_buffer_get_items_count(struct fifo_circular_buffer const * p_fifo);
@@ -84,7 +97,7 @@ uint32_t fifo_circular_buffer_get_items_count(struct fifo_circular_buffer const 
 /**
  * @brief Checks, if the queue can accomodate more data.
  * @details
- * @param[in] p_fifo a handle to the circular buffer obtained via call to fifo_circular_buffer_create
+ * @param[in] p_fifo a handle to the circular buffer obtained via call to circular_buffer_create
  * @return returns non-zero if there is still free space in the buffer. Otherwise, returns 0.
  */
 int fifo_circular_buffer_is_free_space(struct fifo_circular_buffer * p_fifo);
@@ -92,26 +105,30 @@ int fifo_circular_buffer_is_free_space(struct fifo_circular_buffer * p_fifo);
 /**
  * @brief Checks, if queue is completely full.
  * @details If queue is full, then next insert will overwrite date that was written at the beginning of the queue.
- * @param[in] p_fifo a handle to the circular buffer obtained via call to fifo_circular_buffer_create
+ * @param[in] p_fifo a handle to the circular buffer obtained via call to circular_buffer_create
  * @return returns a non zero value if queue is full. If returns 0, then queue can accomodate more data.
  */
 unsigned int fifo_circular_buffer_is_full(struct fifo_circular_buffer * p_fifo);
 
 /**
  * @brief Puts new data into the queue.
- * @param[in] p_fifo a handle to the circular buffer obtained via call to fifo_circular_buffer_create
- * @param[in] p_item descriptor of the data. Describes from where data will be fetched and how many bytes to put into queue.
- * @return returns ... on success, ... otherwise.
+ * @param[in] p_fifo a handle to the circular buffer obtained via call to circular_buffer_create. It is that 
+ * queue the data will be put into.
+ * @param[in] p_data pointer to the array whose contents will be filled with data retrieved from the queue.
+ * @param[in] count indicates the length tof the array given as the p_data parameter.
+ * @return This call returns the number of bytes pushed, or -1 if an error occurred. 
  */
-int fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_fifo, struct data_item const * p_item);
+size_t fifo_circular_buffer_push_item(struct fifo_circular_buffer * p_fifo, uint8_t const * p_data, uint32_t count);
 
 /**
  * @brief Removes data from the queue.
- * @param[in] p_fifo a handle to the circular buffer obtained via call to fifo_circular_buffer_create
- * @param[in] p_item descriptor of the data. Describes where the data will be placed and how many bytes to get.
- * @return returns ... on success, ... otherwise.
+ * @param[in] p_fifo a handle to the circular buffer obtained via call to circular_buffer_create. It is that queue
+ * from which data will be fetched.
+ * @param[in] p_data pointer to the array whose contents will be filled with data retrieved from the queue.
+ * @param[in] p_req_count pointer to the variable which holds the length of the array given as the p_data parameter.
+ * @return This call returns the number of bytes retrieved, or -1 if an error occurred. 
  */
-int fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_fifo, struct data_item * p_item);
+size_t fifo_circular_buffer_fetch_item(struct fifo_circular_buffer * p_fifo, uint8_t * p_data, uint32_t * p_req_count);
 
 #if defined __cplusplus
 }

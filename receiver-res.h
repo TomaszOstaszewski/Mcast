@@ -21,6 +21,7 @@
 #define IDC_WAV_BITS_PER_SAMPLE                 1009
 #define IDC_PLAY_CHUNKS_EDIT                    1010
 #define IDC_PLAY_CHUNKS_SPIN                    1011
+#define IDC_CIRCBUFFER_COMBO                    1012
 #define IDS_APPTITLE_RECEIVER                   40000
 #define ID_RECEIVER_STARTRCV                    40000
 #define IDT_TIMER_1                             40001

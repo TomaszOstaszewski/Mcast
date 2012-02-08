@@ -35,11 +35,17 @@
  */
 #define MODULE_VERSION_STRING_LENGTH (16)
 
+/*!
+ * @brief Structure that holds "About.." dialog data.
+ * @details Here we store both data to be displayed onto the dialog controls, as well as
+ * the handles to the dialog controls. 
+ */
 struct about_dlg_data {
-    HWND hVersion_; /*!<  */
-    HWND hModuleName_; /*!<  */
-    TCHAR module_name[MAX_PATH+1]; /*!< */
-    TCHAR module_version_string[MODULE_VERSION_STRING_LENGTH]; /*! */
+	HWND hDlg_; /*!< Handle to the dialog window itself. */
+    HWND hVersion_; /*!< Handle to the control holding the version information. */
+    HWND hModuleName_; /*!< Handle to the control holding the module path information. */
+    TCHAR module_name[MAX_PATH+1]; /*!< Buffer in which we store module path. */
+    TCHAR module_version_string[MODULE_VERSION_STRING_LENGTH]; /*!< Buffer in which we store module version. */
     LPCTSTR pszCaption_;
 };
 
@@ -54,7 +60,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     p_dlg = (struct about_dlg_data*)lParam;
     assert(p_dlg);
     SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)p_dlg);
-
+	p_dlg->hDlg_ = hwnd;
     p_dlg->hVersion_ = GetDlgItem(hwnd, IDC_VERSION_INFO);
     assert(p_dlg->hVersion_);
     p_dlg->hModuleName_ = GetDlgItem(hwnd, IDC_MODULE_NAME);

@@ -92,8 +92,8 @@ debug_helpers.h \
 dsoundplay.cpp \
 dsoundplay.h \
 ex-perf-counter.c \
-fifo-circular-buffer.c \
-fifo-circular-buffer.h \
+circular-buffer-uint8.c \
+circular-buffer-uint8.h \
 input-buffer.c \
 input-buffer.h \
 mcast-receiver-dlg.c \
