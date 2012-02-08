@@ -161,19 +161,19 @@ static struct val_2_combo sample_rate_values[] = {
     { 96000 },
 };
 
-static struct pair_2_combo circularbuffer_size_values[] = {
-    { 32, 5 },
-    { 64, 6 },
-    { 128, 7 },
-    { 256, 8 },
-    { 512, 9 },
-    { 1024, 10 },
-    { 2048, 11 },
-    { 4096, 12 },
-    { 8192, 13 },
-    { 16384, 14 },
-    { 32768, 15 },
-    { 65536, 16 },
+static struct val_2_combo circularbuffer_size_values[] = {
+    { 32 },
+    { 64 },
+    { 128 },
+    { 256 },
+    { 512 },
+    { 1024 },
+    { 2048 },
+    { 4096 },
+    { 8192 },
+    { 16384 },
+    { 32768 },
+    { 65536 },
 };
 
 
@@ -192,6 +192,16 @@ static struct val_2_combo channel_values[] = {
  */
 static struct receiver_settings_dlg_controls * g_controls;
 
+static unsigned int log2ofInteger(unsigned int v)
+{
+    unsigned int r = 0; // r will be lg(v)
+    while (v >>= 1) // unroll for more speed...
+    {
+        r++;
+    }
+    return r;
+}
+
 static void fill_combo(HWND hCombo, struct val_2_combo * values, unsigned int count)
 {
     static TCHAR text_buffer[8] = {0};
@@ -200,22 +210,6 @@ static void fill_combo(HWND hCombo, struct val_2_combo * values, unsigned int co
     {
         int combo_idx, set_item_ptr_result;
         StringCchPrintf(text_buffer, 8, "%u", values[index].val_);
-        combo_idx = ComboBox_InsertString(hCombo, -1, text_buffer);
-        assert(CB_ERR != combo_idx);
-        set_item_ptr_result = ComboBox_SetItemData(hCombo, combo_idx, index);
-        assert(CB_ERR != set_item_ptr_result);
-        values[index].combo_idx_ = combo_idx;
-    }
-}
-
-static void fill_combo_with_pair(HWND hCombo, struct pair_2_combo * values, unsigned int count)
-{
-    static TCHAR text_buffer[8] = {0};
-    size_t index;
-    for (index = 0; index < count; ++index)
-    {
-        int combo_idx, set_item_ptr_result;
-        StringCchPrintf(text_buffer, 8, "%u", values[index].el1_);
         combo_idx = ComboBox_InsertString(hCombo, -1, text_buffer);
         assert(CB_ERR != combo_idx);
         set_item_ptr_result = ComboBox_SetItemData(hCombo, combo_idx, index);
@@ -242,28 +236,13 @@ static void select_combo_value(struct val_2_combo const * val_table, size_t tabl
     assert(idx < table_size);
 }
 
-static void select_combo_value_pair(struct pair_2_combo const * val_table, size_t table_size, HWND combo, const unsigned int value)
-{
-    size_t idx;
-    /* Find the sample rate that matches the combo box items */
-    for (idx = 0; idx < table_size; ++idx)
-    {
-        if (value == val_table[idx].el2_)
-        {
-            ComboBox_SetCurSel(combo, val_table[idx].combo_idx_);
-            debug_outputln("%s %d : %d %d", __FILE__, __LINE__, val_table[idx].el1_, val_table[idx].el2_);
-            break;
-        }
-    }
-    assert(idx < table_size);
-}
-
 /*!
  * @brief Transfer from data to UI
  * @details Takes values from the settings object and presents them on the UI
  */
 static void data_to_controls(struct receiver_settings const * p_settings, struct receiver_settings_dlg_controls * p_controls)
 {
+    UINT nCircularBufferSize = 1 << p_settings->circular_buffer_level_;
     put_in_edit_control_uint16(p_controls->poll_sleep_time_edit_, p_settings->poll_sleep_time_);
     put_in_edit_control_uint16(p_controls->play_buffer_size_edit_, p_settings->play_settings_.play_buffer_size_);
     put_in_edit_control_uint16(p_controls->mmtimer_edit_, p_settings->play_settings_.timer_delay_);
@@ -272,7 +251,7 @@ static void data_to_controls(struct receiver_settings const * p_settings, struct
     select_combo_value(sample_rate_values, sizeof(sample_rate_values)/sizeof(sample_rate_values[0]), p_controls->sample_rate_combo_, p_settings->wfex_.nSamplesPerSec);
     select_combo_value(bits_per_sample_values, sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]), p_controls->bits_per_sample_combo_, p_settings->wfex_.wBitsPerSample);
     select_combo_value(channel_values, sizeof(channel_values)/sizeof(channel_values[0]), p_controls->channels_combo_, p_settings->wfex_.nChannels);
-    select_combo_value_pair(circularbuffer_size_values, sizeof(circularbuffer_size_values)/sizeof(circularbuffer_size_values[0]), p_controls->circularbuffer_combo_, p_settings->circular_buffer_level_);
+    select_combo_value(circularbuffer_size_values, sizeof(circularbuffer_size_values)/sizeof(circularbuffer_size_values[0]), p_controls->circularbuffer_combo_, nCircularBufferSize);
 }
 
 /*!
@@ -384,17 +363,16 @@ static int combo_controls_to_data(struct receiver_settings * p_settings, struct 
         debug_outputln("%s %d : %d %u", __FILE__, __LINE__, combo_data_item, sizeof(circularbuffer_size_values)/sizeof(circularbuffer_size_values));
         goto error;
     }
-    nCircularBufferLevel = circularbuffer_size_values[combo_data_item].el2_;
-
-
+    nCircularBufferLevel = circularbuffer_size_values[combo_data_item].val_;
     p_settings->wfex_.nChannels      = nChannels;
     p_settings->wfex_.wBitsPerSample = wBitsPerSample;
     p_settings->wfex_.nSamplesPerSec = nSamplesPerSec;
-    p_settings->circular_buffer_level_ = nCircularBufferLevel;
+    p_settings->circular_buffer_level_ = log2ofInteger(nCircularBufferLevel);
     return 1;
 error:
     return 0;
 }
+
 /*!
  * @brief Handler for WM_INITDIALOG message.
  * @details This handler does as follows:
@@ -440,7 +418,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     fill_combo(g_controls->sample_rate_combo_, sample_rate_values, sizeof(sample_rate_values)/sizeof(sample_rate_values[0]));
     fill_combo(g_controls->bits_per_sample_combo_, bits_per_sample_values, sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]));
     fill_combo(g_controls->channels_combo_, channel_values, sizeof(channel_values)/sizeof(channel_values[0]));
-    fill_combo_with_pair(g_controls->circularbuffer_combo_, circularbuffer_size_values, sizeof(circularbuffer_size_values)/sizeof(circularbuffer_size_values[0]));
+    fill_combo(g_controls->circularbuffer_combo_, circularbuffer_size_values, sizeof(circularbuffer_size_values)/sizeof(circularbuffer_size_values[0]));
     data_to_controls(&g_controls->settings_, g_controls);
     return TRUE;
 } 
