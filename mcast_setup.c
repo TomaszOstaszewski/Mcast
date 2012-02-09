@@ -51,7 +51,7 @@ static void dump_addrinfo(struct addrinfo const * p_info, const char * file, uns
 {
     char host[NI_MAXHOST] = { 0 };
     FormatAddress(p_info->ai_addr, p_info->ai_addrlen, host, NI_MAXHOST);
-    debug_outputln("%s %4.4u : L:%d f:%d s:%d p:%d c:%s p:'%s' %p", file, line,
+    debug_outputln("%s %4.4u : flg:%d fam:%d sot:%d pro:%d can:%s hst:'%15s' nxt:%p", file, line,
         p_info->ai_flags,
         p_info->ai_family,
         p_info->ai_socktype,
@@ -92,7 +92,8 @@ static void dump_locally_bound_socket(SOCKET s, const char * file, unsigned int 
 static int setup_multicast_impl(char * bindAddr, unsigned int nTTL, char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
 {
 	int rc;
-	p_mcast_conn->multiAddr_ 	= ResolveAddress(p_multicast_addr, p_port, AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP);
+    debug_outputln("%s %d : %s %s", __FILE__, __LINE__, p_multicast_addr, p_port);
+	p_mcast_conn->multiAddr_ 	= ResolveAddressWithFlags(p_multicast_addr, p_port, AF_INET, SOCK_DGRAM, IPPROTO_UDP, AI_PASSIVE);
 	if (NULL == p_mcast_conn->multiAddr_)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
@@ -100,7 +101,7 @@ static int setup_multicast_impl(char * bindAddr, unsigned int nTTL, char * p_mul
 	}
     dump_addrinfo(p_mcast_conn->multiAddr_, __FILE__, __LINE__);
 	// Resolve the binding address
-	p_mcast_conn->bindAddr_ 	= ResolveAddress(bindAddr, p_port, p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
+	p_mcast_conn->bindAddr_ 	= ResolveAddressWithFlags(bindAddr, p_port, p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol, AI_PASSIVE);
 	if (NULL == p_mcast_conn->bindAddr_)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
@@ -108,17 +109,14 @@ static int setup_multicast_impl(char * bindAddr, unsigned int nTTL, char * p_mul
 	}
     dump_addrinfo(p_mcast_conn->bindAddr_, __FILE__, __LINE__);
 	// Resolve the multicast interface
-	p_mcast_conn->resolveAddr_	= ResolveAddress(NULL, "0", p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
+	p_mcast_conn->resolveAddr_	= ResolveAddressWithFlags(NULL, "0", p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol, AI_PASSIVE);
 	if (NULL == p_mcast_conn->multiAddr_)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
     dump_addrinfo(p_mcast_conn->resolveAddr_, __FILE__, __LINE__);
-	// 
-	// Create the socket. In Winsock 1 you don't need any special
-	// flags to indicate multicasting.
-	//
+	// Create the socket. In Winsock 1 you don't need any special flags to indicate multicasting.
 	p_mcast_conn->socket_ 		= socket(p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
 	if (p_mcast_conn->socket_ == INVALID_SOCKET)
 	{
@@ -138,14 +136,14 @@ static int setup_multicast_impl(char * bindAddr, unsigned int nTTL, char * p_mul
 	}
     dump_locally_bound_socket(p_mcast_conn->socket_, __FILE__, __LINE__);
 	// Join the multicast group if specified
-	rc = JoinMulticastGroup(p_mcast_conn->socket_, p_mcast_conn->multiAddr_, p_mcast_conn->resolveAddr_);
+	rc = JoinMulticastGroup(p_mcast_conn->socket_, p_mcast_conn->multiAddr_, p_mcast_conn->bindAddr_);
 	if (rc == SOCKET_ERROR)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
 	// Set the send (outgoing) interface 
-	rc = SetSendInterface(p_mcast_conn->socket_, p_mcast_conn->resolveAddr_);
+	rc = SetSendInterface(p_mcast_conn->socket_, p_mcast_conn->bindAddr_);
 	if (rc == SOCKET_ERROR)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());

@@ -23,7 +23,7 @@
  * @param[in] iface network interface address. This network interface wil be used for multicast group communication.
  * @return
  */
-int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo const *iface);
+int JoinMulticastGroup(SOCKET s, struct addrinfo const *group, struct addrinfo const *iface);
 
 /*!
  * @brief
