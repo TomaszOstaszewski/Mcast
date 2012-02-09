@@ -42,10 +42,10 @@
 #include "resolve.h"
 #include "debug_helpers.h"
 
-/*!
- * @brief Default TTL for multicast connection.
- */ 
-#define DEFAULT_TTL    8
+
+
+
+
 
 static void dump_addrinfo(struct addrinfo const * p_info, const char * file, unsigned int line)
 {
