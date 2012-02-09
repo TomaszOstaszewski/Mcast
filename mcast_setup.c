@@ -13,6 +13,26 @@
  * Windows XP. To run this sample on older OSes, include the following header
  * file which makes it work automagically.
  * @author T. Ostaszewski
+ * @par License
+ * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+ * 	1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *	2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
+ * 	and/or other materials provided with the distribution.
+  * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+ * IN NO EVENT SHALL Tomasz Ostaszewski OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE.
+  * The views and conclusions contained in the software and documentation are those of the 
+ * authors and should not be interpreted as representing official policies, 
+ * either expressed or implied, of Tomasz Ostaszewski.
+ * @endcode
  * @date 04-Jan-2012
  */
 
@@ -22,164 +42,79 @@
 #include "resolve.h"
 #include "debug_helpers.h"
 
-typedef enum device_type { 
-	BRICK_DEVICE,
-	NGCH_DEVICE
-} device_type_t;
-
-#define MCASTADDRV4    "234.5.6.7"
-#define MCASTADDRV6    "ff12::1"
-#define MCASTPORT      "25000"
-#define BUFSIZE        1024
-#define DEFAULT_COUNT  500
+/*!
+ * @brief Default TTL for multicast connection.
+ */ 
 #define DEFAULT_TTL    8
 
-#define DEFAULT_MCAST_SETTINGS { FALSE, FALSE, TRUE, IPPROTO_UDP, 0, DEFAULT_TTL }
-
-BOOL  
-	bConnect=FALSE,           // Connect before sending?
-	bDontJoin=FALSE,          // Specifies whether to join the multicast group
-	bReuseAddr=TRUE;         // Set SO_REUSEADDR 
-int   
-	gProtocol=IPPROTO_UDP,    // UDP
-	gLoopBack=0,              // Disable loopback?
-	gTtl=DEFAULT_TTL;         // Multicast TTL value
-
-device_type_t g_dev_type = BRICK_DEVICE;
-
-char *gBindAddr=NULL,           // Address to bind socket to (default is 0.0.0.0 or ::)
-	*gInterface=NULL,          // Interface to join the multicast group on
-	*gMulticast=MCASTADDRV4,   // Multicast group to join
-	*gPort=MCASTPORT;          // Port number to use
-
-static const struct timeval hello_send_timer_value = { 0, 500000 };
-static const struct timeval purge_entry_timer_value = { 2, 0 };
-static const struct timeval new_data_timeout = { 0, 250000 };
-
-int setup_multicast(struct mcast_connection * p_mcast_conn)
+static void dump_addrinfo(struct addrinfo const * p_info, const char * file, unsigned int line)
 {
-	SOCKET retval = (SOCKET)INVALID_HANDLE_VALUE;
-	int rc;
-	p_mcast_conn->multiAddr_ = ResolveAddress(gMulticast, gPort, AF_UNSPEC, SOCK_DGRAM, gProtocol);
-	if (NULL == p_mcast_conn->multiAddr_)
-	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-		goto cleanup;
-	}
-	// Resolve the binding address
-	p_mcast_conn->bindAddr_ = ResolveAddress(gBindAddr, gPort, p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
-	if (NULL == p_mcast_conn->bindAddr_)
-	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-		goto cleanup;
-	}
-	// Resolve the multicast interface
-	p_mcast_conn->resolveAddr_	= ResolveAddress(gInterface, "0", p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
-	if (NULL == p_mcast_conn->multiAddr_)
-	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-		goto cleanup;
-	}
-	// 
-	// Create the socket. In Winsock 1 you don't need any special
-	// flags to indicate multicasting.
-	//
-	retval = socket(p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
-	if (retval == INVALID_SOCKET)
-	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-		goto cleanup;
-	}
-	//debug_outputln("%s %d : %8.8x", __FILE__, __LINE__, retval);
-	if (bReuseAddr)
-	{
-		int optval;
-		optval = 1;
-		rc = setsockopt(retval, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval));
-		if (rc == SOCKET_ERROR)
-		{
-			debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-			goto cleanup;
-		}
-	}
-	rc = bind(retval, p_mcast_conn->bindAddr_->ai_addr, (int) p_mcast_conn->bindAddr_->ai_addrlen);
-	if (rc == SOCKET_ERROR)
-	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-		goto cleanup;
-	}
-	{
-		struct sockaddr_in local_bind = { 0 };
-		socklen_t local_data_len = sizeof(local_bind);
-		rc = getsockname(retval, (struct sockaddr*)&local_bind, &local_data_len);
-		if (SOCKET_ERROR != rc)
-		{
-			debug_outputln("%s %d : %s:%u", __FILE__, __LINE__, inet_ntoa(local_bind.sin_addr), ntohs(local_bind.sin_port));
-		}
-		else
-		{
-			debug_outputln("%s %d : %u", __FILE__, __LINE__, rc);
-		}
-	}
-	// Join the multicast group if specified
-	rc = JoinMulticastGroup(retval, p_mcast_conn->multiAddr_, p_mcast_conn->resolveAddr_);
-	if (rc == SOCKET_ERROR)
-	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-		goto cleanup;
-	}
-	// Set the send (outgoing) interface 
-	rc = SetSendInterface(retval, p_mcast_conn->resolveAddr_);
-	if (rc == SOCKET_ERROR)
-	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-		goto cleanup;
-	}
-	// Set the TTL to something else. The default TTL is one.
-	rc = SetMulticastTtl(retval, p_mcast_conn->multiAddr_->ai_family, gTtl);
-	if (rc == SOCKET_ERROR)
-	{
-		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-		goto cleanup;
-	}
-	if (bConnect)
-	{
-		rc = connect(retval, p_mcast_conn->multiAddr_->ai_addr, (int) p_mcast_conn->multiAddr_->ai_addrlen);
-		if (rc == SOCKET_ERROR)
-		{
-			debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-			goto cleanup;
-		}
-	}
-	p_mcast_conn->socket_ = retval;
-	return 0;
-cleanup:
-	return -1;
+    char host[NI_MAXHOST] = { 0 };
+    FormatAddress(p_info->ai_addr, p_info->ai_addrlen, host, NI_MAXHOST);
+    debug_outputln("%s %4.4u : L:%d f:%d s:%d p:%d c:%s p:'%s' %p", file, line,
+        p_info->ai_flags,
+        p_info->ai_family,
+        p_info->ai_socktype,
+        p_info->ai_protocol,
+        p_info->ai_canonname,
+        host,
+        p_info->ai_next);
 }
 
-static int setup_multicast_3(char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
+static int set_reuse_addr(SOCKET s)
+{
+    int optval, rc;
+    optval = 1;
+    rc = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval));
+    if (rc == SOCKET_ERROR)
+    {
+        return 0;
+    }
+    return 1;
+}
+
+static void dump_locally_bound_socket(SOCKET s, const char * file, unsigned int line)
+{
+    int rc;
+    struct sockaddr_in local_bind = { 0 };
+    socklen_t local_data_len = sizeof(local_bind);
+    rc = getsockname(s, (struct sockaddr*)&local_bind, &local_data_len);
+    if (SOCKET_ERROR != rc)
+    {
+        debug_outputln("%s %4.4u : %s:%u", file, line, inet_ntoa(local_bind.sin_addr), ntohs(local_bind.sin_port));
+    }
+    else
+    {
+        debug_outputln("%s %4.4u : %u", file, line, rc);
+    }
+}
+
+static int setup_multicast_impl(char * bindAddr, unsigned int nTTL, char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
 {
 	int rc;
-	p_mcast_conn->multiAddr_ 	= ResolveAddress(p_multicast_addr, p_port, AF_UNSPEC, SOCK_DGRAM, gProtocol);
+	p_mcast_conn->multiAddr_ 	= ResolveAddress(p_multicast_addr, p_port, AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP);
 	if (NULL == p_mcast_conn->multiAddr_)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
+    dump_addrinfo(p_mcast_conn->multiAddr_, __FILE__, __LINE__);
 	// Resolve the binding address
-	p_mcast_conn->bindAddr_ 	= ResolveAddress(gBindAddr, p_port, p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
+	p_mcast_conn->bindAddr_ 	= ResolveAddress(bindAddr, p_port, p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
 	if (NULL == p_mcast_conn->bindAddr_)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
+    dump_addrinfo(p_mcast_conn->bindAddr_, __FILE__, __LINE__);
 	// Resolve the multicast interface
-	p_mcast_conn->resolveAddr_	= ResolveAddress(gInterface, "0", p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
+	p_mcast_conn->resolveAddr_	= ResolveAddress(NULL, "0", p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
 	if (NULL == p_mcast_conn->multiAddr_)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
+    dump_addrinfo(p_mcast_conn->resolveAddr_, __FILE__, __LINE__);
 	// 
 	// Create the socket. In Winsock 1 you don't need any special
 	// flags to indicate multicasting.
@@ -190,37 +125,18 @@ static int setup_multicast_3(char * p_multicast_addr, char * p_port, struct mcas
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
-	//debug_outputln("%s %d : %8.8x", __FILE__, __LINE__, retval);
-	if (bReuseAddr)
-	{
-		int optval;
-		optval = 1;
-		rc = setsockopt(p_mcast_conn->socket_, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval));
-		if (rc == SOCKET_ERROR)
-		{
-			debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-			goto cleanup;
-		}
-	}
+    if (!set_reuse_addr(p_mcast_conn->socket_))
+    {
+        debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
+        goto cleanup;
+    }
 	rc = bind(p_mcast_conn->socket_, p_mcast_conn->bindAddr_->ai_addr, (int) p_mcast_conn->bindAddr_->ai_addrlen);
 	if (rc == SOCKET_ERROR)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
-	{
-		struct sockaddr_in local_bind = { 0 };
-		socklen_t local_data_len = sizeof(local_bind);
-		rc = getsockname(p_mcast_conn->socket_, (struct sockaddr*)&local_bind, &local_data_len);
-		if (SOCKET_ERROR != rc)
-		{
-			debug_outputln("%s %d : %s:%u", __FILE__, __LINE__, inet_ntoa(local_bind.sin_addr), ntohs(local_bind.sin_port));
-		}
-		else
-		{
-			debug_outputln("%s %d : %u", __FILE__, __LINE__, rc);
-		}
-	}
+    dump_locally_bound_socket(p_mcast_conn->socket_, __FILE__, __LINE__);
 	// Join the multicast group if specified
 	rc = JoinMulticastGroup(p_mcast_conn->socket_, p_mcast_conn->multiAddr_, p_mcast_conn->resolveAddr_);
 	if (rc == SOCKET_ERROR)
@@ -236,45 +152,83 @@ static int setup_multicast_3(char * p_multicast_addr, char * p_port, struct mcas
 		goto cleanup;
 	}
 	// Set the TTL to something else. The default TTL is one.
-	rc = SetMulticastTtl(p_mcast_conn->socket_, p_mcast_conn->multiAddr_->ai_family, gTtl);
+	rc = SetMulticastTtl(p_mcast_conn->socket_, p_mcast_conn->multiAddr_->ai_family, nTTL);
 	if (rc == SOCKET_ERROR)
 	{
 		debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
-	if (bConnect)
-	{
-		rc = connect(p_mcast_conn->socket_, p_mcast_conn->multiAddr_->ai_addr, (int) p_mcast_conn->multiAddr_->ai_addrlen);
-		if (rc == SOCKET_ERROR)
-		{
-			debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-			goto cleanup;
-		}
-	}
-	return 0;
+	return 1;
 cleanup:
-	return -1;
+	return 0;
+}
+
+static int setup_multicast_addr(char * bindAddr, uint8_t nTTL, struct sockaddr_in const * p_in_addr, struct mcast_connection * p_mcast_conn)
+{
+    char port[8];
+    int result;
+    StringCchPrintf(port, 8, "%d", ntohs(p_in_addr->sin_port));
+    result = setup_multicast_impl(bindAddr, nTTL, inet_ntoa(p_in_addr->sin_addr), port, p_mcast_conn);
+    return result;
 }
 
 int setup_multicast_indirect(struct mcast_settings const * p_settings, struct mcast_connection * p_conn)
 {
-	struct mcast_connection * p_mcast_conn;	
-	int rc;
-	p_mcast_conn 				= HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct mcast_connection));
-	rc = setup_multicast_3(p_multicast_addr, p_port, p_mcast_conn);
-	if (0 == rc)
-		return p_mcast_conn;
-	return NULL;
+    return setup_multicast_addr(p_settings->bindAddr_, p_settings->nTTL_, &p_settings->mcast_addr_, p_conn);
+}
+
+size_t mcast_sendto_flags(struct mcast_connection * p_conn, void const * p_data, size_t data_size, int flags)
+{
+    return sendto(p_conn->socket_, (const void *)p_data, data_size, flags, p_conn->multiAddr_->ai_addr, (int) p_conn->multiAddr_->ai_addrlen);
+}
+
+size_t mcast_sendto(struct mcast_connection * p_conn, void const * p_data, size_t data_size)
+{
+    return mcast_sendto_flags(p_conn, p_data, data_size, 0);
+}
+
+size_t mcast_recvfrom_flags(struct mcast_connection * p_conn, void * p_data, size_t data_size, int flags)
+{
+    return recvfrom(p_conn->socket_, p_data, data_size, flags, p_conn->multiAddr_->ai_addr, &p_conn->multiAddr_->ai_addrlen);
+ }
+
+int mcast_is_new_data(struct mcast_connection * p_conn, DWORD dwTimeoutMs)
+{
+    fd_set read_sel; 
+    int result;
+    struct timeval timeout, *p_timeout;
+    ZeroMemory(&timeout, sizeof(struct timeval));
+    FD_ZERO(&read_sel);
+    FD_SET(p_conn->socket_, &read_sel);
+    if (0xffffffff == dwTimeoutMs)
+        p_timeout = NULL;
+    else
+    {
+        timeout.tv_sec = dwTimeoutMs / 1000;
+        timeout.tv_usec = (dwTimeoutMs - 1000*(dwTimeoutMs/1000))*1000;
+        p_timeout = &timeout; 
+    }
+    result = select(0 /* This parameter is ignored in WINSOCK */, &read_sel, NULL, NULL, p_timeout);
+    if (SOCKET_ERROR == result)
+    {
+        debug_outputln("%s %u : %u", __FILE__, __LINE__, WSAGetLastError());
+    }
+    return result;
+}
+
+size_t mcast_recvfrom(struct mcast_connection * p_conn, void * p_data, size_t data_size)
+{
+    return mcast_recvfrom_flags(p_conn, p_data, data_size, 0);
 }
 
 int close_multicast(struct mcast_connection * p_mcast_conn)
 {
-	if (NULL == p_mcast_conn)
-		return -E_INVALIDARG;
-	freeaddrinfo(p_mcast_conn->bindAddr_);
-	freeaddrinfo(p_mcast_conn->resolveAddr_);
-	freeaddrinfo(p_mcast_conn->multiAddr_);
-	closesocket(p_mcast_conn->socket_);
-	return 0;
+    if (NULL != p_mcast_conn)
+    {
+        freeaddrinfo(p_mcast_conn->bindAddr_);
+        freeaddrinfo(p_mcast_conn->multiAddr_);
+        closesocket(p_mcast_conn->socket_);
+    }
+    return 1;
 }
- 
+
