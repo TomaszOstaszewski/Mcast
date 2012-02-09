@@ -116,7 +116,10 @@ static int setup_multicast_impl(char * bindAddr, unsigned int nTTL, char * p_mul
 		goto cleanup;
 	}
     dump_addrinfo(p_mcast_conn->resolveAddr_, __FILE__, __LINE__);
-	// Create the socket. In Winsock 1 you don't need any special flags to indicate multicasting.
+	// 
+	// Create the socket. In Winsock 1 you don't need any special
+	// flags to indicate multicasting.
+	//
 	p_mcast_conn->socket_ 		= socket(p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol);
 	if (p_mcast_conn->socket_ == INVALID_SOCKET)
 	{
@@ -177,7 +180,8 @@ int setup_multicast_indirect(struct mcast_settings const * p_settings, struct mc
 
 size_t mcast_sendto_flags(struct mcast_connection * p_conn, void const * p_data, size_t data_size, int flags)
 {
-    return sendto(p_conn->socket_, (const void *)p_data, data_size, flags, p_conn->multiAddr_->ai_addr, (int) p_conn->multiAddr_->ai_addrlen);
+    //return sendto(p_conn->socket_, (const void *)p_data, data_size, flags, p_conn->multiAddr_->ai_addr, (int) p_conn->multiAddr_->ai_addrlen);
+    return sendto(p_conn->socket_, (const void *)p_data, data_size, flags, p_conn->resolveAddr_->ai_addr, (int) p_conn->resolveAddr_->ai_addrlen);
 }
 
 size_t mcast_sendto(struct mcast_connection * p_conn, void const * p_data, size_t data_size)
