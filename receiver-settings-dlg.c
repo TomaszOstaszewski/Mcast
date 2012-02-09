@@ -141,15 +141,6 @@ struct val_2_combo {
     int combo_idx_; /*!< Combo box item number */
 };
  
-/*!
- * @brief Structure used to associate a number with a combo box item.
- */
-struct pair_2_combo {
-    unsigned int el1_; /*!< Value to be associated with combo box. */
-    unsigned int el2_; /*!< Value to be associated with combo box. */
-    int combo_idx_; /*!< Combo box item number */
-};
-
 static struct val_2_combo sample_rate_values[] = {
     { 8000 },
     { 11025 },

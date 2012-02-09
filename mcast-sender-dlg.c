@@ -364,7 +364,12 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                                     sender_destroy(p_dlg->sender_);
                                 p_dlg->sender_ = sender_create(&p_dlg->settings_);
                                 assert(p_dlg->sender_);
-                            }
+                                if (UI_SENDER_TESTTONE_SELECTED == p_dlg->ui_state_ || UI_SENDER_EXTTONE_SELECTED == p_dlg->ui_state_)
+                                {
+                                    assert(p_dlg->tone_selected_);
+                                    sender_handle_selecttone(p_dlg->sender_, p_dlg->tone_selected_);
+                                }
+                             }
                             break;
                         default:
                             assert(0);
