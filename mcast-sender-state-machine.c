@@ -227,7 +227,9 @@ static int sender_handle_startsending_internal(struct mcast_sender * p_sender)
                 p_sender->hSenderThread_ = CreateThread(NULL, 0, SendThreadProc, p_sender, 0, NULL);
                 assert(NULL != p_sender->hSenderThread_);
                 if (NULL != p_sender->hSenderThread_)
+                {
                     result = 1;
+                }
             }
         }
     }
@@ -244,6 +246,7 @@ static int sender_handle_startsending_internal(struct mcast_sender * p_sender)
             p_sender->hStopEventThread_ = NULL;
         }
     }
+    assert(result);
     return result;
 }
 
@@ -351,6 +354,7 @@ int sender_handle_deselecttone(struct mcast_sender * p_sender)
         p_sender->state_ = SENDER_MCAST_JOINED;
         return 1;
     }
+    assert(0);
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
     return 0;
 }
@@ -363,7 +367,8 @@ int sender_handle_startsending(struct mcast_sender * p_sender)
         p_sender->state_ = SENDER_SENDING;
         return 1;
     }
-    debug_outputln("%s %4.4u", __FILE__, __LINE__);
+    debug_outputln("%s %4.4u : %d", __FILE__, __LINE__, p_sender->state_);
+    assert(0);
     return 0;
 }
 
