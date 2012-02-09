@@ -180,8 +180,7 @@ int setup_multicast_indirect(struct mcast_settings const * p_settings, struct mc
 
 size_t mcast_sendto_flags(struct mcast_connection * p_conn, void const * p_data, size_t data_size, int flags)
 {
-    //return sendto(p_conn->socket_, (const void *)p_data, data_size, flags, p_conn->multiAddr_->ai_addr, (int) p_conn->multiAddr_->ai_addrlen);
-    return sendto(p_conn->socket_, (const void *)p_data, data_size, flags, p_conn->resolveAddr_->ai_addr, (int) p_conn->resolveAddr_->ai_addrlen);
+    return sendto(p_conn->socket_, (const void *)p_data, data_size, flags, p_conn->multiAddr_->ai_addr, (int) p_conn->multiAddr_->ai_addrlen);
 }
 
 size_t mcast_sendto(struct mcast_connection * p_conn, void const * p_data, size_t data_size)
@@ -227,6 +226,7 @@ int close_multicast(struct mcast_connection * p_mcast_conn)
 {
     if (NULL != p_mcast_conn)
     {
+        freeaddrinfo(p_mcast_conn->resolveAddr_);
         freeaddrinfo(p_mcast_conn->bindAddr_);
         freeaddrinfo(p_mcast_conn->multiAddr_);
         closesocket(p_mcast_conn->socket_);
