@@ -92,7 +92,7 @@ static void dump_locally_bound_socket(SOCKET s, const char * file, unsigned int 
 static int setup_multicast_impl(char * bindAddr, unsigned int nTTL, char * p_multicast_addr, char * p_port, struct mcast_connection * p_mcast_conn)
 {
 	int rc;
-    debug_outputln("%s %d : %s %s", __FILE__, __LINE__, p_multicast_addr, p_port);
+    debug_outputln("%s %d : %s %s %s", __FILE__, __LINE__, bindAddr, p_multicast_addr, p_port);
 	p_mcast_conn->multiAddr_ 	= ResolveAddress(p_multicast_addr, p_port, AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP);
 	if (NULL == p_mcast_conn->multiAddr_)
 	{
