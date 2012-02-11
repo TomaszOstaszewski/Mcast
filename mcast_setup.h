@@ -45,6 +45,7 @@ struct mcast_settings;
 struct mcast_connection {
 	struct addrinfo * bindAddr_; /*!< */
 	struct addrinfo * multiAddr_; /*!< */
+    struct addrinfo * resolveAddr_; /*!< */
 	SOCKET socket_; /*!< */
 };
 

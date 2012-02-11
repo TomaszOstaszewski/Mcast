@@ -12,7 +12,7 @@
 #include "resolve.h"
 #include "debug_helpers.h"
 
-int JoinMulticastGroup(SOCKET s, struct addrinfo *group, struct addrinfo const *iface)
+int JoinMulticastGroup(SOCKET s, struct addrinfo const *group, struct addrinfo const *iface)
 {
     struct ip_mreq   mreqv4;
     struct ipv6_mreq mreqv6;

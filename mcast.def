@@ -1,0 +1,9 @@
+LIBRARY MCAST
+EXPORTS
+	FormatAddress @2
+	ResolveAddress @3
+ 	JoinMulticastGroup @5	
+	SetSendInterface @6
+	SetMulticastTtl @7
+	SetMulticastLoopBack @8
+	ResolveAddressWithFlags @10

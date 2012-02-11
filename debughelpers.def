@@ -1,0 +1,5 @@
+LIBRARY DEBUGHELPERS
+EXPORTS
+	debug_outputln @1
+	debug_output_flush @2
+	debug_outputln_buffered @3
