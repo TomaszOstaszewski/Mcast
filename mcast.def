@@ -1,0 +1,10 @@
+LIBRARY MCAST
+EXPORTS
+	PrintAddress @1
+	FormatAddress @2
+	ResolveAddress @3
+	ReverseLookup @4
+ 	JoinMulticastGroup @5	
+	SetSendInterface @6
+	SetMulticastTtl @7
+	SetMulticastLoopBack @8
