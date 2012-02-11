@@ -279,7 +279,7 @@ static void test_default_queue_overflow(void)
 
 int main(int argc, char ** argv)
 {
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));
     test_create_destroy_0();
     test_create_destroy_1();
     test_create_destroy_2();
