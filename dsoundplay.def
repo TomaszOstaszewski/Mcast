@@ -14,9 +14,6 @@ EXPORTS
 	fifo_circular_buffer_is_full @16
 	fifo_circular_buffer_push_item @17
 	fifo_circular_buffer_fetch_item @18
-	debug_outputln @30
-	debug_output_flush @31
-	debug_outputln_buffered @32
 	dump_pcmwaveformat @33
  	copy_pcmwaveformat_2_WAVEFORMATEX @34
 	waveformat_normalize @35
