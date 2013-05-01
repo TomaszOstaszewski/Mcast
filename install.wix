@@ -10,24 +10,26 @@
                     <Directory Id='INSTALLDIR' Name='Multicast player'>
                         <Component Id='C_ReceiverExecutable' Guid='7f4af88a-b5a9-44b1-a7c4-a19abe2717ee'>
                             <File Id='F_ReceiverEXE' Name='Receiver.exe' DiskId='1' Source='receiver.exe' KeyPath='yes'>
-			    <Shortcut Id="startmenuFoobar10" Directory="ProgramMenuDirVendor" Name="Receiver.exe" WorkingDirectory='INSTALLDIR' Icon="receiver.exe" IconIndex="0" Advertise="yes" />
+			                    <Shortcut Id="startMenuMulticastPlayerReceiver" Directory="ProgramMenuDirVendor" Name="Receiver.exe" WorkingDirectory='INSTALLDIR' Icon="receiver.exe" IconIndex="0" Advertise="yes" />
                             </File>
                         </Component>
-                        <Component Id='C_SenderExecutable' Guid='2b21ee3d-a99b-400d-9de2-77b64b98a1cd'>
+                        <Component Id='C_SenderApplication' Guid='2e87c406-9e42-4e67-b82d-ffab06d44573'>
                             <File Id='F_SenderEXE' Name='Sender.exe' DiskId='1' Source='sender.exe' KeyPath='yes'>
+			                    <Shortcut Id="startMenuMulticastPlayerSender" Directory="ProgramMenuDirVendor" Name="Sender.exe" WorkingDirectory='INSTALLDIR' Icon="receiver.exe" IconIndex="0" Advertise="yes" />
                             </File>
                         </Component>
                         <Component Id='C_debuglibrary' Guid='2b5393d8-4302-4a87-9ca2-b562f887863b'>
-                            <File Id='FDebugHelperDll' Name='debughelpers.dll' DiskId='1' Source='debughelpers.dll' KeyPath='yes'>
-                            </File>
+                            <File Id='FDebugHelperDll' Name='debughelpers.dll' DiskId='1' Source='debughelpers.dll' KeyPath='yes'/>
                         </Component>
                         <Component Id='C_DsoundPlayDll' Guid='341fa215-35ab-4e39-96fe-20a7b321187b'>
-                            <File Id='FDsoundPlayDll' Name='dsoundplay.dll' DiskId='1' Source='dsoundplay.dll' KeyPath='yes'>
-                            </File>
+                            <File Id='FDsoundPlayDll' Name='dsoundplay.dll' DiskId='1' Source='dsoundplay.dll' KeyPath='yes'/>
                         </Component>
                         <Component Id='C_McastDll' Guid='e35be177-09d8-492c-9dde-ed71faab7ec5'>
-                            <File Id='F_McastDll' Name='mcast.dll' DiskId='1' Source='mcast.dll' KeyPath='yes'>
-                            </File>
+                            <File Id='F_McastDll' Name='mcast.dll' DiskId='1' Source='mcast.dll' KeyPath='yes'/>
+                        </Component>
+                        <Component Id='C_sampleFiles' Guid='91ff80ad-2414-4b32-9b27-396fe929c076'>
+                            <File Id='F_sample1' Name='Sin250Hz.wav' DiskId='1' Source='..\sin250Hz.wav' KeyPath='yes'/>
+                            <File Id='F_sample2' Name='Play.wav' DiskId='1' Source='..\play.wav' />
                         </Component>
                       </Directory>
                 </Directory>
@@ -44,10 +46,11 @@
         </Directory>
         <Feature Id='Complete' Level='1'>
             <ComponentRef Id='C_ReceiverExecutable' />
-            <ComponentRef Id='C_SenderExecutable' />
+            <ComponentRef Id='C_SenderApplication' />
             <ComponentRef Id='C_debuglibrary' />
             <ComponentRef Id='C_DsoundPlayDll' />
             <ComponentRef Id='C_McastDll' />
+            <ComponentRef Id='C_sampleFiles' />
             <ComponentRef Id='ProgramMenuDirVendor' />
         </Feature>
         <Icon Id="receiver.exe" SourceFile="receiver.exe" />
