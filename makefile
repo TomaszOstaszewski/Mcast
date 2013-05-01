@@ -236,28 +236,22 @@ $(OUTDIR)\sender.exe: \
 	@ECHO $@
 	$(link) $(ldebug) $(guiflags) /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$@ $** $(guilibs) ComCtl32.lib winmm.lib dxguid.lib ole32.lib Version.lib
 
-sender.exe: $(OUTDIR)\sender.exe
-	copy /Y $** .
-receiver.exe: $(OUTDIR)\receiver.exe
-	copy /Y $** .
-dsoundplay.dll: $(OUTDIR)\dsoundplay.dll
-	copy /Y $** .
-mcast.dll: $(OUTDIR)\mcast.dll
-	copy /Y $** .
-debughelpers.dll: $(OUTDIR)\debughelpers.dll
-	copy /Y $** .
-install.wixobj: install.wix
-	candle $**
+$(OUTDIR)\install.wix: install.wix $(OUTDIR)
+	copy /Y install.wix $(OUTDIR)\install.wix
+$(OUTDIR)\install.wixobj: install.wix
+	candle -doutputdir=$(OUTDIR) -o $(OUTDIR)\\install.wixobj $**
 
-install.msi: install.wixobj \
- sender.exe \
- receiver.exe \
- dsoundplay.dll \
- mcast.dll \
- debughelpers.dll
-	light install.wixobj
+$(OUTDIR)\install.msi: \
+ $(OUTDIR)\install.wix \
+ $(OUTDIR)\install.wixobj \
+ $(OUTDIR)\sender.exe \
+ $(OUTDIR)\receiver.exe \
+ $(OUTDIR)\dsoundplay.dll \
+ $(OUTDIR)\mcast.dll \
+ $(OUTDIR)\debughelpers.dll
+	light -o $(OUTDIR)\install.msi $(OUTDIR)\install.wixobj
 
-install: install.msi
+install: $(OUTDIR)\install.msi
 
 #--------------------- Clean Rule --------------------------------------------------------
 # Rules for cleaning out those old files

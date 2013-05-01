@@ -8,19 +8,19 @@
             <Directory Id='ProgramFilesFolder' Name='PFiles'>
                 <Directory Id='MotorolaSolutions' Name='Motorola Solutions'>
                     <Directory Id='INSTALLDIR' Name='Multicast player'>
-                        <Component Id='ReceiverExecutable' Guid='7f4af88a-b5a9-44b1-a7c4-a19abe2717ee'>
+                        <Component Id='C_ReceiverExecutable' Guid='7f4af88a-b5a9-44b1-a7c4-a19abe2717ee'>
                             <File Id='ReceiverEXE' Name='Receiver.exe' DiskId='1' Source='receiver.exe' KeyPath='yes'>
                             </File>
                         </Component>
-                        <Component Id='SenderExecutable' Guid='2b21ee3d-a99b-400d-9de2-77b64b98a1cd'>
+                        <Component Id='C_SenderExecutable' Guid='2b21ee3d-a99b-400d-9de2-77b64b98a1cd'>
                             <File Id='FReceiverEXE' Name='Sender.exe' DiskId='1' Source='sender.exe' KeyPath='yes'>
                             </File>
                         </Component>
-                        <Component Id='debuglibrary' Guid='2b5393d8-4302-4a87-9ca2-b562f887863b'>
+                        <Component Id='C_debuglibrary' Guid='2b5393d8-4302-4a87-9ca2-b562f887863b'>
                             <File Id='FDebugHelperDll' Name='debughelpers.dll' DiskId='1' Source='debughelpers.dll' KeyPath='yes'>
                             </File>
                         </Component>
-                        <Component Id='DsoundPlayDll' Guid='341fa215-35ab-4e39-96fe-20a7b321187b'>
+                        <Component Id='C_DsoundPlayDll' Guid='341fa215-35ab-4e39-96fe-20a7b321187b'>
                             <File Id='FDsoundPlayDll' Name='dsoundplay.dll' DiskId='1' Source='dsoundplay.dll' KeyPath='yes'>
                             </File>
                         </Component>
@@ -42,10 +42,10 @@
             <Directory Id="DesktopFolder" Name="Desktop" />
         </Directory>
         <Feature Id='Complete' Level='1'>
-            <ComponentRef Id='ReceiverExecutable' />
-            <ComponentRef Id='SenderExecutable' />
-            <ComponentRef Id='debuglibrary' />
-            <ComponentRef Id='DsoundPlayDll' />
+            <ComponentRef Id='C_ReceiverExecutable' />
+            <ComponentRef Id='C_SenderExecutable' />
+            <ComponentRef Id='C_debuglibrary' />
+            <ComponentRef Id='C_DsoundPlayDll' />
             <ComponentRef Id='C_McastDll' />
             <ComponentRef Id='ProgramMenuDir' />
         </Feature>
