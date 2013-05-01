@@ -9,11 +9,12 @@
                 <Directory Id='MotorolaSolutions' Name='Motorola Solutions'>
                     <Directory Id='INSTALLDIR' Name='Multicast player'>
                         <Component Id='C_ReceiverExecutable' Guid='7f4af88a-b5a9-44b1-a7c4-a19abe2717ee'>
-                            <File Id='ReceiverEXE' Name='Receiver.exe' DiskId='1' Source='receiver.exe' KeyPath='yes'>
+                            <File Id='F_ReceiverEXE' Name='Receiver.exe' DiskId='1' Source='receiver.exe' KeyPath='yes'>
+			    <Shortcut Id="startmenuFoobar10" Directory="ProgramMenuDirVendor" Name="Receiver.exe" WorkingDirectory='INSTALLDIR' Icon="receiver.exe" IconIndex="0" Advertise="yes" />
                             </File>
                         </Component>
                         <Component Id='C_SenderExecutable' Guid='2b21ee3d-a99b-400d-9de2-77b64b98a1cd'>
-                            <File Id='FReceiverEXE' Name='Sender.exe' DiskId='1' Source='sender.exe' KeyPath='yes'>
+                            <File Id='F_SenderEXE' Name='Sender.exe' DiskId='1' Source='sender.exe' KeyPath='yes'>
                             </File>
                         </Component>
                         <Component Id='C_debuglibrary' Guid='2b5393d8-4302-4a87-9ca2-b562f887863b'>
@@ -32,9 +33,9 @@
                 </Directory>
             </Directory>
             <Directory Id="ProgramMenuFolder" Name="Programs">
-                <Directory Id="ProgramMenuDir" Name="Multicast Player">
-                    <Component Id="ProgramMenuDir" Guid="22be4d82-3d3c-4f49-b88a-4b5271dcc77d">
-                        <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
+                <Directory Id='ProgramMenuDirVendor' Name="Motorola Solutions">
+                    <Component Id="ProgramMenuDirVendor" Guid="22be4d82-3d3c-4f49-b88a-4b5271dcc77d">
+                        <RemoveFolder Id='ProgramMenuDirVendor' On='uninstall' />
                         <RegistryValue Root='HKCU' Key='Software\Motorola Solutions\Multicast player' Type='string' Value='1' KeyPath='yes'/>
                     </Component>
                 </Directory>
@@ -47,8 +48,8 @@
             <ComponentRef Id='C_debuglibrary' />
             <ComponentRef Id='C_DsoundPlayDll' />
             <ComponentRef Id='C_McastDll' />
-            <ComponentRef Id='ProgramMenuDir' />
+            <ComponentRef Id='ProgramMenuDirVendor' />
         </Feature>
-        <Icon Id="Foobar10.exe" SourceFile="receiver.exe" />
+        <Icon Id="receiver.exe" SourceFile="receiver.exe" />
     </Product>
 </Wix>
