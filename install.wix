@@ -12,12 +12,28 @@
                             <File Id='ReceiverEXE' Name='Receiver.exe' DiskId='1' Source='receiver.exe' KeyPath='yes'>
                             </File>
                         </Component>
-                    </Directory>
+                        <Component Id='SenderExecutable' Guid='2b21ee3d-a99b-400d-9de2-77b64b98a1cd'>
+                            <File Id='FReceiverEXE' Name='Sender.exe' DiskId='1' Source='sender.exe' KeyPath='yes'>
+                            </File>
+                        </Component>
+                        <Component Id='debuglibrary' Guid='2b5393d8-4302-4a87-9ca2-b562f887863b'>
+                            <File Id='FDebugHelperDll' Name='debughelpers.dll' DiskId='1' Source='debughelpers.dll' KeyPath='yes'>
+                            </File>
+                        </Component>
+                        <Component Id='DsoundPlayDll' Guid='341fa215-35ab-4e39-96fe-20a7b321187b'>
+                            <File Id='FDsoundPlayDll' Name='dsoundplay.dll' DiskId='1' Source='dsoundplay.dll' KeyPath='yes'>
+                            </File>
+                        </Component>
+                        <Component Id='C_McastDll' Guid='e35be177-09d8-492c-9dde-ed71faab7ec5'>
+                            <File Id='F_McastDll' Name='mcast.dll' DiskId='1' Source='mcast.dll' KeyPath='yes'>
+                            </File>
+                        </Component>
+                      </Directory>
                 </Directory>
             </Directory>
             <Directory Id="ProgramMenuFolder" Name="Programs">
                 <Directory Id="ProgramMenuDir" Name="Multicast Player">
-                    <Component Id="ProgramMenuDir" Guid="2b21ee3d-a99b-400d-9de2-77b64b98a1cd">
+                    <Component Id="ProgramMenuDir" Guid="22be4d82-3d3c-4f49-b88a-4b5271dcc77d">
                         <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
                         <RegistryValue Root='HKCU' Key='Software\Motorola Solutions\Multicast player' Type='string' Value='1' KeyPath='yes'/>
                     </Component>
@@ -27,6 +43,10 @@
         </Directory>
         <Feature Id='Complete' Level='1'>
             <ComponentRef Id='ReceiverExecutable' />
+            <ComponentRef Id='SenderExecutable' />
+            <ComponentRef Id='debuglibrary' />
+            <ComponentRef Id='DsoundPlayDll' />
+            <ComponentRef Id='C_McastDll' />
             <ComponentRef Id='ProgramMenuDir' />
         </Feature>
         <Icon Id="Foobar10.exe" SourceFile="receiver.exe" />
