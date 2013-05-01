@@ -249,7 +249,7 @@ $(OUTDIR)\install.msi: \
  $(OUTDIR)\dsoundplay.dll \
  $(OUTDIR)\mcast.dll \
  $(OUTDIR)\debughelpers.dll
-	light -o $(OUTDIR)\install.msi $(OUTDIR)\install.wixobj
+	light -ext WixUIExtension -o $(OUTDIR)\install.msi $(OUTDIR)\install.wixobj
 
 install: $(OUTDIR)\install.msi
 

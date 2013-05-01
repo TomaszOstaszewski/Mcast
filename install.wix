@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='windows-1252'?>
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
     <Product Name='Multicast player' Id='f74803ea-0863-416b-833f-5fd0f625a413' UpgradeCode='628e1088-3238-4a22-9a53-231fc420dc08' Language='1033' Codepage='1252' Version='1.0.0' Manufacturer='Motorola Solutions'>
-        <Package Id='*' Keywords='Installer' Description="Acme's Foobar 1.0 Installer" Comments='Multicast player for MTM5x00 radios' Manufacturer='Motorola Solutions' InstallerVersion='100' Languages='1033' Compressed='yes' SummaryCodepage='1252' />
+        <Package Id='*' Keywords='Installer' Description="Multicast Player Installer" Comments='Multicast player for MTM5x00 radios' Manufacturer='Motorola Solutions' InstallerVersion='100' Languages='1033' Compressed='yes' SummaryCodepage='1252' />
  	    <Media Id='1' Cabinet='Sample.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1' />
         <Property Id='DiskPrompt' Value="Motorola Solution's Multicast Player 1.0 Installation [1]" />
         <Directory Id='TARGETDIR' Name='SourceDir'>
@@ -44,15 +44,22 @@
             </Directory>
             <Directory Id="DesktopFolder" Name="Desktop" />
         </Directory>
-        <Feature Id='Complete' Level='1'>
+        <Feature Id='Complete' Title='Foobar 1.0' Description='The complete package.' Display='expand' Level='1' ConfigurableDirectory='INSTALLDIR'>
+            <Feature Id='MainApplications' Level='1'>
             <ComponentRef Id='C_ReceiverExecutable' />
             <ComponentRef Id='C_SenderApplication' />
             <ComponentRef Id='C_debuglibrary' />
             <ComponentRef Id='C_DsoundPlayDll' />
             <ComponentRef Id='C_McastDll' />
-            <ComponentRef Id='C_sampleFiles' />
             <ComponentRef Id='ProgramMenuDirVendor' />
+            </Feature>
+            <Feature Id='SampleWavFiles' Title='Samples' Description='Sample wav files to play' Level='1'>
+            <ComponentRef Id='C_sampleFiles' />
+            </Feature>
         </Feature>
+        <UIRef Id="WixUI_Mondo" />
+        <UIRef Id="WixUI_ErrorProgressText" />
+        <WixVariable Id="WixUILicenseRtf" Value="..\License.rtf" />
         <Icon Id="receiver.exe" SourceFile="receiver.exe" />
     </Product>
 </Wix>
