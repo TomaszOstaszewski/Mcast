@@ -74,10 +74,9 @@ struct reciever_dialog {
  */
 #define UI_UPDATE_TIMER_MS (500)
 
-static void update_fifo_receiver_bytes_edit_control(struct reciever_dialog * p_dlg)
+static void update_fifo_receiver_bytes_edit_control(struct reciever_dialog * p_dlg, uint32_t items_count)
 {
-    uint32_t fifo_bytes = fifo_circular_buffer_get_items_count(receiver_get_fifo(p_dlg->receiver_));
-    StringCchPrintf(p_dlg->buffer_bytes_edit, BUFFER_BYTES_EDIT_TEXT_LIMIT, "%u", fifo_bytes);
+    StringCchPrintf(p_dlg->buffer_bytes_edit, BUFFER_BYTES_EDIT_TEXT_LIMIT, "%u", items_count);
     SetWindowText(p_dlg->hBufferBytesEdit, p_dlg->buffer_bytes_edit);
 }
 
@@ -215,8 +214,10 @@ static void UpdateUI(HWND hwnd)
     }
     fifo = receiver_get_fifo(p_dlg->receiver_);
     items_count = fifo_circular_buffer_get_items_count(fifo);
+    /* Update the progress byte control */
     SendMessage(p_dlg->hProgressBar, PBM_SETPOS, items_count, 0);
-    update_fifo_receiver_bytes_edit_control(p_dlg);
+    /* Update the edit control */
+    update_fifo_receiver_bytes_edit_control(p_dlg, items_count);
 }
 
 /*!
@@ -370,7 +371,7 @@ static long int on_idle(HWND hwnd, long int count)
     switch (count)
     {
         case 0:
-           UpdateUI(hwnd);
+            UpdateUI(hwnd);
             return 1;
         default:
             return 0;
