@@ -42,11 +42,6 @@
 #include "resolve.h"
 #include "debug_helpers.h"
 
-
-
-
-
-
 static void dump_addrinfo(struct addrinfo const * p_info, const char * file, unsigned int line)
 {
     char host[NI_MAXHOST] = { 0 };
@@ -108,14 +103,6 @@ static int setup_multicast_impl(char * bindAddr, unsigned int nTTL, char * p_mul
 		goto cleanup;
 	}
     dump_addrinfo(p_mcast_conn->bindAddr_, __FILE__, __LINE__);
-	// Resolve the multicast interface
-	p_mcast_conn->resolveAddr_	= ResolveAddressWithFlags(NULL, "0", p_mcast_conn->multiAddr_->ai_family, p_mcast_conn->multiAddr_->ai_socktype, p_mcast_conn->multiAddr_->ai_protocol, AI_PASSIVE);
-	if (NULL == p_mcast_conn->multiAddr_)
-	{
-		debug_outputln("%s %4.4u : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-		goto cleanup;
-	}
-    dump_addrinfo(p_mcast_conn->resolveAddr_, __FILE__, __LINE__);
 	// 
 	// Create the socket. In Winsock 1 you don't need any special
 	// flags to indicate multicasting.
@@ -139,21 +126,7 @@ static int setup_multicast_impl(char * bindAddr, unsigned int nTTL, char * p_mul
 	}
     dump_locally_bound_socket(p_mcast_conn->socket_, __FILE__, __LINE__);
 	// Join the multicast group if specified
-	rc = JoinMulticastGroup(p_mcast_conn->socket_, p_mcast_conn->multiAddr_, p_mcast_conn->resolveAddr_);
-	if (rc == SOCKET_ERROR)
-	{
-		debug_outputln("%s %4.4u : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-		goto cleanup;
-	}
-	// Set the send (outgoing) interface 
-	rc = SetSendInterface(p_mcast_conn->socket_, p_mcast_conn->resolveAddr_);
-	if (rc == SOCKET_ERROR)
-	{
-		debug_outputln("%s %4.4u : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-		goto cleanup;
-	}
-	// Set the TTL to something else. The default TTL is one.
-	rc = SetMulticastTtl(p_mcast_conn->socket_, p_mcast_conn->multiAddr_->ai_family, nTTL);
+    rc = join_mcast_group_set_ttl(p_mcast_conn->socket_, p_mcast_conn->multiAddr_, p_mcast_conn->bindAddr_, nTTL);
 	if (rc == SOCKET_ERROR)
 	{
 		debug_outputln("%s %4.4u : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
@@ -226,7 +199,6 @@ int close_multicast(struct mcast_connection * p_mcast_conn)
 {
     if (NULL != p_mcast_conn)
     {
-        freeaddrinfo(p_mcast_conn->resolveAddr_);
         freeaddrinfo(p_mcast_conn->bindAddr_);
         freeaddrinfo(p_mcast_conn->multiAddr_);
         closesocket(p_mcast_conn->socket_);

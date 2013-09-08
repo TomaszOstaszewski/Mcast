@@ -11,6 +11,23 @@
 
 #include <winsock2.h>
 #include "std-int.h"
+#if defined __cplusplus
+extern "C" {
+#endif
+
+/*!
+ * @brief Multicast registration and Time-To-Live setup
+ * @details This function joins the multicast socket on the specified multicast 
+ * group. The structures for IPv4 and IPv6 multicast joins are slightly
+ * different which requires different handlers. For IPv6 the scope-ID 
+ * (interface index) is specified for the local interface whereas for IPv4
+ * the actual IPv4 address of the interface is given.
+ * @param[in] s socket for which the outgoing interface is to be set.
+ * @param[in] group - multicast group address.
+ * @param[in] iface - network interface address. This network interface wil be used for multicast group communication.
+ * @param[in] ttl - TTL value to be set.
+ */
+int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct addrinfo const * iface, int ttl);
 
 /*!
  * @details This function joins the multicast socket on the specified multicast 
@@ -56,5 +73,9 @@ int SetMulticastTtl(SOCKET s, int af, uint8_t ttl);
  * @return
  */
 int SetMulticastLoopBack(SOCKET s, int af, int loopval);
+
+#if defined __cplusplus
+}
+#endif
 
 #endif /* MCAST_UTILS_H_8DE850FE_74BA_4195_A769_0D9C94034663 */

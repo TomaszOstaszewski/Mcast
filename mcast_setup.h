@@ -43,9 +43,8 @@ struct mcast_settings;
  * @brief Describes the MCAST connection.
  */
 struct mcast_connection {
-	struct addrinfo * bindAddr_; /*!< */
-	struct addrinfo * multiAddr_; /*!< */
-    struct addrinfo * resolveAddr_; /*!< */
+	struct addrinfo * bindAddr_; /*!< Data of the interface we bind to */
+	struct addrinfo * multiAddr_; /*!< Data of the multicast group/port we use*/
 	SOCKET socket_; /*!< */
 };
 

@@ -77,5 +77,21 @@
         <UIRef Id="WixUI_ErrorProgressText" />
         <WixVariable Id="WixUILicenseRtf" Value="..\License.rtf" />
         <Icon Id="receiver.exe" SourceFile="receiver.exe" />
-    </Product>
+
+        <CustomAction Id="InstallDirectX"
+        FileKey="DXSETUP.EXE"
+        ExeCommand="/silent"
+        Execute="deferred"
+        Impersonate="no"
+        Return="check"/>
+
+        <InstallExecuteSequence>
+        <Custom Action="InstallDirectX" Before="InstallFinalize">
+        <![CDATA[NOT REMOVE]]>
+        </Custom>
+        </InstallExecuteSequence>
+<UI>
+    <ProgressText Action="InstallDirectX">Installing DirectX 9.0c</ProgressText>
+</UI>
+        </Product>
 </Wix>
