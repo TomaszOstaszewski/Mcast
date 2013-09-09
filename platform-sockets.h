@@ -1,19 +1,9 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 
 /**
- * @file pcc.h
- * @brief Pre compiled header file.
- * @details This file is used to create a pre compiled header. The whole point of having a pre compiled header
- * is to save on compile time. The pre compiled header therefore contains a lot of include directives on a lot of header
- * files that:
- * - include a lot of other header files;
- * - do not change a lot during the course of the project.
- *
- * The perfect candidate to put into into the pre-compiled header are therefore:
- * - all the standard library files (stdlib.h, stdint.h and so on);
- * - platform specific files (asm/x86.h); 
- * - and vendor specific files (windows.h and so on).
- *
+ * @file platform-sockets.h
+ * @brief Platform agnostic sockets header.
+ * @details 
  * @author T.Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
@@ -37,43 +27,26 @@
  * @endcode
  * @date 04-Jan-2012
  */
-#if !defined PCC_H_10C143CE_7FF9_4E22_8187_6EBF9DAEAA7B
-#define PCC_H_10C143CE_7FF9_4E22_8187_6EBF9DAEAA7B
+#if !defined PLATFORM_SOCKETS_H_3AFE234D_384E_4575_8194_4C7D83326B95
+#define PLATFORM_SOCKETS_H_3AFE234D_384E_4575_8194_4C7D83326B95
 
 #if defined WIN32
-#   define _CRT_SECURE_NO_WARNINGS 
 #   include <winsock2.h>
 #   include <ws2tcpip.h>
 #   include <windows.h>
-#   include <windowsx.h>
-#   include <commctrl.h>
-#   include <winerror.h>
-#   include <mmreg.h>
-#   include <mmsystem.h>
-#   include <tchar.h>
-#   include <objbase.h>
-#   include <malloc.h> /* For alloca() */
-#if !defined __MINGW32__
-#   undef _ftcscat
-#       include <dsound.h>
-#       include <strsafe.h>
-#   endif
+typedef struct SOCKADDR_IN * P_SOCKADDR_IN;
+typedef struct SOCKADDR_IN6 * P_SOCKADDR_IN6;
 #else
 #   include <sys/types.h>
 #   include <sys/socket.h>
+#   include <netdb.h>
+typedef int SOCKET;
+typedef struct sockaddr_in * P_SOCKADDR_IN;
+typedef struct sockaddr_in6 * P_SOCKADDR_IN6;
+#   define SOCKET_ERROR (-1)
+#   define INVALID_SOCKET (-1)
+#   define NO_ERROR (0)
 #endif
 
-#include <memory.h>
-#include <assert.h>
-#include <limits.h>
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-#include "std-int.h" /* Wrapper for <stdint.h> which is not avaiable on every compiler. */
-
-#endif /* PCC_H_10C143CE_7FF9_4E22_8187_6EBF9DAEAA7B */
+#endif /* PLATFORM_SOCKETS_H_3AFE234D_384E_4575_8194_4C7D83326B95 */
 

@@ -9,7 +9,7 @@
 #if !defined MCAST_UTILS_H_8DE850FE_74BA_4195_A769_0D9C94034663
 #define MCAST_UTILS_H_8DE850FE_74BA_4195_A769_0D9C94034663
 
-#include <winsock2.h>
+#include "platform-sockets.h"
 #include "std-int.h"
 #if defined __cplusplus
 extern "C" {

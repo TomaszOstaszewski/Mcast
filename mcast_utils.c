@@ -31,8 +31,8 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
             option   = IP_ADD_MEMBERSHIP;
             optval   = (char *)& mreqv4;
             optlen   = sizeof(mreqv4);
-            mreqv4.imr_multiaddr.s_addr = ((SOCKADDR_IN *)group->ai_addr)->sin_addr.s_addr;
-            mreqv4.imr_interface.s_addr = ((SOCKADDR_IN *)iface->ai_addr)->sin_addr.s_addr;
+            mreqv4.imr_multiaddr.s_addr = ((P_SOCKADDR_IN )group->ai_addr)->sin_addr.s_addr;
+            mreqv4.imr_interface.s_addr = ((P_SOCKADDR_IN )iface->ai_addr)->sin_addr.s_addr;
             rc = setsockopt(s, optlevel, option, (const char *)&mreqv4, optlen);
             if (SOCKET_ERROR == rc)
             {
@@ -40,8 +40,8 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
             }
             /* Set send interface */
             option   = IP_MULTICAST_IF;
-            optval   = (char *) &((SOCKADDR_IN *)iface->ai_addr)->sin_addr.s_addr;
-            optlen   = sizeof(((SOCKADDR_IN *)iface->ai_addr)->sin_addr.s_addr);
+            optval   = (char *) &((P_SOCKADDR_IN )iface->ai_addr)->sin_addr.s_addr;
+            optlen   = sizeof(((P_SOCKADDR_IN )iface->ai_addr)->sin_addr.s_addr);
             rc = setsockopt(s, optlevel, option, optval, optlen);
             if (SOCKET_ERROR == rc)
             {
@@ -63,9 +63,8 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
             option   = IPV6_ADD_MEMBERSHIP;
             optval   = (char *) &mreqv6;
             optlen   = sizeof(mreqv6);
-
-            mreqv6.ipv6mr_multiaddr = ((SOCKADDR_IN6 *)group->ai_addr)->sin6_addr;
-            mreqv6.ipv6mr_interface = ((SOCKADDR_IN6 *)iface->ai_addr)->sin6_scope_id;
+            mreqv6.ipv6mr_multiaddr = ((P_SOCKADDR_IN6 )group->ai_addr)->sin6_addr;
+            mreqv6.ipv6mr_interface = ((P_SOCKADDR_IN6 )iface->ai_addr)->sin6_scope_id;
             rc = setsockopt(s, optlevel, option, (const char *)&mreqv6, optlen);
             if (SOCKET_ERROR == rc)
             {
@@ -73,8 +72,8 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
             }
             // Setup the v6 option values
             option   = IPV6_MULTICAST_IF;
-            optval   = (char *) &((SOCKADDR_IN6 *)iface->ai_addr)->sin6_scope_id;
-            optlen   = sizeof(((SOCKADDR_IN6 *)iface->ai_addr)->sin6_scope_id);
+            optval   = (char *) &((P_SOCKADDR_IN6 )iface->ai_addr)->sin6_scope_id;
+            optlen   = sizeof(((P_SOCKADDR_IN6 )iface->ai_addr)->sin6_scope_id);
             rc = setsockopt(s, optlevel, option, optval, optlen);
             if (SOCKET_ERROR == rc)
             {
@@ -119,8 +118,8 @@ int JoinMulticastGroup(SOCKET s, struct addrinfo const *group, struct addrinfo c
         optval   = (char *)& mreqv4;
         optlen   = sizeof(mreqv4);
 
-        mreqv4.imr_multiaddr.s_addr = ((SOCKADDR_IN *)group->ai_addr)->sin_addr.s_addr;
-        mreqv4.imr_interface.s_addr = ((SOCKADDR_IN *)iface->ai_addr)->sin_addr.s_addr;
+        mreqv4.imr_multiaddr.s_addr = ((P_SOCKADDR_IN )group->ai_addr)->sin_addr.s_addr;
+        mreqv4.imr_interface.s_addr = ((P_SOCKADDR_IN )iface->ai_addr)->sin_addr.s_addr;
 
     }
     else if (group->ai_family == AF_INET6)
@@ -131,8 +130,8 @@ int JoinMulticastGroup(SOCKET s, struct addrinfo const *group, struct addrinfo c
         optval   = (char *) &mreqv6;
         optlen   = sizeof(mreqv6);
 
-        mreqv6.ipv6mr_multiaddr = ((SOCKADDR_IN6 *)group->ai_addr)->sin6_addr;
-        mreqv6.ipv6mr_interface = ((SOCKADDR_IN6 *)iface->ai_addr)->sin6_scope_id;
+        mreqv6.ipv6mr_multiaddr = ((P_SOCKADDR_IN6 )group->ai_addr)->sin6_addr;
+        mreqv6.ipv6mr_interface = ((P_SOCKADDR_IN6 )iface->ai_addr)->sin6_scope_id;
     }
     else
     {
@@ -165,16 +164,16 @@ int SetSendInterface(SOCKET s, struct addrinfo const *iface)
         // Setup the v4 option values
         optlevel = IPPROTO_IP;
         option   = IP_MULTICAST_IF;
-        optval   = (char *) &((SOCKADDR_IN *)iface->ai_addr)->sin_addr.s_addr;
-        optlen   = sizeof(((SOCKADDR_IN *)iface->ai_addr)->sin_addr.s_addr);
+        optval   = (char *) &((P_SOCKADDR_IN )iface->ai_addr)->sin_addr.s_addr;
+        optlen   = sizeof(((P_SOCKADDR_IN )iface->ai_addr)->sin_addr.s_addr);
     }
     else if (iface->ai_family == AF_INET6)
     {
         // Setup the v6 option values
         optlevel = IPPROTO_IPV6;
         option   = IPV6_MULTICAST_IF;
-        optval   = (char *) &((SOCKADDR_IN6 *)iface->ai_addr)->sin6_scope_id;
-        optlen   = sizeof(((SOCKADDR_IN6 *)iface->ai_addr)->sin6_scope_id);
+        optval   = (char *) &((P_SOCKADDR_IN6 )iface->ai_addr)->sin6_scope_id;
+        optlen   = sizeof(((P_SOCKADDR_IN6 )iface->ai_addr)->sin6_scope_id);
     }
     else
     {

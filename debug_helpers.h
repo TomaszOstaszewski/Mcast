@@ -34,6 +34,7 @@
 extern "C" {
 #endif 
 
+#if defined WIN32
 #include <windows.h>
 
 /*!
@@ -68,6 +69,7 @@ void debug_output_flush(void);
  * @return
  */
 HRESULT debug_outputln_buffered(LPCTSTR formatString, ...);
+#endif
 
 #if defined __cplusplus
 }
