@@ -1,9 +1,9 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 
 /**
- * @file platform-sockets.h
- * @brief Platform agnostic sockets header.
- * @details 
+ * @file debug_helpers.h
+ * @brief DebugView interface header.
+ * @details Contains declarations of functions that print output to the Debug Console. This is more fancy wrapper for OutputDebugString API. 
  * @author T.Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
@@ -11,7 +11,7 @@
  * 	1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  *	2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
  * 	and/or other materials provided with the distribution.
-  * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
+ * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
  * IN NO EVENT SHALL Tomasz Ostaszewski OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
@@ -21,32 +21,27 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
-  * The views and conclusions contained in the software and documentation are those of the 
+ * The views and conclusions contained in the software and documentation are those of the 
  * authors and should not be interpreted as representing official policies, 
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
  * @date 04-Jan-2012
  */
-#if !defined PLATFORM_SOCKETS_H_3AFE234D_384E_4575_8194_4C7D83326B95
-#define PLATFORM_SOCKETS_H_3AFE234D_384E_4575_8194_4C7D83326B95
+#if !defined COMPILER_DEFS_H_3F0740A0_908E_4325_AD5C_83EBB2DD3EFA
+#define COMPILER_DEFS_H_3F0740A0_908E_4325_AD5C_83EBB2DD3EFA
+
+#include "platform-sockets.h"
 
 #if defined WIN32
-#   define _CRT_SECURE_NO_WARNINGS 
-#   include <winsock2.h>
-#   include <ws2tcpip.h>
-#   include <windows.h>
+#	define THREAD_LOCAL __declspec(thread)
+
 #else
-#   include <sys/types.h>
-#   include <sys/socket.h>
-#   include <netdb.h>
-typedef int SOCKET;
-typedef struct sockaddr_in * LPSOCKADDR_IN;
-typedef struct sockaddr_in6 * LPSOCKADDR_IN6;
-#   define SOCKET_ERROR (-1)
-#   define INVALID_SOCKET (-1)
-#   define NO_ERROR (0)
-int closesocket(SOCKET s);
+#	define THREAD_LOCAL __thread
+#	define CopyMemory(t,s,c) memcpy(t,s,c)
+#	define ZeroMemory(p,c) memset(p, 0, c)
+
 #endif
 
-#endif /* PLATFORM_SOCKETS_H_3AFE234D_384E_4575_8194_4C7D83326B95 */
+unsigned long get_last_socket_error(void);
 
+#endif /*if !defined COMPILER_DEFS_H_3F0740A0_908E_4325_AD5C_83EBB2DD3EFA */

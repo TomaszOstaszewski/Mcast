@@ -29,6 +29,8 @@
  */
 #include "pcc.h"
 #include "debug_helpers.h"
+#include <stdarg.h>
+#include "compiler_defs.h"
 
 /*!
  * @brief Output buffer size for debug_output and debug_outpuln.
@@ -53,7 +55,7 @@
  * @attention This buffer is a thread local variable. Thus, each thread created, whether you want it or not,
  * will have a copy of that buffer.  
  */
-static __declspec(thread) TCHAR outputBuffer[OUTPUT_BUFFER_LEN];
+static THREAD_LOCAL char g_outputBuffer[OUTPUT_BUFFER_LEN];
 
 /*!
  * @brief Maximum number of characters that fit the buffer.
@@ -63,26 +65,28 @@ static __declspec(thread) TCHAR outputBuffer[OUTPUT_BUFFER_LEN];
  * whose amortized cost is a lot lower than constant calling debug_outputln(), which will flush the string each time it's 
  * being called.
  */
-static __declspec(thread) TCHAR g_lines[BUFFER_MAX_TCHARS];
+static THREAD_LOCAL char g_lines[BUFFER_MAX_TCHARS];
+
+static THREAD_LOCAL char g_tmp_buffer[OUTPUT_BUFFER_LEN];
 
 /*!
  * @brief Number of characters already placed in the buffer.
  * @attention This is a thread specific variable. Each thread gets a copy of it.
  */
-static __declspec(thread) UINT  g_write_offset;
+static THREAD_LOCAL size_t g_write_offset;
 
-HRESULT debug_outputln(LPCTSTR formatString, ...)
+#if defined WIN32
+
+static int debug_outputlnA_impl(const char * formatString, va_args args)
 {
 	HRESULT hr;
-	va_list args;
-	va_start(args, formatString);
-	hr = StringCchVPrintf(outputBuffer, OUTPUT_BUFFER_LEN, formatString, args);
+	hr = StringCchVPrintf(g_outputBuffer, OUTPUT_BUFFER_LEN, formatString, args);
 	if (SUCCEEDED(hr) || hr == STRSAFE_E_INSUFFICIENT_BUFFER)
     {
-		OutputDebugString(outputBuffer);
+		OutputDebugStringA(buffer);
     }
     va_end(args);
-	return hr;
+	return SUCCEEDED(hr);
 }
 
 void debug_output_flush(void)
@@ -93,14 +97,15 @@ void debug_output_flush(void)
     g_write_offset = 0;
 }
 
-HRESULT debug_outputln_buffered(LPCTSTR formatString, ...)
+
+int debug_outputln_bufferedA(const char * formatString, ...)
 {
 	HRESULT hr;
     LPTSTR pszDestEnd;
 	va_list args;
 	va_start(args, formatString);
     /* Write a formatted string into the temporary buffer */
-	hr = StringCchVPrintfEx(outputBuffer, OUTPUT_BUFFER_LEN, &pszDestEnd, NULL, 0, formatString, args);
+	hr = StringCchVPrintfEx(g_outputBuffer, OUTPUT_BUFFER_LEN, &pszDestEnd, NULL, 0, formatString, args);
 	if (SUCCEEDED(hr) || hr == STRSAFE_E_INSUFFICIENT_BUFFER)
     {
         /* Check if the sum of write_offset and string length is greater,
@@ -108,7 +113,7 @@ HRESULT debug_outputln_buffered(LPCTSTR formatString, ...)
          * copy from temporary buffer @ write offset
          * replace last character with '\n'
          */
-        UINT new_string_length = pszDestEnd - outputBuffer + 1; /* We count the terminating null, hence +1. This null will be replaced by the '\n' character. */
+        UINT new_string_length = pszDestEnd - g_outputBuffer + 1; /* We count the terminating null, hence +1. This null will be replaced by the '\n' character. */
         UINT new_write_offset = g_write_offset + new_string_length;
         *pszDestEnd = '\n';
         if (new_write_offset>BUFFER_MAX_TCHARS)
@@ -116,10 +121,157 @@ HRESULT debug_outputln_buffered(LPCTSTR formatString, ...)
             debug_output_flush();
         }
         /* CopyMemory - as we know the length and we know the source string may not be NULL terminated */
-        CopyMemory(&g_lines[g_write_offset], outputBuffer, new_string_length*sizeof(TCHAR)); 
+        CopyMemory(&g_lines[g_write_offset], g_outputBuffer, new_string_length*sizeof(TCHAR)); 
         g_write_offset += new_string_length;
     }
     va_end(args);
     return hr;
 }
+
+#else
+
+#	include <syslog.h>
+#	include <string.h>
+
+static int debug_outputlnA_impl(const char * formatString, va_list args)
+{
+	int chars_printed;
+	chars_printed = vsnprintf(g_outputBuffer, OUTPUT_BUFFER_LEN, formatString, args);
+	if (chars_printed>0)
+    {
+		syslog(LOG_INFO, "%s", g_outputBuffer);
+		return 1;
+    }
+	return 0;
+}
+
+void debug_output_flush(void)
+{
+    /* Write all the lines and zero-out the write offset */
+    g_lines[g_write_offset] = '\0';
+    syslog(LOG_INFO, "%s", &g_lines[0]);
+    g_write_offset = 0;
+}
+
+int debug_outputln_bufferedA(const char * formatString, ...)
+{
+	int chars_written;
+	va_list args;
+	va_start(args, formatString);
+    /* Write a formatted string into the temporary buffer */
+	chars_written = vsnprintf(g_outputBuffer, OUTPUT_BUFFER_LEN, formatString, args);
+	if (chars_written > 0) 
+    {
+		/* Chacke if string was truncated */
+		if (chars_written >= OUTPUT_BUFFER_LEN)
+		{
+			return -1;
+		}
+		else
+		{
+			/* Check if we fit the destination buffer */	
+			size_t new_length = chars_written;
+			if (new_length >= BUFFER_MAX_TCHARS)
+			{
+				debug_output_flush();
+			}
+			CopyMemory(&g_lines[g_write_offset], g_outputBuffer, chars_written*sizeof(char));
+			g_write_offset += chars_written;
+		}
+    }
+    va_end(args);
+    return 0;
+}
+
+
+#endif
+
+int debug_outputlnA(const char * formatString, ...)
+{
+	int retval;
+	va_list args;
+	va_start(args, formatString);
+	retval = debug_outputlnA_impl(g_tmp_buffer, args);
+	va_end(args);
+	return retval;
+}
+
+int debug_outputlnW(const wchar_t * formatString, ...)
+{
+	/* Convert the format string to ANSI */
+	int retval = -1;
+	size_t bytes_written;
+	bytes_written = wcstombs(g_tmp_buffer, formatString, sizeof(g_tmp_buffer));	
+	if ((bytes_written) != (-1))
+	{
+		va_list args;
+		va_start(args, formatString);
+		retval = debug_outputlnA_impl(g_tmp_buffer, args);
+		va_end(args);
+	}
+	return retval;
+}
+
+#if 0
+int debug_outputln_bufferedA(const char * formatString, ...)
+{
+	int chars_written;
+	va_list args;
+	va_start(args, formatString);
+    /* Write a formatted string into the temporary buffer */
+	chars_written = vsnprintf(g_outputBuffer, OUTPUT_BUFFER_LEN, formatString, args);
+	if (chars_written > 0) 
+    {
+		/* Chacke if string was truncated */
+		if (chars_written >= OUTPUT_BUFFER_LEN)
+		{
+			return -1;
+		}
+		else
+		{
+			/* Check if we fit the destination buffer */	
+			size_t new_length = chars_written;
+			if (new_length >= BUFFER_MAX_TCHARS)
+			{
+				debug_output_flush();
+			}
+			COPY_MEMORY(&g_lines[g_write_offset], g_outputBuffer, chars_written*sizeof(char));
+			g_write_offset += chars_written;
+		}
+    }
+    va_end(args);
+    return hr;
+}
+
+int debug_outputln_bufferedA(LPCTSTR formatString, ...)
+{
+	HRESULT hr;
+    LPTSTR pszDestEnd;
+	va_list args;
+	va_start(args, formatString);
+    /* Write a formatted string into the temporary buffer */
+	hr = StringCchVPrintfEx(g_outputBuffer, OUTPUT_BUFFER_LEN, &pszDestEnd, NULL, 0, formatString, args);
+	if (SUCCEEDED(hr) || hr == STRSAFE_E_INSUFFICIENT_BUFFER)
+    {
+        /* Check if the sum of write_offset and string length is greater,
+         * than output buffer size. If so, then flush output buffer
+         * copy from temporary buffer @ write offset
+         * replace last character with '\n'
+         */
+        UINT new_string_length = pszDestEnd - g_outputBuffer + 1; /* We count the terminating null, hence +1. This null will be replaced by the '\n' character. */
+        UINT new_write_offset = g_write_offset + new_string_length;
+        *pszDestEnd = '\n';
+        if (new_write_offset>BUFFER_MAX_TCHARS)
+        {
+            debug_output_flush();
+        }
+        /* CopyMemory - as we know the length and we know the source string may not be NULL terminated */
+        CopyMemory(&g_lines[g_write_offset], g_outputBuffer, new_string_length*sizeof(TCHAR)); 
+        g_write_offset += new_string_length;
+    }
+    va_end(args);
+    return hr;
+}
+
+#endif
 

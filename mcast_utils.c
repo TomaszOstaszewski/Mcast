@@ -11,6 +11,7 @@
 #include "mcast_utils.h"
 #include "resolve.h"
 #include "debug_helpers.h"
+#include "compiler_defs.h"
 
 int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct addrinfo const * iface, int ttl)
 {
@@ -144,7 +145,7 @@ int JoinMulticastGroup(SOCKET s, struct addrinfo const *group, struct addrinfo c
         rc = setsockopt(s, optlevel, option, optval, optlen);
         if (rc == SOCKET_ERROR)
         {
-            debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
+            debug_outputln("%s %4.4u : %d\n", get_last_socket_error());
         }
     }
     return rc;
@@ -188,7 +189,7 @@ int SetSendInterface(SOCKET s, struct addrinfo const *iface)
         rc = setsockopt(s, optlevel, option, optval, optlen);
         if (rc == SOCKET_ERROR)
         {
-            debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
+            debug_outputln("%s %4.4u : %d\n", get_last_socket_error());
         }
     }
     return rc;
@@ -231,7 +232,7 @@ int SetMulticastTtl(SOCKET s, int af, uint8_t ub_ttl)
         rc = setsockopt(s, optlevel, option, optval, optlen);
         if (rc == SOCKET_ERROR)
         {
-            debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
+            debug_outputln("%s %4.4u : %d\n", get_last_socket_error());
         }
     }
     return rc;
@@ -273,7 +274,7 @@ int SetMulticastLoopBack(SOCKET s, int af, int loopval)
         rc = setsockopt(s, optlevel, option, optval, optlen);
         if (rc == SOCKET_ERROR)
         {
-            debug_outputln("%s %4.4u : %d\n", WSAGetLastError());
+            debug_outputln("%s %4.4u : %d\n", get_last_socket_error());
         }
     }
     return rc;

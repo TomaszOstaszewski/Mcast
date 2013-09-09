@@ -41,6 +41,7 @@
 #define PCC_H_10C143CE_7FF9_4E22_8187_6EBF9DAEAA7B
 
 #include "platform-sockets.h"
+#include "compiler_defs.h"
 #if defined WIN32
 #   define _CRT_SECURE_NO_WARNINGS 
 #   include <windowsx.h>
