@@ -40,11 +40,9 @@
 #if !defined PCC_H_10C143CE_7FF9_4E22_8187_6EBF9DAEAA7B
 #define PCC_H_10C143CE_7FF9_4E22_8187_6EBF9DAEAA7B
 
+#include "platform-sockets.h"
 #if defined WIN32
 #   define _CRT_SECURE_NO_WARNINGS 
-#   include <winsock2.h>
-#   include <ws2tcpip.h>
-#   include <windows.h>
 #   include <windowsx.h>
 #   include <commctrl.h>
 #   include <winerror.h>
@@ -58,9 +56,6 @@
 #       include <dsound.h>
 #       include <strsafe.h>
 #   endif
-#else
-#   include <sys/types.h>
-#   include <sys/socket.h>
 #endif
 
 #include <memory.h>

@@ -31,18 +31,17 @@
 #define PLATFORM_SOCKETS_H_3AFE234D_384E_4575_8194_4C7D83326B95
 
 #if defined WIN32
+#   define _CRT_SECURE_NO_WARNINGS 
 #   include <winsock2.h>
 #   include <ws2tcpip.h>
 #   include <windows.h>
-typedef struct SOCKADDR_IN * P_SOCKADDR_IN;
-typedef struct SOCKADDR_IN6 * P_SOCKADDR_IN6;
 #else
 #   include <sys/types.h>
 #   include <sys/socket.h>
 #   include <netdb.h>
 typedef int SOCKET;
-typedef struct sockaddr_in * P_SOCKADDR_IN;
-typedef struct sockaddr_in6 * P_SOCKADDR_IN6;
+typedef struct sockaddr_in * LPSOCKADDR_IN;
+typedef struct sockaddr_in6 * LPSOCKADDR_IN6;
 #   define SOCKET_ERROR (-1)
 #   define INVALID_SOCKET (-1)
 #   define NO_ERROR (0)

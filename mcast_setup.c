@@ -166,7 +166,7 @@ size_t mcast_recvfrom_flags(struct mcast_connection * p_conn, void * p_data, siz
     return recvfrom(p_conn->socket_, p_data, data_size, flags, p_conn->multiAddr_->ai_addr, &p_conn->multiAddr_->ai_addrlen);
  }
 
-int mcast_is_new_data(struct mcast_connection * p_conn, DWORD dwTimeoutMs)
+int mcast_is_new_data(struct mcast_connection * p_conn, size_t dwTimeoutMs)
 {
     fd_set read_sel; 
     int result;
