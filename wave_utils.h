@@ -180,8 +180,7 @@
 #if !defined WAVE_UTILS_16606182_713B_4823_B290_4BE6CBA65CCC
 #define WAVE_UTILS_16606182_713B_4823_B290_4BE6CBA65CCC
 
-#include <windows.h>
-#include <mmreg.h>
+#include "pcc.h"
 #include "std-int.h"
 
 #if defined __cplusplus
@@ -221,13 +220,41 @@ typedef WAVEFORMAT FAR  *LPWAVEFORMAT;
 #define WAVE_FORMAT_PCM     1
 
 /*!
+ * @brief A sub-chunk header
+ * @details This is the last header, what follows is data. 
+ * @attention All the data in the WAV file is stored in little endian. So on the little endian machine 
+ * it is enough to load a WAV file into this structure.
+  */
+typedef struct wav_subchunk { 
+    uint8_t     subchunkId_[4]; /*!< 4 bytes, they give string 'data', 0x64 0x61 0x74 0x61 */
+    uint32_t    subchunk_size_;  /*!< Number of bytes that follow. */
+    union {
+        int8_t      samples8_[1];
+        int16_t     samples16_[1];
+        int32_t     samples32_[1];
+    };
+} wav_subchunk_t;
+
+typedef struct plainwaveformat {
+    WAVEFORMAT wavFormat_;  
+    wav_subchunk_t subchunk_;
+} plainwaveformat_t;
+
+struct extensiblewav {
+    WAVEFORMAT wavFormat_;
+    uint16_t cbSize_; /*!< Bits per sample (16, 24, 32) */
+    uint16_t wValidBitsPerSample_;     
+} extensiblewav_t;
+/*!
  * @brief specific waveform format structure for PCM data 
  * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
  */
 typedef struct pcmwaveformat_tag {
     WAVEFORMAT  wf;             /*!< All the preceeding format settings. */
     WORD        wBitsPerSample; /*!< Bits per sample (16, 24, 32) */
+    struct wav_subchunk subchunk_; /*!< The chunk itself, prepended with some rudimentary header. */
 } PCMWAVEFORMAT;
+
 /*!
  * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
  */
@@ -244,21 +271,6 @@ typedef PCMWAVEFORMAT FAR  *LPPCMWAVEFORMAT;
 #endif /* WAVE_FORMAT_PCM */
 
 /*!
- * @brief A sub-chunk header
- * @details This is the last header, what follows is data. 
- * @attention All the data in the WAV file is stored in little endian. So on the little endian machine 
- * it is enough to load a WAV file into this structure.
-  */
-typedef struct wav_subchunk { 
-    uint8_t     subchunkId_[4]; /*!< 4 bytes, they give string 'data', 0x64 0x61 0x74 0x61 */
-    uint32_t    subchunk_size_;  /*!< Number of bytes that follow. */
-    union {
-        int8_t      samples8_[1];
-        int16_t     samples16_[1];
-    };
-} wav_subchunk_t;
-
-/*!
  * @brief WAV file header.
  * @details Each WAV file begins with this bytes. 
  * @attention All the data in the file is stored in little endian. Thus, on little endian machine, 
@@ -270,8 +282,22 @@ typedef struct wav_format_chunk {
     uint8_t     ckid_[4]; /*!< Yet another chunk id, 4 bytes that give "fmt ", 0x66 0x6d 0x74 0x20 */
     uint32_t    cksize_; /*!< Chunk size, either 16, 18 or 40 decimal */
     struct pcmwaveformat_tag format_; /*!< Format of the chunk */
-    struct wav_subchunk subchunk_; /*!< The chunk itself, prepended with some rudimentary header. */
 } wav_format_chunk_t; 
+
+/**
+ * @brief 
+ */
+typedef struct wav_format_chunk_2 {
+    uint8_t     waveid_[4]; /*!< WaveID, 4 bytes that give "WAVE", 0x57 0x41 0x56 0x45 */ 
+    uint8_t     ckid_[4]; /*!< Yet another chunk id, 4 bytes that give "fmt ", 0x66 0x6d 0x74 0x20 */
+    uint32_t    cksize_; /*!< Chunk size, either 16, 18 or 40 decimal */
+    union {
+        uint16_t wFormatTag_;
+        struct plainwaveformat  plain_wav_;
+        struct pcmwaveformat_tag pcm_wav_; /*!< Format of the chunk */
+        struct extensiblewav ext_wav_;
+    };
+} PACKED wav_format_chunk_2_t; 
 
 /*!
  * @brief WAV file header.
@@ -281,6 +307,7 @@ struct master_riff_chunk {
     uint32_t    cksize_; /*!< Chunk size, 4+n, little endian. */
     union {
         wav_format_chunk_t format_chunk_;
+        wav_format_chunk_2_t format_chunk_2_;
         uint8_t     data_u8_[1];
         uint16_t    data_u16_[1];
         uint32_t    data_u32_[1];
@@ -297,6 +324,7 @@ typedef struct master_riff_chunk * P_MASTER_RIFF;
  */
 typedef struct master_riff_chunk const * P_MASTER_RIFF_CONST;
 
+#if 0
 /*!
  * @brief Helper function, dumps the WAVEFORMATEX into the provided buffer.
  * @param[in,out] psz_buffer the buffer into which the structure will be dumped.
@@ -349,6 +377,7 @@ void waveformat_normalize(WAVEFORMATEX * p_struct);
  * @return returns 0 on success, <>0 otherwise.
  */
 int init_master_riff(P_MASTER_RIFF_CONST * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName);
+#endif
 
 #if defined __cplusplus
 }

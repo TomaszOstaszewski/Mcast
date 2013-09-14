@@ -34,11 +34,13 @@
 
 #if defined WIN32
 #	define THREAD_LOCAL __declspec(thread)
+#	define PACKED 
 
 #else
 #	define THREAD_LOCAL __thread
 #	define CopyMemory(t,s,c) memcpy(t,s,c)
 #	define ZeroMemory(p,c) memset(p, 0, c)
+#	define PACKED __attribute__((packed))
 
 #endif
 

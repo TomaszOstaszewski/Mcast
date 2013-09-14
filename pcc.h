@@ -68,6 +68,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#if defined __linux__
+#   include <netinet/in.h>
+#   include <errno.h>
+#   include <fcntl.h>
+#   include <unistd.h>
+#   include <sys/types.h>
+#   include <sys/stat.h>
+#   include <sys/mman.h>
+#   include <stdint.h>
+typedef uint32_t DWORD ;
+typedef uint16_t WORD ;
+#define NEAR 
+#define FAR 
+#endif
 
 #include "std-int.h" /* Wrapper for <stdint.h> which is not avaiable on every compiler. */
 

@@ -2,7 +2,7 @@
 .PHONY	:= clean
 MINGWPSDKINCLUDE	:=/usr/i586-mingw32msvc/include/
 CROSS_COMPILE:=i586-mingw32msvc-gcc
-CFLAGS 	:=-Wall -Werror
+CFLAGS 	:=-Wall -Werror -ggdb -O0
 
 all: mcast-sender
 
@@ -24,4 +24,9 @@ clean:
  ut-circular-buffer-uint8.o \
  circular-buffer-uint8.o \
  mcast-setup-linux.o \
+ mcast-sender-linux.o \
+ debug_helpers.o \
+ platform-sockets.o \
+ resolve.o \
+ mcast-sender \
  mcast_utils.o 
