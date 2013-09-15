@@ -92,7 +92,7 @@ struct ui_focus {
 /*!
  * @brief Defines which control shall get the inital focus in each UI state.
  */
-static struct ui_focus focus_table[] = {
+static const struct ui_focus focus_table[] = {
     {UI_SENDER_INITIAL, ID_TEST_TONE},
     {UI_SENDER_MCASTJOINED, ID_TEST_TONE},
     {UI_SENDER_TESTTONE_SELECTED, ID_SENDER_JOINMCAST},
@@ -106,7 +106,7 @@ static struct ui_focus focus_table[] = {
 /*!
  * @brief Defines how controls shall be ghosted-out/enabled or checked in each UI state.
  */
-static struct ui_control_state controls_state_table[] = {
+static const struct ui_control_state controls_state_table[] = {
     /* Controls state for 'UI_SENDER_INITIAL' state */
     {UI_SENDER_INITIAL,ID_SENDER_SETTINGS, TRUE, FALSE},
     {UI_SENDER_INITIAL,ID_SENDER_JOINMCAST, TRUE, FALSE},
@@ -202,8 +202,8 @@ static void UpdateUI(HWND hwnd)
         HWND hwnd;
         struct ui_control_state const * const p_past_end = &controls_state_table[sizeof(controls_state_table)/sizeof(controls_state_table[0])];
         struct ui_focus const * const p_focus_past_end = &focus_table[sizeof(focus_table)/sizeof(focus_table[0])];
-        struct ui_control_state * p_item = &controls_state_table[0];
-        struct ui_focus * p_focus_item = &focus_table[0];
+        struct ui_control_state const * p_item = &controls_state_table[0];
+        struct ui_focus const * p_focus_item = &focus_table[0];
         /* Find all the rows matching current state */
         for (; p_item != p_past_end; ++p_item)
         {

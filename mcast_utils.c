@@ -26,7 +26,6 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
     switch (group->ai_family)
     {
         case AF_INET: /* IPv4 */
-            debug_outputln("%4.4u %10.10s", __LINE__, __FILE__);
             /* Join Multicast group */
             optlevel = IPPROTO_IP;
             option   = IP_ADD_MEMBERSHIP;
@@ -94,6 +93,7 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
             rc = SOCKET_ERROR;
             break;
     }
+    debug_outputln("%4.4u %s : %d", __LINE__, __FILE__, rc);
     return rc;
 error:
     debug_outputln("%4.4u %10.10s", __LINE__, __FILE__);

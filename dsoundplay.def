@@ -17,4 +17,6 @@ EXPORTS
 	dump_pcmwaveformat @33
  	copy_pcmwaveformat_2_WAVEFORMATEX @34
 	waveformat_normalize @35
-	init_master_riff @36
+	LoadWavFromResoure @36
+        get_wave_data @37
+        get_wave_data_size @38

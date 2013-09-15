@@ -33,31 +33,14 @@
 
 void test_00(void)
 {
-	struct abstract_tone * p_tone;
-	p_tone = abstract_tone_create(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
-	assert(p_tone);
-	abstract_tone_destroy(p_tone);
 }
 
 void test_01(void)
 {
-	struct abstract_tone * p_tone;
-    uint8_t const * p_data;
-    size_t data_size = 0;
-	p_tone = abstract_tone_create(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
-	assert(p_tone);
-    p_data = (uint8_t const *)abstract_tone_get_wave_data(p_tone, &data_size);
-    assert(p_data);
-    assert(0 != data_size);
-	abstract_tone_destroy(p_tone);
 }
 
 void test_02(void)
 {
-	struct abstract_tone * p_tone;
-	p_tone = abstract_tone_create(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
-	assert(p_tone);
-	abstract_tone_destroy(p_tone);
 }
 
 int main(int argc, char ** argv)

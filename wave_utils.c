@@ -93,7 +93,7 @@ void waveformat_normalize(WAVEFORMATEX * p_dest)
 	p_dest->nAvgBytesPerSec = p_dest->nSamplesPerSec * (p_dest->wBitsPerSample/8) * p_dest->nChannels ;
 }
 
-int init_master_riff(P_MASTER_RIFF_CONST * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName)
+int LoadWavFromResoure(P_MASTER_RIFF_CONST * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName)
 {
     HRSRC hRes;
     int result = 0;
@@ -122,5 +122,34 @@ int init_master_riff(P_MASTER_RIFF_CONST * pp_chunk, HINSTANCE hModule, LPCTSTR 
         debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, GetLastError(), GetLastError());
     }
     return result;
+}
+
+int16_t const * get_wave_data(P_MASTER_RIFF_CONST p_master_riff)
+{
+    switch (p_master_riff->format_chunk_2_.wFormatTag_)
+    {
+        case WAVE_FORMAT_PCM:
+            return &p_master_riff->format_chunk_2_.plain_wav_.subchunk_.samples16_[0];
+            break;
+        default:
+            return NULL;
+    }
+}
+
+uint32_t get_wave_data_size(P_MASTER_RIFF_CONST p_master_riff)
+{
+    switch (p_master_riff->format_chunk_2_.wFormatTag_)
+    {
+        case WAVE_FORMAT_PCM:
+            return p_master_riff->format_chunk_2_.plain_wav_.subchunk_.subchunk_size_;
+            break;
+        default:
+            return 0;
+    }
+}
+
+void get_waveformat(P_MASTER_RIFF_CONST p_master_riff, WAVEFORMAT * p_output)
+{
+    
 }
 

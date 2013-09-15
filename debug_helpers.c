@@ -77,13 +77,13 @@ static THREAD_LOCAL size_t g_write_offset;
 
 #if defined WIN32
 
-static int debug_outputlnA_impl(const char * formatString, va_args args)
+static int debug_outputlnA_impl(const char * formatString, va_list args)
 {
 	HRESULT hr;
-	hr = StringCchVPrintf(g_outputBuffer, OUTPUT_BUFFER_LEN, formatString, args);
+	hr = StringCchVPrintfA(g_outputBuffer, OUTPUT_BUFFER_LEN, formatString, args);
 	if (SUCCEEDED(hr) || hr == STRSAFE_E_INSUFFICIENT_BUFFER)
     {
-		OutputDebugStringA(buffer);
+		OutputDebugStringA(g_outputBuffer);
     }
     va_end(args);
 	return SUCCEEDED(hr);
@@ -191,7 +191,7 @@ int debug_outputlnA(const char * formatString, ...)
 	int retval;
 	va_list args;
 	va_start(args, formatString);
-	retval = debug_outputlnA_impl(g_tmp_buffer, args);
+	retval = debug_outputlnA_impl(formatString, args);
 	va_end(args);
 	return retval;
 }

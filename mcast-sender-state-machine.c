@@ -100,6 +100,7 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
     send_offset = 0;
     p_data_begin = (int8_t const *)abstract_tone_get_wave_data(p_sender->tone_, &max_offset);
     assert(p_data_begin);
+    debug_outputln("%4.4u %s : %p %u %u", __LINE__, __FILE__, p_data_begin, max_chunk_size, max_offset);
     for (;;)
     {
         int result;
@@ -125,6 +126,11 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
                 {
                     send_offset = 0;
                 }
+                //debug_outputln("%4.4u %s : %p %u", __LINE__, __FILE__, p_data_begin+send_offset, chunk_size);
+            }
+            else
+            {
+                debug_outputln("%4.4u %s : %p %u", __LINE__, __FILE__, p_data_begin+send_offset, chunk_size);
             }
             continue;
         }

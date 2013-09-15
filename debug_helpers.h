@@ -71,11 +71,7 @@ int debug_outputln_bufferedA(const char * formatString, ...);
 
 int debug_outputln_bufferedW(const wchar_t * formatString, ...);
 
-#if defined WIN32
-#	define debug_outputln debug_outputlnW
-#else
-#	define debug_outputln debug_outputlnA
-#endif
+#define debug_outputln debug_outputlnA
 
 #if defined __cplusplus
 }

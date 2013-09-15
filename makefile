@@ -62,7 +62,7 @@ $(OUTDIR_OBJ)\mcast_utils.obj: mcast_utils.c mcast_utils.h resolve.h $(OUTDIR_PC
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\resolve.obj: resolve.c resolve.h debug_helpers.h $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\timeofday.obj: timeofday.c timeofday.h $(OUTDIR_PCC)\pcc.pch
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
@@ -77,7 +77,7 @@ $(OUTDIR_OBJ)\mcast_setup.obj: mcast_setup.c mcast_setup.h mcast_utils.h resolve
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\debug_helpers.obj: debug_helpers.c pcc.h debug_helpers.h pcc.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE) /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\mcast-receiver-dlg.obj: mcast-receiver-dlg.c pcc.h dsoundplay.h mcast_setup.h mcast-settings.h mcast-receiver-state-machine.h circular-buffer-uint8.h receiver-settings.h play-settings.h wave_utils.h receiver-res.h $(OUTDIR_OBJ)
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
@@ -95,6 +95,9 @@ $(OUTDIR_OBJ)\sender-settings-dlg.obj: sender-settings-dlg.c pcc.h sender-settin
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\sender-settings.obj: sender-settings.c pcc.h sender-settings.h wave_utils.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+
+$(OUTDIR_OBJ)\platform-sockets.obj: platform-sockets.c platform-sockets.h pcc.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\receiver-settings.obj: receiver-settings.c pcc.h receiver-settings.h play-settings.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
@@ -128,6 +131,9 @@ $(OUTDIR_OBJ)\perf-counter-itf.obj: perf-counter-itf.c perf-counter-itf.h $(OUTD
 $(OUTDIR_OBJ)\ut-input-buffer.obj: ut-input-buffer.c input-buffer.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
+$(OUTDIR_OBJ)\ut-debug-helpers.obj: ut-debug-helpers.c debug_helpers.c $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+
 $(OUTDIR_OBJ)\ut-circular-buffer-uint8.obj: ut-circular-buffer-uint8.c circular-buffer-uint8.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
@@ -145,6 +151,9 @@ $(OUTDIR_OBJ)\ut-abstract-tone.obj: ut-abstract-tone.c abstract-tone.h sender-re
 # Tests
 $(OUTDIR)\ut-abstract-tone.exe: $(OUTDIR_OBJ)\ut-abstract-tone.obj $(OUTDIR_OBJ)\abstract-tone.obj $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\wave_utils.obj $(OUTDIR_OBJ)\sender.res 
 	@$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map /PDB:$(OUTDIR_OBJ)\$(@B).pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
+
+$(OUTDIR)\ut-debug-helpers.exe: $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\ut-debug-helpers.obj 
+	@$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map /PDB:$(OUTDIR_OBJ)\$(@B).pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
 	
 $(OUTDIR)\ut-circular-buffer-uint8.exe: $(OUTDIR_OBJ)\circular-buffer-uint8.obj $(OUTDIR_OBJ)\ut-circular-buffer-uint8.obj $(OUTDIR_OBJ)\timeofday.obj
 	@$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map /PDB:$(OUTDIR_OBJ)\$(@B).pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
@@ -155,6 +164,13 @@ $(OUTDIR)\ut-input-buffer.exe: $(OUTDIR_OBJ)\input-buffer.obj $(OUTDIR_OBJ)\ut-i
 $(OUTDIR)\ex-perf-counter.exe: $(OUTDIR_OBJ)\ex-perf-counter.obj $(OUTDIR_OBJ)\perf-counter-itf.obj
 	@$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map /PDB:$(OUTDIR_OBJ)\$(@B).pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
 
+tests: \
+ $(OUTDIR)\ut-abstract-tone.exe \
+ $(OUTDIR)\ut-debug-helpers.exe \
+ $(OUTDIR)\ut-circular-buffer-uint8.exe \
+ $(OUTDIR)\ut-input-buffer.exe \
+ $(OUTDIR)\ex-perf-counter.exe
+	
 $(OUTDIR)\debughelpers.lib:\
  $(OUTDIR_OBJ)\version.res\
  $(OUTDIR_OBJ)\debug_helpers.obj
@@ -178,6 +194,7 @@ $(OUTDIR)\mcast.lib: \
  $(OUTDIR)\debughelpers.lib \
  $(OUTDIR_OBJ)\version.res\
  $(OUTDIR_OBJ)\mcast_utils.obj\
+ $(OUTDIR_OBJ)\platform-sockets.obj\
  $(OUTDIR_OBJ)\resolve.obj
 	@$(link) /DEF:$(@B).def /dll $(ldebug) $(guiflags) /NOLOGO /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$(OUTDIR)\$(@B).dll $** $(guilibs) dsound.lib winmm.lib dxguid.lib 
  

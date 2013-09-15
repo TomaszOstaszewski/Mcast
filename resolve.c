@@ -17,10 +17,16 @@ static int format_string_into_buffer(char * addrbuf, size_t addrbuflen, const ch
 {
     HRESULT hr; 
     int retval = -1;
-    const char * p_end;
+    char * p_end;
     va_list args;
     va_start(args, format_string);
-	hr = StringCchVPrintfEx(addrbuf, addrbuflen, &p_end, NULL, 0, format_string, args);
+	hr = StringCchVPrintfEx(addrbuf, 
+            addrbuflen, 
+            &p_end, 
+            NULL, 
+            0, 
+            format_string, 
+        args);
     if (SUCCEEDED(hr))
     {
         retval = 0;
