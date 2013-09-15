@@ -6,11 +6,12 @@
 #include "wave_utils.h"
 
 #define INTEFACE_BIND_ADDRESS "0.0.0.0"
-#define MCAST_GROUP_ADDRESS "234.4.5.6"
+#define MCAST_GROUP_ADDRESS "234.5.6.7"
 #define MCAST_PORT_NUMBER "25000"
 #define FILE_TO_SEND_NAME "play.wav"
 #define DEFAULT_TTL (2)
-#define CHUNK_SIZE (512)
+#define CHUNK_SIZE (1024)
+#define DEFAULT_SLEEP_TIME ((1000000*1024)/8000)
 
 static void dump_addrinfo(FILE * fp, struct addrinfo const * p_addr)
 {
@@ -134,7 +135,8 @@ int main(int argc, char ** argv)
     dump_wave(stdout, p_header);
     while (1)
     {
-        uint8_t const * p_buffer;
+        int8_t const * p_buffer;
+        useconds_t sleep_time_usec = DEFAULT_SLEEP_TIME;
         ssize_t bytes_written;
         size_t idx = 0;
         p_buffer = get_samples_buffer(p_header);
@@ -142,7 +144,7 @@ int main(int argc, char ** argv)
         fprintf(stderr, "%4.4u %s : %u \n", __LINE__, __FILE__, samples_buffer_size);
         for (; idx < samples_buffer_size / CHUNK_SIZE; ++idx)
         {
-            uint8_t const * p_buffer_to_send = p_buffer + CHUNK_SIZE*idx;
+            int8_t const * p_buffer_to_send = p_buffer + CHUNK_SIZE*idx;
             bytes_written = sendto(s, p_buffer_to_send, 
                     CHUNK_SIZE, 0, p_group_address->ai_addr, p_group_address->ai_addrlen); 
             if (bytes_written < 0)
@@ -154,7 +156,7 @@ int main(int argc, char ** argv)
             {
                 //fprintf(stderr, "%4.4u %s : %d %p\n", __LINE__, __FILE__, bytes_written, p_buffer_to_send);
             }
-            sleep(1);
+            usleep(sleep_time_usec);
         }
     }
     return 0;

@@ -9,10 +9,10 @@ all: mcast-sender
 ut-circular-buffer-uint8: ut-circular-buffer-uint8.o circular-buffer-uint8.o	
 
 mcast-sender: mcast-sender-linux.o mcast_utils.o mcast-setup-linux.o debug_helpers.o platform-sockets.o resolve.o
-	$(CC) -o $(@) $(^)
+	$(CC) $(CFLAGS) -o $(@) $(^)
 
 %.o: %.c
-	$(CC) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 cscope:
 	@cscope -bk -I$(MINGWPSDKINCLUDE)

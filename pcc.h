@@ -69,14 +69,17 @@
 #include <string.h>
 #include <time.h>
 #if defined __linux__
-#   include <netinet/in.h>
+#   include <arpa/inet.h>
 #   include <errno.h>
 #   include <fcntl.h>
-#   include <unistd.h>
-#   include <sys/types.h>
-#   include <sys/stat.h>
-#   include <sys/mman.h>
+#   include <netinet/in.h>
 #   include <stdint.h>
+#   include <sys/mman.h>
+#   include <sys/socket.h>
+#   include <sys/stat.h>
+#   include <sys/types.h>
+#   include <unistd.h>
+
 typedef uint32_t DWORD ;
 typedef uint16_t WORD ;
 #define NEAR 

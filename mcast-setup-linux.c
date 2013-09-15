@@ -42,7 +42,7 @@
 #include "resolve.h"
 #include "debug_helpers.h"
 
-extern debug_outputln(const char * format_string, ...);
+extern int debug_outputln(const char * format_string, ...);
 
 static void dump_addrinfo(struct addrinfo const * p_info, const char * file, unsigned int line)
 {
