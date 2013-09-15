@@ -57,7 +57,7 @@ static const char * wFormatTag2String(WORD wFormatTag)
 	return "NULL";
 }
 
-int dump_pcmwaveformat(TCHAR * psz_buffer, size_t buffer_size, PCMWAVEFORMAT const * p_wfe)
+int dump_pcmwaveformat(char * psz_buffer, size_t buffer_size, pcmwaveformat_t const * p_wfe)
 {
     HRESULT hr;
     hr = StringCchPrintf(psz_buffer, buffer_size, 
@@ -77,7 +77,7 @@ int dump_pcmwaveformat(TCHAR * psz_buffer, size_t buffer_size, PCMWAVEFORMAT con
     return SUCCEEDED(hr);
 }
 
-void copy_pcmwaveformat_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, PCMWAVEFORMAT const * p_source)
+void copy_pcmwaveformat_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, pcmwaveformat_t const * p_source)
 {
 	p_dest->wFormatTag 		= p_source->wf.wFormatTag;
 	p_dest->nChannels 		= p_source->wf.nChannels;

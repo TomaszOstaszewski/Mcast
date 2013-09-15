@@ -245,6 +245,10 @@ $(OUTDIR)\install.wix: install.wix $(OUTDIR)
 $(OUTDIR)\install.wixobj: install.wix
 	@candle -nologo -doutputdir=$(OUTDIR) -o $(OUTDIR)\\install.wixobj $**
 
+app:  \
+$(OUTDIR)\sender.exe \
+$(OUTDIR)\receiver.exe
+
 $(OUTDIR)\install.msi: \
  $(OUTDIR)\install.wix \
  $(OUTDIR)\install.wixobj \
