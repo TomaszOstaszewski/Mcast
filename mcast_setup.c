@@ -118,13 +118,6 @@ static int setup_multicast_impl(char * bindAddr, unsigned int nTTL, char * p_mul
         debug_outputln("%s %4.4u : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
         goto cleanup;
     }
-	rc = bind(p_mcast_conn->socket_, p_mcast_conn->bindAddr_->ai_addr, (int) p_mcast_conn->bindAddr_->ai_addrlen);
-	if (rc == SOCKET_ERROR)
-	{
-		debug_outputln("%s %4.4u : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
-		goto cleanup;
-	}
-    dump_locally_bound_socket(p_mcast_conn->socket_, __FILE__, __LINE__);
 	// Join the multicast group if specified
     rc = join_mcast_group_set_ttl(p_mcast_conn->socket_, p_mcast_conn->multiAddr_, p_mcast_conn->bindAddr_, nTTL);
 	if (rc == SOCKET_ERROR)
@@ -132,6 +125,7 @@ static int setup_multicast_impl(char * bindAddr, unsigned int nTTL, char * p_mul
 		debug_outputln("%s %4.4u : %10.10d %8.8x", __FILE__, __LINE__, WSAGetLastError(), WSAGetLastError());
 		goto cleanup;
 	}
+    dump_locally_bound_socket(p_mcast_conn->socket_, __FILE__, __LINE__);
 	return 1;
 cleanup:
 	return 0;

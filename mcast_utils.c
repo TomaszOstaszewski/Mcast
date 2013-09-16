@@ -25,6 +25,7 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
     rc = bind(s, iface->ai_addr, iface->ai_addrlen);
     if (rc < 0)
     {
+        debug_outputln("%4.4u %10.10s : %d %8.8x", __LINE__, __FILE__, rc, get_last_socket_error());
         goto error;
     }
     switch (group->ai_family)
@@ -40,6 +41,7 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
             rc = setsockopt(s, optlevel, option, (const char *)&mreqv4, optlen);
             if (SOCKET_ERROR == rc)
             {
+                debug_outputln("%4.4u %10.10s : %8.8x", __LINE__, __FILE__, get_last_socket_error());
                 goto error;
             }
             /* Set send interface */
@@ -49,6 +51,7 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
             rc = setsockopt(s, optlevel, option, optval, optlen);
             if (SOCKET_ERROR == rc)
             {
+                debug_outputln("%4.4u %10.10s : %8.8x", __LINE__, __FILE__, get_last_socket_error());
                 goto error;
             }
             /* Set outgoing TTL */
@@ -72,6 +75,7 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
             rc = setsockopt(s, optlevel, option, (const char *)&mreqv6, optlen);
             if (SOCKET_ERROR == rc)
             {
+                debug_outputln("%4.4u %10.10s : %8.8x", __LINE__, __FILE__, get_last_socket_error());
                 goto error;
             }
             // Setup the v6 option values
@@ -81,6 +85,7 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
             rc = setsockopt(s, optlevel, option, optval, optlen);
             if (SOCKET_ERROR == rc)
             {
+                debug_outputln("%4.4u %10.10s : %8.8x", __LINE__, __FILE__, get_last_socket_error());
                 goto error;
             }
             // Set the options for V6
@@ -90,6 +95,7 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
             rc = setsockopt(s, optlevel, option, optval, optlen);
             if (SOCKET_ERROR == rc)
             {
+                debug_outputln("%4.4u %10.10s : %8.8x", __LINE__, __FILE__, get_last_socket_error());
                 goto error;
             }
             break;
@@ -100,7 +106,7 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
     debug_outputln("%4.4u %s : %d", __LINE__, __FILE__, rc);
     return rc;
 error:
-    debug_outputln("%4.4u %10.10s", __LINE__, __FILE__);
+    debug_outputln("%4.4u %10.10s : %8.8x", __LINE__, __FILE__, get_last_socket_error());
     return rc;
 }
 
