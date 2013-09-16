@@ -6,12 +6,12 @@
 #include "wave_utils.h"
 
 #define INTEFACE_BIND_ADDRESS "0.0.0.0"
-#define MCAST_GROUP_ADDRESS "234.5.6.7"
+#define MCAST_GROUP_ADDRESS "239.0.0.1"
 #define MCAST_PORT_NUMBER "25000"
 #define FILE_TO_SEND_NAME "play.wav"
 #define DEFAULT_TTL (2)
 #define CHUNK_SIZE (1024)
-#define DEFAULT_SLEEP_TIME ((1000000*1024)/8000)
+#define DEFAULT_SLEEP_TIME ((useconds_t)((1000000*1024)/16000))
 
 static void dump_addrinfo(FILE * fp, struct addrinfo const * p_addr)
 {
@@ -32,52 +32,52 @@ static void dump_wave(FILE * fp, struct master_riff_chunk const * p_header)
     p_wave_format_chunk = &p_header->format_chunk_2_;
     p_plainwave = &p_wave_format_chunk->plain_wav_;
     p_subchunk = &p_plainwave->subchunk_;
-    
+
     fprintf(fp, "%4.4u %s : %c%c%c%c %u\n", __LINE__, __FILE__,
-        p_header->ckid_[0],
-        p_header->ckid_[1],
-        p_header->ckid_[2],
-        p_header->ckid_[3],
-        p_header->cksize_);
+            p_header->ckid_[0],
+            p_header->ckid_[1],
+            p_header->ckid_[2],
+            p_header->ckid_[3],
+            p_header->cksize_);
 
     fprintf(fp, "%4.4u %s : %c%c%c%c %c%c%c %u\n", __LINE__, __FILE__,
-        p_wave_format_chunk->waveid_[0],
-        p_wave_format_chunk->waveid_[1],
-        p_wave_format_chunk->waveid_[2],
-        p_wave_format_chunk->waveid_[3],
-        p_wave_format_chunk->ckid_[0],
-        p_wave_format_chunk->ckid_[1],
-        p_wave_format_chunk->ckid_[2],
-        p_wave_format_chunk->cksize_ 
-        );
-    
-    fprintf(fp, "%4.4u %s : 0x%4.4hx %hu %u %u %hu\n", __LINE__, __FILE__, 
-        p_plainwave->wavFormat_.wFormatTag,
-        p_plainwave->wavFormat_.nChannels,
-        p_plainwave->wavFormat_.nSamplesPerSec,
-        p_plainwave->wavFormat_.nAvgBytesPerSec,
-        p_plainwave->wavFormat_.nBlockAlign
-    );
+            p_wave_format_chunk->waveid_[0],
+            p_wave_format_chunk->waveid_[1],
+            p_wave_format_chunk->waveid_[2],
+            p_wave_format_chunk->waveid_[3],
+            p_wave_format_chunk->ckid_[0],
+            p_wave_format_chunk->ckid_[1],
+            p_wave_format_chunk->ckid_[2],
+            p_wave_format_chunk->cksize_ 
+           );
 
     fprintf(fp, "%4.4u %s : 0x%4.4hx %hu %u %u %hu\n", __LINE__, __FILE__, 
-        p_plainwave->wavFormat_.wFormatTag,
-        p_plainwave->wavFormat_.nChannels,
-        p_plainwave->wavFormat_.nSamplesPerSec,
-        p_plainwave->wavFormat_.nAvgBytesPerSec,
-        p_plainwave->wavFormat_.nBlockAlign
-    );
+            p_plainwave->wavFormat_.wFormatTag,
+            p_plainwave->wavFormat_.nChannels,
+            p_plainwave->wavFormat_.nSamplesPerSec,
+            p_plainwave->wavFormat_.nAvgBytesPerSec,
+            p_plainwave->wavFormat_.nBlockAlign
+           );
+
+    fprintf(fp, "%4.4u %s : 0x%4.4hx %hu %u %u %hu\n", __LINE__, __FILE__, 
+            p_plainwave->wavFormat_.wFormatTag,
+            p_plainwave->wavFormat_.nChannels,
+            p_plainwave->wavFormat_.nSamplesPerSec,
+            p_plainwave->wavFormat_.nAvgBytesPerSec,
+            p_plainwave->wavFormat_.nBlockAlign
+           );
 
     fprintf(fp, "%4.4u %s : %c%c%c%c 0x%8.8x 0x%4.4hx 0x%4.4hx ..\n", __LINE__, __FILE__, 
-        p_subchunk->subchunkId_[0],
-        p_subchunk->subchunkId_[1],
-        p_subchunk->subchunkId_[2],
-        p_subchunk->subchunkId_[3],
-        p_subchunk->subchunk_size_,
-        p_subchunk->samples16_[0],
-        p_subchunk->samples16_[1]
-    );
+            p_subchunk->subchunkId_[0],
+            p_subchunk->subchunkId_[1],
+            p_subchunk->subchunkId_[2],
+            p_subchunk->subchunkId_[3],
+            p_subchunk->subchunk_size_,
+            p_subchunk->samples16_[0],
+            p_subchunk->samples16_[1]
+           );
 
-//    fprintf(fp, "%4.4u %s : %8.8hx\n", __LINE__, __FILE__, p_header->format_chunk_.wavefmt_.wFormatTag);
+    //    fprintf(fp, "%4.4u %s : %8.8hx\n", __LINE__, __FILE__, p_header->format_chunk_.wavefmt_.wFormatTag);
 }
 
 const int8_t * get_samples_buffer(struct master_riff_chunk const * p_header)
@@ -104,7 +104,6 @@ size_t get_samples_buffer_size(struct master_riff_chunk const * p_header)
 
 int main(int argc, char ** argv)
 {
-    int fd;
     uint8_t const * p_file;
     struct stat st_file;
     int result;
@@ -124,13 +123,18 @@ int main(int argc, char ** argv)
     result = getaddrinfo("0.0.0.0", NULL, &a_hints, &p_iface_address);
     assert(0 == result);
     dump_addrinfo(stderr, p_iface_address);
-    result = join_mcast_group_set_ttl(s, p_group_address, p_iface_address, DEFAULT_TTL);
     fprintf(stderr, "%4.4u %s : %d\n", __LINE__, __FILE__, result);
-    fd = open(FILE_TO_SEND_NAME, O_RDONLY);
-    assert(fd >= 0);
-    result = fstat(fd, &st_file);
+    result = join_mcast_group_set_ttl(s, p_group_address, p_iface_address, DEFAULT_TTL); 
     assert(0 == result);
-    p_file = mmap(NULL, st_file.st_size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);
+    {
+        int fd;
+        fd = open(FILE_TO_SEND_NAME, O_RDONLY);
+        assert(fd >= 0);
+        result = fstat(fd, &st_file);
+        assert(0 == result);
+        p_file = mmap(NULL, st_file.st_size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);
+        close(fd);
+    }
     struct master_riff_chunk const * p_header = (struct master_riff_chunk const *)p_file; 
     dump_wave(stdout, p_header);
     while (1)

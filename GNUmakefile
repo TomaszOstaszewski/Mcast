@@ -4,11 +4,14 @@ MINGWPSDKINCLUDE	:=/usr/i586-mingw32msvc/include/
 CROSS_COMPILE:=i586-mingw32msvc-gcc
 CFLAGS 	:=-Wall -Werror -ggdb -O0
 
-all: mcast-sender
+all: mcast-sender mcast-receiver
 
 ut-circular-buffer-uint8: ut-circular-buffer-uint8.o circular-buffer-uint8.o	
 
 mcast-sender: mcast-sender-linux.o mcast_utils.o mcast-setup-linux.o debug_helpers.o platform-sockets.o resolve.o
+	$(CC) $(CFLAGS) -o $(@) $(^)
+
+mcast-receiver: mcast-receiver-linux.o mcast_utils.o mcast-setup-linux.o debug_helpers.o platform-sockets.o resolve.o
 	$(CC) $(CFLAGS) -o $(@) $(^)
 
 %.o: %.c

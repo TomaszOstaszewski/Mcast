@@ -22,7 +22,11 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
                      option = 0,
                      optlen = 0,
                      rc;
-    rc = NO_ERROR;
+    rc = bind(s, iface->ai_addr, iface->ai_addrlen);
+    if (rc < 0)
+    {
+        goto error;
+    }
     switch (group->ai_family)
     {
         case AF_INET: /* IPv4 */
