@@ -31,9 +31,7 @@
 #define MCAST_SETUP_H_870702C0_B65B_4828_949C_490704388A28
 
 #include <stddef.h>
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#include "platform-sockets.h"
 #include "mcast-settings.h"
 
 struct addrinfo;
@@ -43,9 +41,8 @@ struct mcast_settings;
  * @brief Describes the MCAST connection.
  */
 struct mcast_connection {
-	struct addrinfo * bindAddr_; /*!< */
-	struct addrinfo * multiAddr_; /*!< */
-    struct addrinfo * resolveAddr_; /*!< */
+	struct addrinfo * bindAddr_; /*!< Data of the interface we bind to */
+	struct addrinfo * multiAddr_; /*!< Data of the multicast group/port we use*/
 	SOCKET socket_; /*!< */
 };
 
@@ -102,7 +99,7 @@ size_t mcast_recvfrom_flags(struct mcast_connection * p_conn, void * p_data, siz
  * @param[in] dwTimeoutMs time to wait for new data, in milliseconds.
  * @return returns non-zero if there is new data on the socket, returns 0 otherwise.
  */
-int mcast_is_new_data(struct mcast_connection * p_conn, DWORD dwTimeoutMs);
+int mcast_is_new_data(struct mcast_connection * p_conn, size_t dwTimeoutMs);
 
 /*!
  * @brief Leaves the multicast group, closes socket.

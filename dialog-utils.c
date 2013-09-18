@@ -38,7 +38,7 @@
 /*!
  * @brief Buffer into which we store the contents of the edit control, when asked for 4 byte decimal conversion.
  */
-static __declspec(thread) TCHAR uint32_buffer[UINT32_DIGITS_DEC+1];
+static __declspec(thread) TCHAR g_tls_uint32_buffer[UINT32_DIGITS_DEC+1];
 
 /*!
  * @brief Another helper function taken out of the body of other functions.
@@ -55,8 +55,8 @@ int get_from_edit_uint32_dec(HWND hControl, uint32_t * p_target)
 {
     int result;
     uint32_t contents;
-    get_from_edit_control(hControl, uint32_buffer, sizeof(uint32_buffer));
-    result = sscanf(uint32_buffer, "%u", &contents);
+    get_from_edit_control(hControl, g_tls_uint32_buffer, sizeof(g_tls_uint32_buffer));
+    result = sscanf(g_tls_uint32_buffer, "%u", &contents);
     if (result>0)
     {
         *p_target = contents;
@@ -69,8 +69,8 @@ int get_from_edit_uint16_dec(HWND hControl, uint16_t * p_target)
 {
     int result;
     uint16_t contents;
-    get_from_edit_control(hControl, uint32_buffer, sizeof(uint32_buffer));
-    result = sscanf(uint32_buffer, "%hu", &contents);
+    get_from_edit_control(hControl, g_tls_uint32_buffer, sizeof(g_tls_uint32_buffer));
+    result = sscanf(g_tls_uint32_buffer, "%hu", &contents);
     if (result>0)
     {
         *p_target = contents;
@@ -83,8 +83,8 @@ int get_from_edit_uint8_dec(HWND hControl, uint8_t * p_target)
 {
     int result;
     uint8_t contents;
-    get_from_edit_control(hControl, uint32_buffer, sizeof(uint32_buffer));
-    result = sscanf(uint32_buffer, "%hhu", &contents);
+    get_from_edit_control(hControl, g_tls_uint32_buffer, sizeof(g_tls_uint32_buffer));
+    result = sscanf(g_tls_uint32_buffer, "%hhu", &contents);
     if (result>0)
     {
         *p_target = contents;
@@ -96,8 +96,8 @@ int get_from_edit_uint8_dec(HWND hControl, uint8_t * p_target)
 int put_in_edit_control_uint32(HWND hControl, uint32_t value)
 {
     BOOL result;
-    StringCchPrintf(uint32_buffer, UINT32_DIGITS_DEC+1, "%u", value);
-    result = SetWindowText(hControl, uint32_buffer);
+    StringCchPrintf(g_tls_uint32_buffer, UINT32_DIGITS_DEC+1, "%u", value);
+    result = SetWindowText(hControl, g_tls_uint32_buffer);
     assert(result);
     return result;
 }
@@ -105,8 +105,8 @@ int put_in_edit_control_uint32(HWND hControl, uint32_t value)
 int put_in_edit_control_uint16(HWND hControl, uint16_t value)
 {
     BOOL result;
-    StringCchPrintf(uint32_buffer, UINT32_DIGITS_DEC+1, "%hu", value);
-    result = SetWindowText(hControl, uint32_buffer);
+    StringCchPrintf(g_tls_uint32_buffer, UINT32_DIGITS_DEC+1, "%hu", value);
+    result = SetWindowText(hControl, g_tls_uint32_buffer);
     assert(result);
     return result;
 }
@@ -114,8 +114,8 @@ int put_in_edit_control_uint16(HWND hControl, uint16_t value)
 int put_in_edit_control_uint8(HWND hControl, uint8_t value)
 {
     BOOL result;
-    StringCchPrintf(uint32_buffer, UINT32_DIGITS_DEC+1, "%hhu", value);
-    result = SetWindowText(hControl, uint32_buffer);
+    StringCchPrintf(g_tls_uint32_buffer, UINT32_DIGITS_DEC+1, "%hhu", value);
+    result = SetWindowText(hControl, g_tls_uint32_buffer);
     assert(result);
     return result;
 }

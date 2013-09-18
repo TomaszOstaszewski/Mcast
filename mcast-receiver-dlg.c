@@ -66,7 +66,7 @@ struct reciever_dialog {
     HMENU hMainMenu; /*!< Handle to the main menu. */
     struct receiver_settings settings_;
     struct mcast_receiver * receiver_;
-    TCHAR buffer_bytes_edit[BUFFER_BYTES_EDIT_TEXT_LIMIT]; /*!< Buffer that holds string to be displayed in the 'buffer bytes' control. */
+    TCHAR buffer_bytes_edit_[BUFFER_BYTES_EDIT_TEXT_LIMIT]; /*!< Buffer that holds string to be displayed in the 'buffer bytes' control. */
 };
 
 /*!
@@ -74,11 +74,66 @@ struct reciever_dialog {
  */
 #define UI_UPDATE_TIMER_MS (500)
 
-static void update_fifo_receiver_bytes_edit_control(struct reciever_dialog * p_dlg)
+/*!
+ * @brief Handler for WM_INITDIALOG message.
+ * @details This handler does as follows:
+ * \li Initializes the control handles
+ * \li Presents the settings on the UI
+ * @param[in] hwnd handle to the window that received WM_INITDIALOG message
+ * @param[in] hwndFocus handle to the Window that is to be got the keyboard focus upon dialog initalizing. 
+ * @param[in] lParam client specific parameter passed to DialogBoxParam function. This is a way to pass to the
+ * handler some client specific data.
+ * @param returns TRUE if the window indicated as hWndFocus is to get keyboard focus. Returns FALSE otherwise.
+ */
+static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
 {
-    uint32_t fifo_bytes = fifo_circular_buffer_get_items_count(receiver_get_fifo(p_dlg->receiver_));
-    StringCchPrintf(p_dlg->buffer_bytes_edit, BUFFER_BYTES_EDIT_TEXT_LIMIT, "%u", fifo_bytes);
-    SetWindowText(p_dlg->hBufferBytesEdit, p_dlg->buffer_bytes_edit);
+    int result;
+    struct reciever_dialog * p_dlg;
+    p_dlg = (struct reciever_dialog *)lParam;
+    assert(p_dlg);
+    SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)p_dlg); 
+    result = receiver_settings_get_default(&p_dlg->settings_);
+    assert(result);
+    if (result)
+    {
+        p_dlg->receiver_ = receiver_create(&p_dlg->settings_);
+        assert(p_dlg->receiver_);
+        p_dlg->hDlg_ = hwnd;
+        p_dlg->hSettingsBtn = GetDlgItem(hwnd, ID_RECEIVER_SETTINGS);    
+        p_dlg->hJoinMcastBtn = GetDlgItem(hwnd, ID_RECEIVER_JOINMCAST);  
+        p_dlg->hPlay = GetDlgItem(hwnd, ID_RECEIVER_PLAY);    
+        p_dlg->hStop = GetDlgItem(hwnd, ID_RECEIVER_STOP);  
+        p_dlg->hLeaveMcast = GetDlgItem(hwnd, ID_RECEIVER_LEAVEMCAST);
+        p_dlg->hStopRcv = GetDlgItem(hwnd, ID_RECEIVER_STOPRCV);
+        p_dlg->hStartRcv = GetDlgItem(hwnd, ID_RECEIVER_STARTRCV);
+        p_dlg->hProgressBar = GetDlgItem(hwnd, IDC_RECEIVER_BUFFER_FILL);
+        p_dlg->hBufferBytesEdit = GetDlgItem(hwnd, IDC_BUFFER_BYTES_EDIT);
+        p_dlg->hMainMenu = GetMenu(hwnd);
+        assert(p_dlg->hSettingsBtn);
+        assert(p_dlg->hJoinMcastBtn);
+        assert(p_dlg->hPlay);
+        assert(p_dlg->hStop);
+        assert(p_dlg->hLeaveMcast);
+        assert(p_dlg->hStopRcv);
+        assert(p_dlg->hStartRcv);
+        assert(p_dlg->hProgressBar);
+        assert(p_dlg->hBufferBytesEdit);
+        assert(p_dlg->hMainMenu);
+        SendMessage(p_dlg->hProgressBar, PBM_SETRANGE32, 0, fifo_circular_buffer_get_capacity(receiver_get_fifo(p_dlg->receiver_)));
+        SendMessage(p_dlg->hBufferBytesEdit, EM_SETLIMITTEXT, (WPARAM)BUFFER_BYTES_EDIT_TEXT_LIMIT, (LPARAM)0);
+        SetTimer(hwnd, IDT_TIMER_1, UI_UPDATE_TIMER_MS , NULL);
+    }
+    else 
+    {
+        EndDialog(hwnd, IDCANCEL);
+    }
+    return TRUE;
+}
+
+static void update_fifo_receiver_bytes_edit_control(struct reciever_dialog * p_dlg, uint32_t items_count)
+{
+    StringCchPrintf(p_dlg->buffer_bytes_edit_, BUFFER_BYTES_EDIT_TEXT_LIMIT, "%u", items_count);
+    SetWindowText(p_dlg->hBufferBytesEdit, p_dlg->buffer_bytes_edit_);
 }
 
 /**
@@ -215,64 +270,10 @@ static void UpdateUI(HWND hwnd)
     }
     fifo = receiver_get_fifo(p_dlg->receiver_);
     items_count = fifo_circular_buffer_get_items_count(fifo);
+    /* Update the progress byte control */
     SendMessage(p_dlg->hProgressBar, PBM_SETPOS, items_count, 0);
-    update_fifo_receiver_bytes_edit_control(p_dlg);
-}
-
-/*!
- * @brief Handler for WM_INITDIALOG message.
- * @details This handler does as follows:
- * \li Initializes the control handles
- * \li Presents the settings on the UI
- * @param[in] hwnd handle to the window that received WM_INITDIALOG message
- * @param[in] hwndFocus handle to the Window that is to be got the keyboard focus upon dialog initalizing. 
- * @param[in] lParam client specific parameter passed to DialogBoxParam function. This is a way to pass to the
- * handler some client specific data.
- * @param returns TRUE if the window indicated as hWndFocus is to get keyboard focus. Returns FALSE otherwise.
- */
-static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
-{
-    int result;
-    struct reciever_dialog * p_dlg;
-    p_dlg = (struct reciever_dialog *)lParam;
-    assert(p_dlg);
-    SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)p_dlg); 
-    result = receiver_settings_get_default(&p_dlg->settings_);
-    assert(result);
-    if (result)
-    {
-        p_dlg->receiver_ = receiver_create(&p_dlg->settings_);
-        assert(p_dlg->receiver_);
-        p_dlg->hDlg_ = hwnd;
-        p_dlg->hSettingsBtn = GetDlgItem(hwnd, ID_RECEIVER_SETTINGS);    
-        p_dlg->hJoinMcastBtn = GetDlgItem(hwnd, ID_RECEIVER_JOINMCAST);  
-        p_dlg->hPlay = GetDlgItem(hwnd, ID_RECEIVER_PLAY);    
-        p_dlg->hStop = GetDlgItem(hwnd, ID_RECEIVER_STOP);  
-        p_dlg->hLeaveMcast = GetDlgItem(hwnd, ID_RECEIVER_LEAVEMCAST);
-        p_dlg->hStopRcv = GetDlgItem(hwnd, ID_RECEIVER_STOPRCV);
-        p_dlg->hStartRcv = GetDlgItem(hwnd, ID_RECEIVER_STARTRCV);
-        p_dlg->hProgressBar = GetDlgItem(hwnd, IDC_RECEIVER_BUFFER_FILL);
-        p_dlg->hBufferBytesEdit = GetDlgItem(hwnd, IDC_BUFFER_BYTES_EDIT);
-        p_dlg->hMainMenu = GetMenu(hwnd);
-        assert(p_dlg->hSettingsBtn);
-        assert(p_dlg->hJoinMcastBtn);
-        assert(p_dlg->hPlay);
-        assert(p_dlg->hStop);
-        assert(p_dlg->hLeaveMcast);
-        assert(p_dlg->hStopRcv);
-        assert(p_dlg->hStartRcv);
-        assert(p_dlg->hProgressBar);
-        assert(p_dlg->hBufferBytesEdit);
-        assert(p_dlg->hMainMenu);
-        SendMessage(p_dlg->hProgressBar, PBM_SETRANGE32, 0, fifo_circular_buffer_get_capacity(receiver_get_fifo(p_dlg->receiver_)));
-        SendMessage(p_dlg->hBufferBytesEdit, EM_SETLIMITTEXT, (WPARAM)BUFFER_BYTES_EDIT_TEXT_LIMIT, (LPARAM)0);
-        SetTimer(hwnd, IDT_TIMER_1, UI_UPDATE_TIMER_MS , NULL);
-    }
-    else 
-    {
-        EndDialog(hwnd, IDCANCEL);
-    }
-    return TRUE; /* We return FALSE, as we do call SetFocus() ourselves */
+    /* Update the edit control */
+    update_fifo_receiver_bytes_edit_control(p_dlg, items_count);
 }
 
 /**
@@ -370,7 +371,7 @@ static long int on_idle(HWND hwnd, long int count)
     switch (count)
     {
         case 0:
-           UpdateUI(hwnd);
+            UpdateUI(hwnd);
             return 1;
         default:
             return 0;

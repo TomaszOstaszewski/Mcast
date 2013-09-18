@@ -14,7 +14,7 @@
  * 	1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  *	2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
  * 	and/or other materials provided with the distribution.
-  * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
+ * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
  * IN NO EVENT SHALL Tomasz Ostaszewski OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
@@ -24,7 +24,7 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
-  * The views and conclusions contained in the software and documentation are those of the 
+ * The views and conclusions contained in the software and documentation are those of the 
  * authors and should not be interpreted as representing official policies, 
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode 
@@ -51,13 +51,13 @@
  * @brief Description of the multicast sender state machine.
  */
 struct mcast_sender { 
-	/** @brief Current sender state. */
+    /** @brief Current sender state. */
     sender_state_t state_; 
     /** @brief Pointer to the first byte of data being send. */
     P_MASTER_RIFF_CONST chunk_;
-	/** @brief Pointer to the structure that describes multicast connection */
+    /** @brief Pointer to the structure that describes multicast connection */
     struct mcast_connection * conn_;   
-	/** @brief Copy of the sender settings. */
+    /** @brief Copy of the sender settings. */
     struct sender_settings settings_; 
     /** @brief The tone that is to be played. */
     struct abstract_tone * tone_;
@@ -100,6 +100,7 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
     send_offset = 0;
     p_data_begin = (int8_t const *)abstract_tone_get_wave_data(p_sender->tone_, &max_offset);
     assert(p_data_begin);
+    debug_outputln("%4.4u %s : %p %u %u", __LINE__, __FILE__, p_data_begin, max_chunk_size, max_offset);
     for (;;)
     {
         int result;
@@ -125,6 +126,11 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
                 {
                     send_offset = 0;
                 }
+                //debug_outputln("%4.4u %s : %p %u", __LINE__, __FILE__, p_data_begin+send_offset, chunk_size);
+            }
+            else
+            {
+                debug_outputln("%4.4u %s : %p %u", __LINE__, __FILE__, p_data_begin+send_offset, chunk_size);
             }
             continue;
         }
@@ -293,15 +299,25 @@ sender_state_t sender_get_current_state(struct mcast_sender * p_sender)
 int sender_handle_mcastjoin(struct mcast_sender * p_sender)
 {
     assert(p_sender);
-    if (SENDER_INITIAL == p_sender->state_ && sender_handle_mcastjoin_internal(p_sender))
+    switch (p_sender->state_)
     {
-        p_sender->state_ = SENDER_MCAST_JOINED;
-        return 1;
-    }
-    if (SENDER_TONE_SELECTED == p_sender->state_ && sender_handle_mcastjoin_internal(p_sender))
-    {
-        p_sender->state_ = SENDER_MCASTJOINED_TONESELECTED;
-        return 1;
+        case SENDER_INITIAL: 
+            if (sender_handle_mcastjoin_internal(p_sender))
+            {
+                p_sender->state_ = SENDER_MCAST_JOINED;
+                return 1;
+            }
+            break;
+        case SENDER_TONE_SELECTED: 
+            if (sender_handle_mcastjoin_internal(p_sender))
+            {
+                p_sender->state_ = SENDER_MCASTJOINED_TONESELECTED;
+                return 1;
+            }
+            break;
+        default:
+            assert(0);
+            break;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
     return 0;
@@ -310,15 +326,24 @@ int sender_handle_mcastjoin(struct mcast_sender * p_sender)
 int sender_handle_mcastleave(struct mcast_sender * p_sender)
 {
     assert(p_sender);
-    if (SENDER_MCAST_JOINED == p_sender->state_ && sender_handle_mcastleave_internal(p_sender))
+    switch (p_sender->state_)
     {
-        p_sender->state_ = SENDER_INITIAL;
-        return 1;
-    }
-    if(SENDER_MCASTJOINED_TONESELECTED == p_sender->state_ && sender_handle_mcastleave_internal(p_sender))
-    {
-        p_sender->state_ = SENDER_TONE_SELECTED;
-        return 1;
+        case SENDER_MCAST_JOINED: 
+            if (sender_handle_mcastleave_internal(p_sender))
+            {
+                p_sender->state_ = SENDER_INITIAL;
+                return 1;
+            }
+            break;
+        case SENDER_MCASTJOINED_TONESELECTED: 
+            if (sender_handle_mcastleave_internal(p_sender))
+            {
+                p_sender->state_ = SENDER_TONE_SELECTED;
+                return 1;
+            }
+        default:
+            assert(0);
+            break;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
     return 0;
@@ -327,15 +352,24 @@ int sender_handle_mcastleave(struct mcast_sender * p_sender)
 int sender_handle_selecttone(struct mcast_sender * p_sender, struct abstract_tone * p_tone)
 {
     assert(p_sender);
-    if (SENDER_INITIAL == p_sender->state_ && sender_handle_selecttone_internal(p_sender, p_tone))
+    switch (p_sender->state_)
     {
-        p_sender->state_ = SENDER_TONE_SELECTED;
-        return 1;
-    }
-    if(SENDER_MCAST_JOINED == p_sender->state_ && sender_handle_selecttone_internal(p_sender, p_tone))
-    {
-        p_sender->state_ = SENDER_MCASTJOINED_TONESELECTED;
-        return 1;
+        case SENDER_INITIAL: 
+            if (sender_handle_selecttone_internal(p_sender, p_tone))
+            {
+                p_sender->state_ = SENDER_TONE_SELECTED;
+                return 1;
+            }
+            break;
+        case SENDER_MCAST_JOINED: 
+            if (sender_handle_selecttone_internal(p_sender, p_tone))
+            {
+                p_sender->state_ = SENDER_MCASTJOINED_TONESELECTED;
+                return 1;
+            }
+        default:
+            assert(0);
+            break;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
     return 0;
@@ -344,28 +378,46 @@ int sender_handle_selecttone(struct mcast_sender * p_sender, struct abstract_ton
 int sender_handle_deselecttone(struct mcast_sender * p_sender)
 {
     assert(p_sender);
-    if (SENDER_TONE_SELECTED == p_sender->state_ && sender_handle_deselecttone_internal(p_sender))
+    switch (p_sender->state_)
     {
-        p_sender->state_ = SENDER_INITIAL;
-        return 1;
+        case SENDER_TONE_SELECTED: 
+            if (sender_handle_deselecttone_internal(p_sender))
+            {
+                p_sender->state_ = SENDER_INITIAL;
+                return 1;
+            }
+            break;
+        case SENDER_MCASTJOINED_TONESELECTED: 
+            if (sender_handle_deselecttone_internal(p_sender))
+            {
+                p_sender->state_ = SENDER_MCAST_JOINED;
+                return 1;
+            }
+            break;
+        default:
+            assert(0);
+            break;
     }
-    if(SENDER_MCASTJOINED_TONESELECTED == p_sender->state_ && sender_handle_deselecttone_internal(p_sender))
-    {
-        p_sender->state_ = SENDER_MCAST_JOINED;
-        return 1;
-    }
-    assert(0);
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
+    assert(0);
     return 0;
 }
 
 int sender_handle_startsending(struct mcast_sender * p_sender)
 {
     assert(p_sender);
-    if (SENDER_MCASTJOINED_TONESELECTED == p_sender->state_ && sender_handle_startsending_internal(p_sender))
+    switch (p_sender->state_)
     {
-        p_sender->state_ = SENDER_SENDING;
-        return 1;
+        case SENDER_MCASTJOINED_TONESELECTED: 
+            if (sender_handle_startsending_internal(p_sender))
+            {
+                p_sender->state_ = SENDER_SENDING;
+                return 1;
+            }
+            break;
+        default:
+            assert(0);
+            break;
     }
     debug_outputln("%s %4.4u : %d", __FILE__, __LINE__, p_sender->state_);
     assert(0);
@@ -375,10 +427,18 @@ int sender_handle_startsending(struct mcast_sender * p_sender)
 int sender_handle_stopsending(struct mcast_sender * p_sender)
 {
     assert(p_sender);
-    if (SENDER_SENDING == p_sender->state_ && sender_handle_stopsending_internal(p_sender))
+    switch (p_sender->state_)
     {
-        p_sender->state_ = SENDER_MCASTJOINED_TONESELECTED;
-        return 1;
+        case SENDER_SENDING: 
+            if (sender_handle_stopsending_internal(p_sender))
+            {
+                p_sender->state_ = SENDER_MCASTJOINED_TONESELECTED;
+                return 1;
+            }
+            break;
+        default:
+            assert(0);
+            break;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
     return 0;

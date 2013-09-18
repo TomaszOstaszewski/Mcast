@@ -32,7 +32,7 @@
 /*!
  * @brief Default multicast group IPv4 address.
  */
-#define DEFAULT_MCASTADDRV4 "234.5.6.7"
+#define DEFAULT_MCASTADDRV4 "239.0.0.1"
 
 /*!
  * @brief Default multicast group IPv6 address.

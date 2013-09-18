@@ -44,14 +44,16 @@
 #if !defined STD_INT_H_809467C6_E3E1_479D_95E9_98B4CB49D026
 #define STD_INT_H_809467C6_E3E1_479D_95E9_98B4CB49D026
 
-#if defined _MSC_VER && _MSC_VER < 1600
+#if defined _MSC_VER && _MSC_VER < 1500
 /* VC2003 does not have <stdint.h>.
  * Use the one provided by Mike Acton 
  */
-#include "vc2003stdint.h"
-#else
+#   include "vc2003stdint.h"
+#elif defined _MSC_VER && _MSC_VER < 1600
 /* VC2010 has its own <stdint.h> */
-#include <stdint.h>
+#   include "vc2009stdint.h"
+#else
+#   include <stdint.h>
 #endif
 
 #endif /* STD_INT_H_809467C6_E3E1_479D_95E9_98B4CB49D026 */

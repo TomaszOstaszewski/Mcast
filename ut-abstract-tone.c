@@ -55,11 +55,8 @@ void test_01(void)
 void test_02(void)
 {
 	struct abstract_tone * p_tone;
-    PCMWAVEFORMAT const * p_pcmwaveformat;
 	p_tone = abstract_tone_create(EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
 	assert(p_tone);
-    p_pcmwaveformat = abstract_tone_get_pcmwaveformat(p_tone);
-    assert(p_pcmwaveformat);
 	abstract_tone_destroy(p_tone);
 }
 

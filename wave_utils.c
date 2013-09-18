@@ -57,7 +57,7 @@ static const char * wFormatTag2String(WORD wFormatTag)
 	return "NULL";
 }
 
-int dump_pcmwaveformat(TCHAR * psz_buffer, size_t buffer_size, PCMWAVEFORMAT const * p_wfe)
+int dump_pcmwaveformat(char * psz_buffer, size_t buffer_size, pcmwaveformat_t const * p_wfe)
 {
     HRESULT hr;
     hr = StringCchPrintf(psz_buffer, buffer_size, 
@@ -77,7 +77,7 @@ int dump_pcmwaveformat(TCHAR * psz_buffer, size_t buffer_size, PCMWAVEFORMAT con
     return SUCCEEDED(hr);
 }
 
-void copy_pcmwaveformat_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, PCMWAVEFORMAT const * p_source)
+void copy_pcmwaveformat_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, pcmwaveformat_t const * p_source)
 {
 	p_dest->wFormatTag 		= p_source->wf.wFormatTag;
 	p_dest->nChannels 		= p_source->wf.nChannels;
@@ -93,7 +93,7 @@ void waveformat_normalize(WAVEFORMATEX * p_dest)
 	p_dest->nAvgBytesPerSec = p_dest->nSamplesPerSec * (p_dest->wBitsPerSample/8) * p_dest->nChannels ;
 }
 
-int init_master_riff(P_MASTER_RIFF_CONST * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName)
+int LoadWavFromResoure(P_MASTER_RIFF_CONST * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName)
 {
     HRSRC hRes;
     int result = 0;
@@ -122,5 +122,34 @@ int init_master_riff(P_MASTER_RIFF_CONST * pp_chunk, HINSTANCE hModule, LPCTSTR 
         debug_outputln("%s %5.5d : %10.10d %8.8x", __FILE__, __LINE__, GetLastError(), GetLastError());
     }
     return result;
+}
+
+int16_t const * get_wave_data(P_MASTER_RIFF_CONST p_master_riff)
+{
+    switch (p_master_riff->format_chunk_2_.wFormatTag_)
+    {
+        case WAVE_FORMAT_PCM:
+            return &p_master_riff->format_chunk_2_.plain_wav_.subchunk_.samples16_[0];
+            break;
+        default:
+            return NULL;
+    }
+}
+
+uint32_t get_wave_data_size(P_MASTER_RIFF_CONST p_master_riff)
+{
+    switch (p_master_riff->format_chunk_2_.wFormatTag_)
+    {
+        case WAVE_FORMAT_PCM:
+            return p_master_riff->format_chunk_2_.plain_wav_.subchunk_.subchunk_size_;
+            break;
+        default:
+            return 0;
+    }
+}
+
+void get_waveformat(P_MASTER_RIFF_CONST p_master_riff, WAVEFORMAT * p_output)
+{
+    
 }
 

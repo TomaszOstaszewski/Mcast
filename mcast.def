@@ -7,3 +7,4 @@ EXPORTS
 	SetMulticastTtl @7
 	SetMulticastLoopBack @8
 	ResolveAddressWithFlags @10
+	join_mcast_group_set_ttl @11
