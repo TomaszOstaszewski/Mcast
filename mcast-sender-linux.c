@@ -13,6 +13,8 @@
 #define CHUNK_SIZE (1024)
 #define DEFAULT_SLEEP_TIME ((useconds_t)((1000000*1024)/16000))
 
+volatile sig_atomic_t g_stop_processing;
+
 static void dump_addrinfo(FILE * fp, struct addrinfo const * p_addr)
 {
     struct addrinfo const * p_idx = p_addr;
@@ -102,6 +104,11 @@ size_t get_samples_buffer_size(struct master_riff_chunk const * p_header)
     return p_subchunk->subchunk_size_;
 }
 
+static void sigint_handle(int signal)
+{
+    g_stop_processing = 1;
+}
+
 int main(int argc, char ** argv)
 {
     uint8_t const * p_file;
@@ -115,7 +122,7 @@ int main(int argc, char ** argv)
     assert(s>=0); 
     a_hints.ai_family = AF_INET;
     a_hints.ai_protocol = 0;
-    a_hints.ai_socktype = AF_INET;
+    a_hints.ai_socktype = SOCK_DGRAM;
     result = getaddrinfo(MCAST_GROUP_ADDRESS, MCAST_PORT_NUMBER, &a_hints, &p_group_address);
     assert(0 == result);
     dump_addrinfo(stderr, p_group_address);
@@ -137,7 +144,15 @@ int main(int argc, char ** argv)
     }
     struct master_riff_chunk const * p_header = (struct master_riff_chunk const *)p_file; 
     dump_wave(stdout, p_header);
-    while (1)
+    {
+        struct sigaction query_action;
+        memset(&query_action, 0, sizeof(query_action));
+        query_action.sa_handler = &sigint_handle;
+        if (sigaction (SIGINT, NULL, &query_action) < 0)
+            exit(EXIT_FAILURE);
+            /* sigaction returns -1 in case of error. */
+    }
+    while (!g_stop_processing)
     {
         int8_t const * p_buffer;
         useconds_t sleep_time_usec = DEFAULT_SLEEP_TIME;
@@ -163,5 +178,6 @@ int main(int argc, char ** argv)
             usleep(sleep_time_usec);
         }
     }
+    close(s);
     return 0;
 }

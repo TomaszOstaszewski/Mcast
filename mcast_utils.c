@@ -25,7 +25,7 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
     rc = bind(s, iface->ai_addr, iface->ai_addrlen);
     if (rc < 0)
     {
-        debug_outputln("%4.4u %10.10s : %d %8.8x", __LINE__, __FILE__, rc, get_last_socket_error());
+        debug_outputln("%4.4u %10.10s : %d %8.8x\n", __LINE__, __FILE__, rc, get_last_socket_error());
         goto error;
     }
     switch (group->ai_family)
@@ -103,7 +103,7 @@ int join_mcast_group_set_ttl(SOCKET s, struct addrinfo const * group, struct add
             rc = SOCKET_ERROR;
             break;
     }
-    debug_outputln("%4.4u %s : %d", __LINE__, __FILE__, rc);
+    debug_outputln("%4.4u %s : %d\n", __LINE__, __FILE__, rc);
     return rc;
 error:
     debug_outputln("%4.4u %10.10s : %8.8x", __LINE__, __FILE__, get_last_socket_error());

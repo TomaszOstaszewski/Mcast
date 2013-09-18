@@ -28,6 +28,7 @@ clean:
  circular-buffer-uint8.o \
  mcast-setup-linux.o \
  mcast-sender-linux.o \
+ mcast-receiver-linux.o \
  debug_helpers.o \
  platform-sockets.o \
  resolve.o \

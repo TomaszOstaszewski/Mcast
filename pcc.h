@@ -75,9 +75,11 @@
 #   include <netinet/in.h>
 #   include <stdint.h>
 #   include <sys/mman.h>
+#   include <sys/select.h>
 #   include <sys/socket.h>
 #   include <sys/stat.h>
 #   include <sys/types.h>
+#   include <signal.h>
 #   include <unistd.h>
 
 typedef uint32_t DWORD ;

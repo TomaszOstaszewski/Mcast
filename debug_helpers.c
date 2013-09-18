@@ -139,7 +139,7 @@ static int debug_outputlnA_impl(const char * formatString, va_list args)
 	chars_printed = vsnprintf(g_outputBuffer, OUTPUT_BUFFER_LEN, formatString, args);
 	if (chars_printed>0)
     {
-		syslog(LOG_INFO, "%s", g_outputBuffer);
+		fprintf(stderr, "%s", g_outputBuffer);
 		return 1;
     }
 	return 0;
@@ -149,7 +149,7 @@ void debug_output_flush(void)
 {
     /* Write all the lines and zero-out the write offset */
     g_lines[g_write_offset] = '\0';
-    syslog(LOG_INFO, "%s", &g_lines[0]);
+    fprintf(stderr, "%s", &g_lines[0]);
     g_write_offset = 0;
 }
 
