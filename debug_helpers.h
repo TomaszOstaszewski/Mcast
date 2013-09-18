@@ -34,8 +34,6 @@
 extern "C" {
 #endif 
 
-#include <windows.h>
-
 /*!
  * @brief Outputs a formated text into the debug window, appends a newline.
  * @details The debug window is the one to which we write using OutputDebugString. 
@@ -44,7 +42,9 @@ extern "C" {
  * @param[in] formatString
  * @return
  */
-HRESULT debug_outputln(LPCTSTR formatString, ...);
+int debug_outputlnA(const char * formatString, ...);
+
+int debug_outputlnW(const wchar_t * formatString, ...);
 
 /*!
  * @brief Flush the output buffer.
@@ -67,7 +67,11 @@ void debug_output_flush(void);
  * @sa debug_output_flush
  * @return
  */
-HRESULT debug_outputln_buffered(LPCTSTR formatString, ...);
+int debug_outputln_bufferedA(const char * formatString, ...);
+
+int debug_outputln_bufferedW(const wchar_t * formatString, ...);
+
+#define debug_outputln debug_outputlnA
 
 #if defined __cplusplus
 }

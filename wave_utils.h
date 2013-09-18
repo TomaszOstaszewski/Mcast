@@ -180,9 +180,49 @@
 #if !defined WAVE_UTILS_16606182_713B_4823_B290_4BE6CBA65CCC
 #define WAVE_UTILS_16606182_713B_4823_B290_4BE6CBA65CCC
 
-#include <windows.h>
-#include <mmreg.h>
+#include "pcc.h"
 #include "std-int.h"
+
+#if !defined WIN32
+#   define WAVE_FORMAT_PCM     1
+/*!
+ * @brief general waveform format structure (information common to all formats) 
+ * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
+ */
+typedef struct waveformat_tag {
+    WORD    wFormatTag;        /*!< format type */
+    WORD    nChannels;         /*!< number of channels (i.e. mono, stereo...) */
+    DWORD   nSamplesPerSec;    /*!< sample rate */
+    DWORD   nAvgBytesPerSec;   /*!< for buffer estimation */
+    WORD    nBlockAlign;       /*!< block size of data */
+} WAVEFORMAT;
+
+typedef struct waveformatex_tag {
+    WORD    wFormatTag;        /*!< format type */
+    WORD    nChannels;         /*!< number of channels (i.e. mono, stereo...) */
+    DWORD   nSamplesPerSec;    /*!< sample rate */
+    DWORD   nAvgBytesPerSec;   /*!< for buffer estimation */
+    WORD    nBlockAlign;       /*!< block size of data */
+    WORD    cbSize;
+} WAVEFORMATEX;
+
+/*!
+ * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
+ */
+typedef WAVEFORMAT       *PWAVEFORMAT;
+
+/*!
+ * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
+ */
+typedef WAVEFORMAT NEAR *NPWAVEFORMAT;
+
+/*!
+ * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
+ */
+typedef WAVEFORMAT FAR  *LPWAVEFORMAT;
+
+
+#endif
 
 #if defined __cplusplus
 extern "C" { 
@@ -220,27 +260,6 @@ typedef WAVEFORMAT FAR  *LPWAVEFORMAT;
 /*! flags for wFormatTag field of WAVEFORMAT */
 #define WAVE_FORMAT_PCM     1
 
-/*!
- * @brief specific waveform format structure for PCM data 
- * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
- */
-typedef struct pcmwaveformat_tag {
-    WAVEFORMAT  wf;             /*!< All the preceeding format settings. */
-    WORD        wBitsPerSample; /*!< Bits per sample (16, 24, 32) */
-} PCMWAVEFORMAT;
-/*!
- * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
- */
-typedef PCMWAVEFORMAT       *PPCMWAVEFORMAT;
-/*!
- * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
- */
-typedef PCMWAVEFORMAT NEAR *NPPCMWAVEFORMAT;
-/*!
- * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
- */
-typedef PCMWAVEFORMAT FAR  *LPPCMWAVEFORMAT;
-
 #endif /* WAVE_FORMAT_PCM */
 
 /*!
@@ -255,8 +274,30 @@ typedef struct wav_subchunk {
     union {
         int8_t      samples8_[1];
         int16_t     samples16_[1];
+        int32_t     samples32_[1];
     };
 } wav_subchunk_t;
+
+/*!
+ * @brief specific waveform format structure for PCM data 
+ * @copyright Copyright (C) 1992-1998 Microsoft Corporation.  All Rights Reserved.
+ */
+typedef struct pcm_waveformat {
+    WAVEFORMAT  wf;             /*!< All the preceeding format settings. */
+    WORD        wBitsPerSample; /*!< Bits per sample (16, 24, 32) */
+    struct wav_subchunk subchunk_; /*!< The chunk itself, prepended with some rudimentary header. */
+} pcmwaveformat_t ;
+
+typedef struct plainwaveformat {
+    WAVEFORMAT wavFormat_;  
+    wav_subchunk_t subchunk_;
+} plainwaveformat_t;
+
+typedef struct extensiblewav {
+    WAVEFORMAT wavFormat_;
+    uint16_t cbSize_; 
+    uint16_t wValidBitsPerSample_;     /*!< Bits per sample (16, 24, 32) */
+} extensiblewav_t;
 
 /*!
  * @brief WAV file header.
@@ -269,9 +310,23 @@ typedef struct wav_format_chunk {
     uint8_t     waveid_[4]; /*!< WaveID, 4 bytes that give "WAVE", 0x57 0x41 0x56 0x45 */ 
     uint8_t     ckid_[4]; /*!< Yet another chunk id, 4 bytes that give "fmt ", 0x66 0x6d 0x74 0x20 */
     uint32_t    cksize_; /*!< Chunk size, either 16, 18 or 40 decimal */
-    struct pcmwaveformat_tag format_; /*!< Format of the chunk */
-    struct wav_subchunk subchunk_; /*!< The chunk itself, prepended with some rudimentary header. */
+    pcmwaveformat_t format_; /*!< Format of the chunk */
 } wav_format_chunk_t; 
+
+/**
+ * @brief 
+ */
+typedef struct wav_format_chunk_2 {
+    uint8_t     waveid_[4]; /*!< WaveID, 4 bytes that give "WAVE", 0x57 0x41 0x56 0x45 */ 
+    uint8_t     ckid_[4]; /*!< Yet another chunk id, 4 bytes that give "fmt ", 0x66 0x6d 0x74 0x20 */
+    uint32_t    cksize_; /*!< Chunk size, either 16, 18 or 40 decimal */
+    union {
+        uint16_t wFormatTag_;
+        plainwaveformat_t  plain_wav_;
+        pcmwaveformat_t pcm_wav_; /*!< Format of the chunk */
+        extensiblewav_t ext_wav_;
+    };
+} PACKED wav_format_chunk_2_t; 
 
 /*!
  * @brief WAV file header.
@@ -280,7 +335,7 @@ struct master_riff_chunk {
     uint8_t     ckid_[4]; /*!< ChunkID, 4 bytes that give "RIFF", 0x52 0x49 0x46 0x46 in hex */
     uint32_t    cksize_; /*!< Chunk size, 4+n, little endian. */
     union {
-        wav_format_chunk_t format_chunk_;
+        wav_format_chunk_2_t format_chunk_2_;
         uint8_t     data_u8_[1];
         uint16_t    data_u16_[1];
         uint32_t    data_u32_[1];
@@ -304,7 +359,7 @@ typedef struct master_riff_chunk const * P_MASTER_RIFF_CONST;
  * @param[in] p_wfe pointer to the WAVEFORMATEX structure to be dumped.
  * @return returns non-zero on success, 0 otherwise.
  */
-int dump_pcmwaveformat(TCHAR * psz_buffer, size_t buffer_size, PCMWAVEFORMAT const * p_wfe);
+int dump_pcmwaveformat(char * psz_buffer, size_t buffer_size, pcmwaveformat_t const * p_wfe);
 
 /*!
  * @brief Copies the waveformatex structure into a valid WAVEFORMATEX structure.
@@ -316,7 +371,7 @@ int dump_pcmwaveformat(TCHAR * psz_buffer, size_t buffer_size, PCMWAVEFORMAT con
  * @param[out] p_dest pointer to the memory location which will be written with data copied from p_source parameter.
  * @param[in] p_source pointer to the memory location which will be written with data copied from p_source parameter.
  */
-void copy_pcmwaveformat_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, PCMWAVEFORMAT const * p_source);
+void copy_pcmwaveformat_2_WAVEFORMATEX(WAVEFORMATEX * p_dest, pcmwaveformat_t const * p_source);
 
 /*!
  * @brief Performs normalization of the WAVEFORMAT structure
@@ -348,7 +403,12 @@ void waveformat_normalize(WAVEFORMATEX * p_struct);
  * @param[in] lpResName describes what resource to load
  * @return returns 0 on success, <>0 otherwise.
  */
-int init_master_riff(P_MASTER_RIFF_CONST * pp_chunk, HINSTANCE hModule, LPCTSTR lpResName);
+int LoadWavFromResoure(P_MASTER_RIFF_CONST * pp_chunk, HINSTANCE hModule, const char * lpResName);
+
+int16_t const * get_wave_data(P_MASTER_RIFF_CONST p_master_riff);
+uint32_t get_wave_data_size(P_MASTER_RIFF_CONST p_master_riff);
+
+void get_waveformat(P_MASTER_RIFF_CONST p_master_riff, WAVEFORMAT * p_output);
 
 #if defined __cplusplus
 }

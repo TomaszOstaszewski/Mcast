@@ -306,100 +306,155 @@ int receiver_destroy(struct mcast_receiver * p_receiver)
 
 void handle_play(struct mcast_receiver * p_receiver, HWND hMainWnd)
 {
-    if (RECEIVER_MCASTJOINED == p_receiver->state_ && handle_play_internal(hMainWnd, p_receiver))
+    assert(p_receiver);
+    switch (p_receiver->state_)
     {
-        p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
-        return;
-    }
-    if (RECEIVER_INITIAL == p_receiver->state_ && handle_play_internal(hMainWnd, p_receiver))
-    {
-        p_receiver->state_ = RECEIVER_PLAYING;
-        return;
-    }
-    if (RECEIVER_RECEIVING == p_receiver->state_ && handle_play_internal(hMainWnd, p_receiver))
-    {
-        p_receiver->state_ = RECEIVER_RECEIVING_PLAYING;
-        return;
+        case RECEIVER_MCASTJOINED: 
+            if (handle_play_internal(hMainWnd, p_receiver))
+            {
+                p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
+                return;
+            }
+        case RECEIVER_INITIAL: 
+            if (handle_play_internal(hMainWnd, p_receiver))
+            {
+                p_receiver->state_ = RECEIVER_PLAYING;
+                return;
+            }
+        case RECEIVER_RECEIVING: 
+            if (handle_play_internal(hMainWnd, p_receiver))
+            {
+                p_receiver->state_ = RECEIVER_RECEIVING_PLAYING;
+                return;
+            }
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void handle_stop(struct mcast_receiver * p_receiver)
 {
-    if (RECEIVER_PLAYING == p_receiver->state_ && handle_stop_internal(p_receiver))
+    assert(p_receiver);
+    switch (p_receiver->state_)
     {
-        p_receiver->state_ = RECEIVER_INITIAL;
-        return;
-    }
-    if (RECEIVER_RECEIVING_PLAYING == p_receiver->state_ && handle_stop_internal(p_receiver))
-    {
-        p_receiver->state_ = RECEIVER_RECEIVING;
-        return;
-    }
-    if (RECEIVER_MCASTJOINED_PLAYING == p_receiver->state_ && handle_stop_internal(p_receiver))
-    {
-        p_receiver->state_ = RECEIVER_MCASTJOINED;
-        return;
+        case RECEIVER_PLAYING: 
+            if (handle_stop_internal(p_receiver))
+            {
+                p_receiver->state_ = RECEIVER_INITIAL;
+                return;
+            }
+            break;
+        case RECEIVER_RECEIVING_PLAYING: 
+            if (handle_stop_internal(p_receiver))
+            {
+                p_receiver->state_ = RECEIVER_RECEIVING;
+                return;
+            }
+        case RECEIVER_MCASTJOINED_PLAYING:
+            if (handle_stop_internal(p_receiver))
+            {
+                p_receiver->state_ = RECEIVER_MCASTJOINED;
+                return;
+            }
+        default:
+            break;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void handle_rcvstart(struct mcast_receiver * p_receiver)
 {
-    if (RECEIVER_MCASTJOINED == p_receiver->state_ && handle_rcvstart_internal(p_receiver))
+    assert(p_receiver);
+    switch (p_receiver->state_)
     {
-        p_receiver->state_ = RECEIVER_RECEIVING;
-        return;
-    } 
-    if (RECEIVER_MCASTJOINED_PLAYING == p_receiver->state_ && handle_rcvstart_internal(p_receiver))
-    {
-        p_receiver->state_ = RECEIVER_RECEIVING_PLAYING;
-        return;
+        case RECEIVER_MCASTJOINED: 
+            if (handle_rcvstart_internal(p_receiver))
+            {
+                p_receiver->state_ = RECEIVER_RECEIVING;
+                return;
+            } 
+            break;
+        case RECEIVER_MCASTJOINED_PLAYING: 
+            if (handle_rcvstart_internal(p_receiver))
+            {
+                p_receiver->state_ = RECEIVER_RECEIVING_PLAYING;
+                return;
+            }
+            break;
+        default:
+            break;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void handle_rcvstop(struct mcast_receiver * p_receiver)
 {
-    if (RECEIVER_RECEIVING_PLAYING == p_receiver->state_ && handle_rcvstop_internal(p_receiver))
+    assert(p_receiver);
+    switch (p_receiver->state_)
     {
-        p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
-        return;
-    }
-    if (RECEIVER_RECEIVING == p_receiver->state_ && handle_rcvstop_internal(p_receiver))
-    {
-        p_receiver->state_ = RECEIVER_MCASTJOINED;
-        return;
+        case RECEIVER_RECEIVING_PLAYING: 
+            if (handle_rcvstop_internal(p_receiver))
+            {
+                p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
+                return;
+            }
+            break;
+        case RECEIVER_RECEIVING: 
+            if (handle_rcvstop_internal(p_receiver))
+            {
+                p_receiver->state_ = RECEIVER_MCASTJOINED;
+                return;
+            }
+            break;
+        default:
+            break;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void handle_mcastjoin(struct mcast_receiver * p_receiver)
 {
-    if (RECEIVER_INITIAL == p_receiver->state_ && handle_mcastjoin_internal(p_receiver))
+    assert(p_receiver);
+    switch (p_receiver->state_)
     {
-        p_receiver->state_ = RECEIVER_MCASTJOINED;
-        return;
-    }
-    if (RECEIVER_PLAYING == p_receiver->state_ && handle_mcastjoin_internal(p_receiver))
-    {
-        p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
-        return;
+        case RECEIVER_INITIAL: 
+            if (handle_mcastjoin_internal(p_receiver))
+            {
+                p_receiver->state_ = RECEIVER_MCASTJOINED;
+                return;
+            }
+            break;
+        case RECEIVER_PLAYING: 
+            if (handle_mcastjoin_internal(p_receiver))
+            {
+                p_receiver->state_ = RECEIVER_MCASTJOINED_PLAYING;
+                return;
+            }
+            break;
+        default:
+            break;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
 }
 
 void handle_mcastleave(struct mcast_receiver * p_receiver)
 {
-    if (RECEIVER_MCASTJOINED == p_receiver->state_ && handle_mcastleave_internal(p_receiver))
+    assert(p_receiver);
+    switch (p_receiver->state_)
     {
-        p_receiver->state_ = RECEIVER_INITIAL; 
-        return;
-    }
-    if (RECEIVER_MCASTJOINED_PLAYING == p_receiver->state_ && handle_mcastleave_internal(p_receiver))
-    {
-        p_receiver->state_ = RECEIVER_PLAYING;
-        return;
+        case RECEIVER_MCASTJOINED: 
+            if (handle_mcastleave_internal(p_receiver))
+            {
+                p_receiver->state_ = RECEIVER_INITIAL; 
+                return;
+            }
+        case RECEIVER_MCASTJOINED_PLAYING: 
+            if (handle_mcastleave_internal(p_receiver))
+            {
+                p_receiver->state_ = RECEIVER_PLAYING;
+                return;
+            }
+        default:
+            break;
     }
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
     return;
