@@ -262,7 +262,6 @@ typedef WAVEFORMAT FAR  *LPWAVEFORMAT;
 
 #endif /* WAVE_FORMAT_PCM */
 
-
 /*!
  * @brief A sub-chunk header
  * @details This is the last header, what follows is data. 
@@ -336,7 +335,6 @@ struct master_riff_chunk {
     uint8_t     ckid_[4]; /*!< ChunkID, 4 bytes that give "RIFF", 0x52 0x49 0x46 0x46 in hex */
     uint32_t    cksize_; /*!< Chunk size, 4+n, little endian. */
     union {
-        wav_format_chunk_t format_chunk_;
         wav_format_chunk_2_t format_chunk_2_;
         uint8_t     data_u8_[1];
         uint16_t    data_u16_[1];
