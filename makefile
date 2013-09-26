@@ -58,6 +58,9 @@ $(OUTDIR_OBJ)\abstract-tone.obj: abstract-tone.c abstract-tone.h wave_utils.h $(
 $(OUTDIR_OBJ)\about-dialog.obj: about-dialog.c about-dialog.h $(OUTDIR_PCC)\pcc.pch
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
+$(OUTDIR_OBJ)\resample.obj: resample.c
+    @$(cc) $(cdebug) $(cvars) $(cflags) /O2 /Oy /I$(DXINCLUDE)  /W3 /WX /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
+
 $(OUTDIR_OBJ)\mcast_utils.obj: mcast_utils.c mcast_utils.h resolve.h $(OUTDIR_PCC)\pcc.pch
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
@@ -163,6 +166,9 @@ $(OUTDIR)\ut-input-buffer.exe: $(OUTDIR_OBJ)\input-buffer.obj $(OUTDIR_OBJ)\ut-i
 
 $(OUTDIR)\ex-perf-counter.exe: $(OUTDIR_OBJ)\ex-perf-counter.obj $(OUTDIR_OBJ)\perf-counter-itf.obj
 	@$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map /PDB:$(OUTDIR_OBJ)\$(@B).pdb -out:$@ $** $(guilibs) ComCtl32.lib dsound.lib winmm.lib dxguid.lib ole32.lib
+
+$(OUTDIR)\resample.exe: $(OUTDIR_OBJ)\resample.obj
+	@$(link) $(ldebug) /nologo /SUBSYSTEM:console /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map /PDB:$(OUTDIR_OBJ)\$(@B).pdb-out:$@ $** $(guilibs)
 
 tests: \
  $(OUTDIR)\ut-abstract-tone.exe \
