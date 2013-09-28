@@ -93,52 +93,31 @@ struct mcast_sender {
 static DWORD WINAPI SendThreadProc(LPVOID param)
 {
     DWORD dwResult;
+    static uint8_t data_to_send[1024*sizeof(uint16_t)] = {0};
     struct mcast_sender * p_sender;
-    uint32_t send_offset;
-    uint32_t send_delay;
-    size_t max_offset;
-    uint32_t max_chunk_size;
-    int8_t const * p_data_begin;
 
     p_sender = (struct mcast_sender *)param;
     assert(p_sender);
-    assert(p_sender->tone_);
-    max_chunk_size = sender_settings_get_chunk_size_bytes(&p_sender->settings_);
-    assert(max_chunk_size <= MAX_ETHER_PAYLOAD_SANS_UPD_IP);
-    send_offset = 0;
-    p_data_begin = (int8_t const *)abstract_tone_get_wave_data(p_sender->tone_, &max_offset);
-    assert(p_data_begin);
-    debug_outputln("%4.4u %s : %p %u %u", __LINE__, __FILE__, p_data_begin, max_chunk_size, max_offset);
     for (;;)
     {
         int result;
-        uint32_t chunk_size = max_chunk_size;
-        if (send_offset + chunk_size > max_offset)
+        size_t data_retrived_size;
+        uint32_t retrieved_data_size = sizeof(data_to_send);
+        data_retrived_size = fifo_circular_buffer_fetch_item(p_sender->p_circular_buffer_, data_to_send, &retrieved_data_size);
+        if (data_retrived_size > 0)
         {
-            chunk_size = max_offset - send_offset;
+            result = mcast_sendto(p_sender->conn_, &data_to_send[0], retrieved_data_size);
+            if (SOCKET_ERROR == result)
+            {
+                debug_outputln("%4.4u %s : %p %u", __LINE__, __FILE__, &data_to_send[0], retrieved_data_size);
+            }
+            debug_outputln("%4.4u %s : %d %u %u", 
+                __LINE__, __FILE__, 
+                result, data_retrived_size, fifo_circular_buffer_get_items_count(p_sender->p_circular_buffer_));
         }
-        assert(send_offset + chunk_size <= max_offset);
-        /* We wait here to emulate the time it takes to gather the samples. 
-         * Time to wait is proportional to the send chunk length.
-         */
-        send_delay = sender_settings_convert_bytes_to_ms(&p_sender->settings_, chunk_size);
-        dwResult = WaitForSingleObject(p_sender->hStopEventThread_, send_delay);
+        dwResult = WaitForSingleObject(p_sender->hStopEventThread_, 0);
         if (WAIT_TIMEOUT == dwResult)
         {
-            result = mcast_sendto(p_sender->conn_, p_data_begin + send_offset, chunk_size);
-            if (SOCKET_ERROR != result)
-            {
-                send_offset += result;
-                assert (send_offset <= max_offset);
-                if (send_offset >= max_offset)
-                {
-                    send_offset = 0;
-                }
-            }
-            else
-            {
-                debug_outputln("%4.4u %s : %p %u", __LINE__, __FILE__, p_data_begin+send_offset, chunk_size);
-            }
             continue;
         }
         else if (WAIT_OBJECT_0 == dwResult)
@@ -455,14 +434,19 @@ int sender_handle_startrecording(struct mcast_sender * p_sender)
 {
     debug_outputln("%4.4u %s", __LINE__, __FILE__);
     if (NULL == p_sender->p_circular_buffer_)
+    {
        p_sender->p_circular_buffer_ = circular_buffer_create_with_size(16);
+    }
     assert(NULL != p_sender->p_circular_buffer_);
     if (NULL == p_sender->rec_settings_)
+    {
         p_sender->rec_settings_ = recorder_settings_get_default(); 
+    }
     assert(NULL != p_sender->rec_settings_);
     if (NULL == p_sender->recorder_)
     {
-        p_sender->recorder_ = dxaudio_recorder_create(p_sender->rec_settings_, 
+        p_sender->recorder_ = dxaudio_recorder_create(
+            p_sender->rec_settings_, 
             p_sender->p_circular_buffer_);     
     }
     assert(NULL != p_sender->rec_settings_);

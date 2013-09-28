@@ -130,17 +130,17 @@ static DWORD WINAPI recorder_thread(LPVOID param)
         {
             /* Handle WAIT_TIMEOUT */
             case WAIT_TIMEOUT:
-                debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
+                //debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
                 break;
             /* Handle WAIT_FAILED */
             case WAIT_FAILED:
-                debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
+                //debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
                 break;
             /* Handle WAIT_OBJECT_0 which indicates that we shall exit now. */
             case WAIT_OBJECT_0:
                 /* Ack interrupt */
                 ResetEvent(p_recorder->hWatcherThreadRunning_);
-                debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
+                //debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
                 runLoop = 0;
                 break;
             /* All the rest is a notification from our recorder, that the buffer is now ready to be processed */
@@ -156,8 +156,7 @@ static DWORD WINAPI recorder_thread(LPVOID param)
                         /* Acknowledge notification */
                         ResetEvent(p_recorder->notify_marks_[idx-1].hEventNotify);
                         /* Retrive data just captured */
-                        debug_outputln("%4.4u %s :" " %u %u", __LINE__, __FILE__, 
-                                dwWaitResult, idx); 
+                        //debug_outputln("%4.4u %s :" " %u %u", __LINE__, __FILE__, dwWaitResult, idx); 
                         p_recorder->p_capture_buffer8_->Lock(p_recorder->dw_notify_marks_begin_[idx-1],
                                 p_recorder->notify_marks_[idx-1].dwOffset - p_recorder->dw_notify_marks_begin_[idx-1] + 1,
                                 &p_ptr_1, &dw_offset_1,
@@ -165,11 +164,13 @@ static DWORD WINAPI recorder_thread(LPVOID param)
                                 0);
                         items_pushed = fifo_circular_buffer_push_item(p_recorder->fifo_, (uint8_t*) p_ptr_1, dw_offset_1);
                         p_recorder->p_capture_buffer8_->Unlock(p_ptr_1, dw_offset_1, p_ptr_2, dw_offset_2);
+#if 0
                         debug_outputln("%4.4u %s :" "%u" " %u %u %p %p %u %u", __LINE__, __FILE__, 
                                 items_pushed,
                                 p_recorder->dw_notify_marks_begin_[idx-1],
                                 p_recorder->notify_marks_[idx-1].dwOffset - p_recorder->dw_notify_marks_begin_[idx-1] + 1,
                                 p_ptr_1, p_ptr_2, dw_offset_1, dw_offset_2);
+#endif
                     }
                 } 
                 break;
