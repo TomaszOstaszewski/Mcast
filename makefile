@@ -243,6 +243,7 @@ $(OUTDIR)\sender.exe: \
  $(OUTDIR_OBJ)\timeofday.obj\
  $(OUTDIR_OBJ)\mcast_setup.obj\
  $(OUTDIR_OBJ)\message-loop.obj\
+ $(OUTDIR_OBJ)\circular-buffer-uint8.obj \
  $(OUTDIR_OBJ)\mcast-sender-state-machine.obj\
  $(OUTDIR_OBJ)\sender-settings.obj\
  $(OUTDIR_OBJ)\recorder-settings.obj\

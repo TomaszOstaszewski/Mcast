@@ -102,6 +102,7 @@ struct dxaudio_recorder {
     IDirectSoundCapture8 * p_capture8_; /*!< */
     IDirectSoundCaptureBuffer8 * p_capture_buffer8_; /*!< . */
     struct fifo_circular_buffer * fifo_; /*!< A fifo queue - from that queue we fetch the data and feed to the buffers.*/
+    DWORD dw_notify_marks_begin_[NOTIFY_MARKS_COUNT];
     DSBPOSITIONNOTIFY notify_marks_[NOTIFY_MARKS_COUNT];
     HANDLE hWatcherThread_;
     HANDLE hWatcherThreadRunning_;
@@ -149,9 +150,26 @@ static DWORD WINAPI recorder_thread(LPVOID param)
                 {
                     if (dwWaitResult - WAIT_OBJECT_0 == idx)
                     {
+                        size_t items_pushed;
+                        LPVOID p_ptr_1 = NULL, p_ptr_2 = NULL;
+                        DWORD dw_offset_1 = 0, dw_offset_2 = 0;
                         /* Acknowledge notification */
                         ResetEvent(p_recorder->notify_marks_[idx-1].hEventNotify);
-                        debug_outputln("%4.4u %s : %u %u", __LINE__, __FILE__, dwWaitResult, idx);
+                        /* Retrive data just captured */
+                        debug_outputln("%4.4u %s :" " %u %u", __LINE__, __FILE__, 
+                                dwWaitResult, idx); 
+                        p_recorder->p_capture_buffer8_->Lock(p_recorder->dw_notify_marks_begin_[idx-1],
+                                p_recorder->notify_marks_[idx-1].dwOffset - p_recorder->dw_notify_marks_begin_[idx-1] + 1,
+                                &p_ptr_1, &dw_offset_1,
+                                &p_ptr_2, &dw_offset_2,
+                                0);
+                        items_pushed = fifo_circular_buffer_push_item(p_recorder->fifo_, (uint8_t*) p_ptr_1, dw_offset_1);
+                        p_recorder->p_capture_buffer8_->Unlock(p_ptr_1, dw_offset_1, p_ptr_2, dw_offset_2);
+                        debug_outputln("%4.4u %s :" "%u" " %u %u %p %p %u %u", __LINE__, __FILE__, 
+                                items_pushed,
+                                p_recorder->dw_notify_marks_begin_[idx-1],
+                                p_recorder->notify_marks_[idx-1].dwOffset - p_recorder->dw_notify_marks_begin_[idx-1] + 1,
+                                p_ptr_1, p_ptr_2, dw_offset_1, dw_offset_2);
                     }
                 } 
                 break;
@@ -161,7 +179,8 @@ static DWORD WINAPI recorder_thread(LPVOID param)
     return 0;
 }
 
-extern "C" dxaudio_recorder_t dxaudio_recorder_create(struct recorder_settings const * p_settings, 
+extern "C" dxaudio_recorder_t dxaudio_recorder_create(
+ struct recorder_settings const * p_settings, 
  struct fifo_circular_buffer * p_fifo)
 {
     struct dxaudio_recorder * p_retval = NULL;
@@ -171,6 +190,7 @@ extern "C" dxaudio_recorder_t dxaudio_recorder_create(struct recorder_settings c
         HRESULT hr;
         /* Get the reference to fifo queue. */
         p_retval->fifo_= p_fifo;
+        assert(NULL != p_retval->fifo_);
         /* 1st step - create the DirectSound capture object and get its interface */
         hr = DirectSoundCaptureCreate8(recorder_settings_get_guid(p_settings), &p_retval->p_capture8_, NULL);
         if (SUCCEEDED(hr))
@@ -199,9 +219,12 @@ extern "C" dxaudio_recorder_t dxaudio_recorder_create(struct recorder_settings c
                         size_t idx;
                         for (idx = 0; idx < NOTIFY_MARKS_COUNT; ++idx)
                         {
+                            p_retval->dw_notify_marks_begin_[idx] = ((dsc_buffer_desc.dwBufferBytes*idx)/NOTIFY_MARKS_COUNT); 
                             p_retval->notify_marks_[idx].dwOffset = ((dsc_buffer_desc.dwBufferBytes*(idx+1))/NOTIFY_MARKS_COUNT) - 1; 
                             p_retval->notify_marks_[idx].hEventNotify = ::CreateEvent(NULL, TRUE, FALSE, NULL);
-                            debug_outputln("%4.4u %s : %u %8.8x", __LINE__, __FILE__, 
+
+                            debug_outputln("%4.4u %s : %u %u %8.8x", __LINE__, __FILE__, 
+                                p_retval->dw_notify_marks_begin_[idx],     
                                 p_retval->notify_marks_[idx].dwOffset,
                                 p_retval->notify_marks_[idx].hEventNotify);
                         } 

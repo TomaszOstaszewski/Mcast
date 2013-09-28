@@ -39,7 +39,7 @@
 #include "mcast-sender-state-machine.h"
 #include "sender-settings.h"
 #include "abstract-tone.h"
-
+#include "circular-buffer-uint8.h"
 #include "dsound-recorder.h"
 #include "recorder-settings.h"
 
@@ -66,6 +66,8 @@ struct mcast_sender {
     struct abstract_tone * tone_;
     /** @brief */
     struct dxaudio_recorder * recorder_;
+    /** @brief */
+    struct fifo_circular_buffer * p_circular_buffer_;
     recorder_settings_t rec_settings_;
     HANDLE hStopEvent_; /*!< Handle to the event used to stop the sending thread. */
     /*!
@@ -132,7 +134,6 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
                 {
                     send_offset = 0;
                 }
-                //debug_outputln("%4.4u %s : %p %u", __LINE__, __FILE__, p_data_begin+send_offset, chunk_size);
             }
             else
             {
@@ -453,15 +454,19 @@ int sender_handle_stopsending(struct mcast_sender * p_sender)
 int sender_handle_startrecording(struct mcast_sender * p_sender)
 {
     debug_outputln("%4.4u %s", __LINE__, __FILE__);
+    if (NULL == p_sender->p_circular_buffer_)
+       p_sender->p_circular_buffer_ = circular_buffer_create_with_size(16);
+    assert(NULL != p_sender->p_circular_buffer_);
     if (NULL == p_sender->rec_settings_)
         p_sender->rec_settings_ = recorder_settings_get_default(); 
+    assert(NULL != p_sender->rec_settings_);
     if (NULL == p_sender->recorder_)
     {
-        p_sender->recorder_ = dxaudio_recorder_create(p_sender->rec_settings_, NULL);     
-        if (NULL == p_sender->recorder_)
-            return 0;
-        dxaudio_recorder_start(p_sender->recorder_);
+        p_sender->recorder_ = dxaudio_recorder_create(p_sender->rec_settings_, 
+            p_sender->p_circular_buffer_);     
     }
+    assert(NULL != p_sender->rec_settings_);
+    dxaudio_recorder_start(p_sender->recorder_);
     return 1;
 }
 
@@ -474,5 +479,4 @@ int sender_handle_stoprecording(struct mcast_sender * p_sender)
     p_sender->recorder_ = NULL; 
     return 1;
 }
-
 
