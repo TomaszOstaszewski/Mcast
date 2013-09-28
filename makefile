@@ -97,6 +97,9 @@ $(OUTDIR_OBJ)\mcast-settings-dlg.obj: mcast-settings-dlg.c mcast-settings-dlg.h 
 $(OUTDIR_OBJ)\sender-settings-dlg.obj: sender-settings-dlg.c pcc.h sender-settings-dlg.h sender-settings.h sender-res.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
+$(OUTDIR_OBJ)\recorder-settings.obj: recorder-settings.c pcc.h recorder-settings.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+
 $(OUTDIR_OBJ)\sender-settings.obj: sender-settings.c pcc.h sender-settings.h wave_utils.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
@@ -114,6 +117,10 @@ $(OUTDIR_OBJ)\wave_utils.obj: wave_utils.c wave_utils.h pcc.h $(OUTDIR_OBJ) $(OU
 
 $(OUTDIR_OBJ)\dsoundplay.obj: dsoundplay.cpp dsoundplay.h pcc.h wave_utils.h circular-buffer-uint8.h input-buffer.h receiver-settings.h play-settings.h perf-counter-itf.h  $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcpp.pch
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcpp.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
+
+$(OUTDIR_OBJ)\dsound-recorder.obj: dsound-recorder.cpp dsound-recorder.h pcc.h wave_utils.h circular-buffer-uint8.h input-buffer.h receiver-settings.h play-settings.h perf-counter-itf.h  $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcpp.pch
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcpp.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
+
 
 $(OUTDIR_OBJ)\message-loop.obj: message-loop.c message-loop.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
@@ -185,9 +192,11 @@ $(OUTDIR)\debughelpers.lib:\
 $(OUTDIR)\dsoundplay.lib: $(OUTDIR)\debughelpers.lib
 
 $(OUTDIR)\dsoundplay.lib:\
+ $(OUTDIR_OBJ)\recorder-settings.obj \
  $(OUTDIR_OBJ)\version.res\
  $(OUTDIR_OBJ)\dsoundplay.obj\
  $(OUTDIR_OBJ)\input-buffer.obj\
+ $(OUTDIR_OBJ)\dsound-recorder.obj \
  $(OUTDIR_OBJ)\circular-buffer-uint8.obj\
  $(OUTDIR_OBJ)\receiver-settings.obj\
  $(OUTDIR_OBJ)\mcast-settings.obj\
@@ -236,6 +245,7 @@ $(OUTDIR)\sender.exe: \
  $(OUTDIR_OBJ)\message-loop.obj\
  $(OUTDIR_OBJ)\mcast-sender-state-machine.obj\
  $(OUTDIR_OBJ)\sender-settings.obj\
+ $(OUTDIR_OBJ)\recorder-settings.obj\
  $(OUTDIR_OBJ)\dialog-utils.obj\
  $(OUTDIR_OBJ)\mcast-settings.obj\
  $(OUTDIR_OBJ)\mcast-sender-dlg.obj\
@@ -244,7 +254,7 @@ $(OUTDIR)\sender.exe: \
  $(OUTDIR_OBJ)\about-dialog.obj\
  $(OUTDIR_OBJ)\perf-counter-itf.obj\
  $(OUTDIR_OBJ)\abstract-tone.obj
-	@$(link) $(ldebug) $(guiflags) /NOLOGO /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$@ $** $(guilibs) ComCtl32.lib winmm.lib dxguid.lib ole32.lib Version.lib
+	@$(link) $(ldebug) $(guiflags) /NOLOGO /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$@ $** $(guilibs) ComCtl32.lib winmm.lib dxguid.lib ole32.lib Version.lib dsound.lib
 
 $(OUTDIR)\install.wix: install.wix $(OUTDIR)
 	@copy /Y install.wix $(OUTDIR)\install.wix

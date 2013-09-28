@@ -5,14 +5,6 @@
 
 #define MAX_CAPTURE_GUIDS_COUNT (5)
 
-typedef struct waveFormat_2_textDescription {
-	DWORD dwFormat_;
-	const char * tag_;
-	const char * text_desc_;
-} waveFormat_2_textDescription_t;
-
-#define MAKE_WAVE_FORMAT(flag,text) { flag, #flag, text }
-
 #define SAMPLES_BUFFER_SIZE (65536)
 
 short g_wav_data_buffer[SAMPLES_BUFFER_SIZE];

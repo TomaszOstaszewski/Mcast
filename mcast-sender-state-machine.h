@@ -117,5 +117,9 @@ int sender_handle_startsending(struct mcast_sender * p_sender);
  */
 int sender_handle_stopsending(struct mcast_sender * p_sender);
 
+int sender_handle_startrecording(struct mcast_sender * p_sender);
+
+int sender_handle_stoprecording(struct mcast_sender * p_sender);
+
 #endif /*!defined MCAST_SENDER_BF6FAC88_2286_488B_9256_997E81B13E49*/
 

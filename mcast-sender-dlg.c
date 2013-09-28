@@ -35,7 +35,7 @@
 #include "about-dialog.h"
 #include "abstract-tone.h"
 #include "wave_utils.h"
-#include "sender-res.h"
+#include "resource.h"
 
 /*! 
  * @brief Length of the text displayed in the preview window.
@@ -56,6 +56,11 @@ typedef enum e_sender_ui_state {
     UI_SENDER_SENDING_EXTTONESELECTED, /*!< Sending out the external tone.*/
 } sender_ui_state_t;
 
+typedef enum e_sender_ui_recording_state {
+    UI_SENDER_NOT_RECORDING,
+    UI_SENDER_RECORDING,
+} sender_ui_recording_state_t;
+
 /*!
  * @brief Describes all the 'interesting' UI controls of the sender's main dialog.
  */
@@ -64,6 +69,7 @@ struct sender_dialog {
     struct abstract_tone * tone_selected_; /*!< Currently selected tone to be played. */
     struct sender_settings settings_; /*!< The sender settings object. Here are multicast group settings stored, and how many bytes to send with each packet. */
     sender_ui_state_t ui_state_; /*!< The UI state. */
+    sender_ui_recording_state_t recording_state_; /*!< */
     TCHAR wav_preview_text_[WAV_PREVIEW_LENGTH+1];
     HWND hDlg_; /*!< Handle to the main dialog */
     HWND hWavPreview_; /*!< Handle to the static control in which WAV file details will be displayed. */
@@ -183,7 +189,9 @@ static const struct ui_control_state controls_state_table[] = {
 
 /**
  * @brief Entry point for the user interface widgets update.
- * @details Compares the previous and current sender state.
+ * @details Compares the previous and current sender state. Updates the UI widgets state
+ * if it detects a change. We need to handle this manually here. Otherwise, the focus may
+ * stay with a ghosted out item, which is not desirable, as it puzzles and perplexes the end user.
  * @param hwnd handle to the main dialog window, holding the user interface widgets.
  */
 static void UpdateUI(HWND hwnd)
@@ -199,35 +207,31 @@ static void UpdateUI(HWND hwnd)
     curr_state = p_dlg->ui_state_;
     if (prev_state != curr_state)
     {
-        HWND hwnd;
-        struct ui_control_state const * const p_past_end = &controls_state_table[sizeof(controls_state_table)/sizeof(controls_state_table[0])];
-        struct ui_focus const * const p_focus_past_end = &focus_table[sizeof(focus_table)/sizeof(focus_table[0])];
-        struct ui_control_state const * p_item = &controls_state_table[0];
-        struct ui_focus const * p_focus_item = &focus_table[0];
+        size_t idx;
         /* Find all the rows matching current state */
-        for (; p_item != p_past_end; ++p_item)
+        for (idx = 0; idx < COUNTOF_ARRAY(controls_state_table); ++idx)
         {
-            if (curr_state == p_item->state_)
+            if (controls_state_table[idx].state_ == curr_state)
             {
                 UINT nMenuEnabled = MF_GRAYED, nMenuChecked = MF_UNCHECKED;
-                if (p_item->enabled_)
+                if (controls_state_table[idx].enabled_)
                     nMenuEnabled  = MF_ENABLED;
-                if (p_item->checked_)
+                if (controls_state_table[idx].checked_)
                     nMenuChecked = MF_CHECKED;
-                EnableMenuItem(p_dlg->hMainMenu, p_item->nID_, MF_BYCOMMAND | nMenuEnabled);
-                CheckMenuItem(p_dlg->hMainMenu, p_item->nID_, MF_BYCOMMAND | nMenuChecked);
-                hwnd = GetDlgItem(p_dlg->hDlg_, p_item->nID_);
+                EnableMenuItem(p_dlg->hMainMenu, controls_state_table[idx].nID_, MF_BYCOMMAND | nMenuEnabled);
+                CheckMenuItem(p_dlg->hMainMenu, controls_state_table[idx].nID_, MF_BYCOMMAND | nMenuChecked);
+                hwnd = GetDlgItem(p_dlg->hDlg_, controls_state_table[idx].nID_);
                 assert(hwnd);
-                EnableWindow(hwnd, p_item->enabled_);
-                Button_SetCheck(hwnd, p_item->checked_);
+                EnableWindow(hwnd, controls_state_table[idx].enabled_);
+                Button_SetCheck(hwnd, controls_state_table[idx].checked_);
             } 
         }
         /* Set the focus */
-        for (; p_focus_item != p_focus_past_end; ++p_focus_item)
+        for (idx = 0; idx < COUNTOF_ARRAY(focus_table); ++idx)
         {
-            if (p_focus_item->state_ == curr_state)
+            if (focus_table[idx].state_ == curr_state)
             {
-                hwnd = GetDlgItem(p_dlg->hDlg_, p_focus_item->nID_);
+                hwnd = GetDlgItem(p_dlg->hDlg_, focus_table[idx].nID_);
                 assert(hwnd);
                 SetFocus(hwnd); 
             }
@@ -284,12 +288,15 @@ static int handle_select_ext_tone(struct sender_dialog * p_dlg)
 static int handle_close_tone(struct sender_dialog * p_dlg)
 {
     assert(p_dlg->tone_selected_);
-    sender_handle_deselecttone(p_dlg->sender_);
-    abstract_tone_destroy(p_dlg->tone_selected_);
-    p_dlg->tone_selected_ = NULL;
-    p_dlg->wav_preview_text_[0] = _T('\0');
-    SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
-    return 1;
+    if (sender_handle_deselecttone(p_dlg->sender_));
+    {
+        abstract_tone_destroy(p_dlg->tone_selected_);
+        p_dlg->tone_selected_ = NULL;
+        p_dlg->wav_preview_text_[0] = _T('\0');
+        SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
+        return 1;
+    }
+    return 0;
 } 
 
 /*!
@@ -347,8 +354,8 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
     switch (uMessage)
     {
         case WM_INITDIALOG:
-           return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
-       case WM_COMMAND:
+            return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
+        case WM_COMMAND:
             assert(p_dlg);
             switch(LOWORD(wParam))
             {
@@ -369,7 +376,7 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                                     assert(p_dlg->tone_selected_);
                                     sender_handle_selecttone(p_dlg->sender_, p_dlg->tone_selected_);
                                 }
-                             }
+                            }
                             break;
                         default:
                             assert(0);
@@ -377,14 +384,24 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     }
                     break;
                 case ID_SENDER_JOINMCAST:
-                    if (UI_SENDER_INITIAL == p_dlg->ui_state_ && sender_handle_mcastjoin(p_dlg->sender_))
-                        p_dlg->ui_state_ = UI_SENDER_MCASTJOINED;
-                    else if (UI_SENDER_TESTTONE_SELECTED == p_dlg->ui_state_ && sender_handle_mcastjoin(p_dlg->sender_))
-                        p_dlg->ui_state_ = UI_SENDER_MCASTJOINED_TESTTONESELECTED;
-                    else if (UI_SENDER_EXTTONE_SELECTED == p_dlg->ui_state_ && sender_handle_mcastjoin(p_dlg->sender_))
-                        p_dlg->ui_state_ = UI_SENDER_MCASTJOINED_EXTTONESELECTED;
-                    else
-                        assert(0);
+                    switch (p_dlg->ui_state_)
+                    {
+                        case UI_SENDER_INITIAL:
+                            if (sender_handle_mcastjoin(p_dlg->sender_))
+                                p_dlg->ui_state_ = UI_SENDER_MCASTJOINED;
+                            break;
+                        case UI_SENDER_TESTTONE_SELECTED:
+                            if (sender_handle_mcastjoin(p_dlg->sender_))
+                                p_dlg->ui_state_ = UI_SENDER_MCASTJOINED_TESTTONESELECTED;
+                            break;
+                        case UI_SENDER_SENDING_EXTTONESELECTED:
+                            if (sender_handle_mcastjoin(p_dlg->sender_))
+                                p_dlg->ui_state_ = UI_SENDER_MCASTJOINED_EXTTONESELECTED;
+                            break;
+                        default:
+                            assert(0);
+                            break;
+                    }
                     break;
                 case ID_SENDER_LEAVEMCAST:
                     if (UI_SENDER_MCASTJOINED == p_dlg->ui_state_ && sender_handle_mcastleave(p_dlg->sender_))
@@ -440,8 +457,56 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     else
                         assert(0);
                     break;
-               case IDM_SENDER_ABOUT:
+                case IDM_SENDER_ABOUT:
                     display_about_dialog(hDlg, _T("Sender"));
+                    break;
+                case ID_SENDER_STOP_RECORDING:
+                    debug_outputln("%4.4u %s ", __LINE__, __FILE__);
+                    switch (p_dlg->recording_state_)
+                    {
+                        case UI_SENDER_RECORDING:
+                            if (sender_handle_stoprecording(p_dlg->sender_))
+                            {
+                                HWND hWidget;
+                                p_dlg->recording_state_ = UI_SENDER_NOT_RECORDING;
+                                hWidget = GetDlgItem(p_dlg->hDlg_, ID_SENDER_START_RECORDING);
+                                assert(NULL != hWidget);
+                                EnableWindow(hWidget, TRUE);
+                                hWidget = GetDlgItem(p_dlg->hDlg_, ID_SENDER_STOP_RECORDING);
+                                assert(NULL != hWidget);
+                                assert(NULL != hWidget);
+                                EnableWindow(hWidget, FALSE);
+                            }
+                            break;
+                        case UI_SENDER_NOT_RECORDING:
+                        default:
+                            debug_outputln("%4.4u %s ", __LINE__, __FILE__);
+                            break;
+                    }
+                    break;
+                case ID_SENDER_START_RECORDING:
+                    switch (p_dlg->recording_state_)
+                    {
+                        case UI_SENDER_NOT_RECORDING:
+                            debug_outputln("%4.4u %s ", __LINE__, __FILE__);
+                            if (sender_handle_startrecording(p_dlg->sender_))
+                            {
+                                HWND hWidget;
+                                p_dlg->recording_state_ = UI_SENDER_RECORDING;
+                                hWidget = GetDlgItem(p_dlg->hDlg_, ID_SENDER_START_RECORDING);
+                                assert(NULL != hWidget);
+                                EnableWindow(hWidget, FALSE);
+                                hWidget = GetDlgItem(p_dlg->hDlg_, ID_SENDER_STOP_RECORDING);
+                                assert(NULL != hWidget);
+                                assert(NULL != hWidget);
+                                EnableWindow(hWidget, TRUE);
+                            }
+                            break;
+                        case UI_SENDER_RECORDING:
+                        default:
+                            debug_outputln("%4.4u %s ", __LINE__, __FILE__);
+                            break;
+                    }
                     break;
                 case IDOK:
                 case IDCANCEL: 
@@ -501,7 +566,7 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     /* Init Winsock */
     if ((rc = WSAStartup(MAKEWORD(1, 1), &wsd)) != 0)
         return 0;
-    /* Init COM */
+    /* Init COM, this is needed for DirectX */
     hr = CoInitializeEx(0, COINIT_APARTMENTTHREADED);
     if (FAILED(hr))
         return 0;

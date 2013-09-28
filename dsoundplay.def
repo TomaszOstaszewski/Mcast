@@ -20,3 +20,8 @@ EXPORTS
 	LoadWavFromResoure @36
         get_wave_data @37
         get_wave_data_size @38
+	dxaudio_recorder_create @39
+	dxaudio_recorder_destroy @40
+	dxaudio_recorder_start @41
+	dxaudio_recorder_stop @42
+	recorder_settings_get_default @43

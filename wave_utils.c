@@ -32,27 +32,86 @@
 #include "wave_utils.h"
 #include "debug_helpers.h"
 
+typedef struct wavinoutcaps_dwFormat_2_textDescription {
+	DWORD dwFormat_;
+	const char * tag_;
+	const char * text_desc_;
+} wavinoutcaps_dwFormat_2_textDescription_t;
+
+typedef wavinoutcaps_dwFormat_2_textDescription_t * P_WAVINOUTCAPS_DWFORMAT_2_TEXTDESCRIPTION;
+typedef wavinoutcaps_dwFormat_2_textDescription_t const * P_CONST_WAVINOUTCAPS_DWFORMAT_2_TEXTDESCRIPTION;
+
+typedef struct waveFormatTag_2_textDescription {
+    WORD wFormatTag_;
+    const char * string_;
+} waveFormatTag_2_textDescription_t;
+
 /*! 
  * @brief Macro to facilitate structure creation.
  */
-#define MAKE_STRUCT(x)	{x, #x}
+#define MAKE_DWFORMAT_DESC(flag,text) { flag, #flag, text }
+
+/*! 
+ * @brief Macro to facilitate structure creation.
+ */
+#define MAKE_WFORMATTAG_DESC(flag) { flag, #flag }
+
+static wavinoutcaps_dwFormat_2_textDescription_t const g_dwFormatDesc[] = {
+	MAKE_DWFORMAT_DESC(WAVE_INVALIDFORMAT, "invalid format "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_1M08, " 11.025 kHz, Mono,   8-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_1S08, " 11.025 kHz, Stereo, 8-bit  "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_1M16, " 11.025 kHz, Mono,   16-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_1S16, " 11.025 kHz, Stereo, 16-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_2M08, " 22.05  kHz, Mono,   8-bit  "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_2S08, " 22.05  kHz, Stereo, 8-bit  "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_2M16, " 22.05  kHz, Mono,   16-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_2S16, " 22.05  kHz, Stereo, 16-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_4M08, " 44.1   kHz, Mono,   8-bit  "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_4S08, " 44.1   kHz, Stereo, 8-bit  "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_4M16, " 44.1   kHz, Mono,   16-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_4S16, " 44.1   kHz, Stereo, 16-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_44M08, " 44.1   kHz, Mono,   8-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_44S08, " 44.1   kHz, Stereo, 8-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_44M16, " 44.1   kHz, Mono,   16-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_44S16, " 44.1   kHz, Stereo, 16-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_48M08, " 48     kHz, Mono,   8-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_48S08, " 48     kHz, Stereo, 8-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_48M16, " 48     kHz, Mono,   16-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_48S16, " 48     kHz, Stereo, 16-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_96M08, " 96     kHz, Mono,   8-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_96S08, " 96     kHz, Stereo, 8-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_96M16, " 96     kHz, Mono,   16-bit "),
+	MAKE_DWFORMAT_DESC(WAVE_FORMAT_96S16, " 96     kHz, Stereo, 16-bit "),
+};
+
+static waveFormatTag_2_textDescription_t const  g_wFormatTagDesc[] = {
+    MAKE_WFORMATTAG_DESC(WAVE_FORMAT_PCM),
+    MAKE_WFORMATTAG_DESC(WAVE_FORMAT_IEEE_FLOAT),
+    MAKE_WFORMATTAG_DESC(WAVE_FORMAT_EXTENSIBLE),
+    MAKE_WFORMATTAG_DESC(WAVE_FORMAT_ADPCM),
+};
+
+static int get_dwFormat_desc(DWORD dwFormat, P_CONST_WAVINOUTCAPS_DWFORMAT_2_TEXTDESCRIPTION * p_pointers_table, size_t pointers_table_size)
+{
+    size_t idx;    
+    size_t out_idx;
+    for (out_idx = 0, idx = 0; idx < COUNTOF_ARRAY(g_dwFormatDesc); ++idx)
+    {
+        if (dwFormat & g_dwFormatDesc[idx].dwFormat_)
+        {
+            p_pointers_table[out_idx] = &g_dwFormatDesc[idx];
+        } 
+    }
+    return 0;
+}
 
 static const char * wFormatTag2String(WORD wFormatTag)
 {
-	static const struct tag_wFormatTag2String {
-		WORD wFormatTag_;
-		const char * string_;
-	} format2String_[] = {
-		 MAKE_STRUCT(WAVE_FORMAT_PCM),
-		 MAKE_STRUCT(WAVE_FORMAT_IEEE_FLOAT),
-		 MAKE_STRUCT(WAVE_FORMAT_EXTENSIBLE),
-		 MAKE_STRUCT(WAVE_FORMAT_ADPCM),
-	};
 	size_t idx = 0;
-	for (idx = 0; idx < sizeof(format2String_)/sizeof(format2String_[0]); ++idx)
+	for (idx = 0; idx < COUNTOF_ARRAY(g_wFormatTagDesc); ++idx)
 	{
-		if (format2String_[idx].wFormatTag_ == wFormatTag)
-			return format2String_[idx].string_;
+		if (g_wFormatTagDesc[idx].wFormatTag_ == wFormatTag)
+			return g_wFormatTagDesc[idx].string_;
 	}
 	return "NULL";
 }

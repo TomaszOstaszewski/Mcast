@@ -40,6 +40,9 @@
 #include "sender-settings.h"
 #include "abstract-tone.h"
 
+#include "dsound-recorder.h"
+#include "recorder-settings.h"
+
 /*!
  * @brief Maximum number of payload bytes that will fit a single 100BaseT Ethernet packet.
  * @details The macro assumes that the payload also contains the IP and UDP header. What is 
@@ -61,6 +64,9 @@ struct mcast_sender {
     struct sender_settings settings_; 
     /** @brief The tone that is to be played. */
     struct abstract_tone * tone_;
+    /** @brief */
+    struct dxaudio_recorder * recorder_;
+    recorder_settings_t rec_settings_;
     HANDLE hStopEvent_; /*!< Handle to the event used to stop the sending thread. */
     /*!
      * @brief Handle to the event used to stop the sending thread. 
@@ -443,4 +449,30 @@ int sender_handle_stopsending(struct mcast_sender * p_sender)
     debug_outputln("%s %4.4u", __FILE__, __LINE__);
     return 0;
 }
+
+int sender_handle_startrecording(struct mcast_sender * p_sender)
+{
+    debug_outputln("%4.4u %s", __LINE__, __FILE__);
+    if (NULL == p_sender->rec_settings_)
+        p_sender->rec_settings_ = recorder_settings_get_default(); 
+    if (NULL == p_sender->recorder_)
+    {
+        p_sender->recorder_ = dxaudio_recorder_create(p_sender->rec_settings_, NULL);     
+        if (NULL == p_sender->recorder_)
+            return 0;
+        dxaudio_recorder_start(p_sender->recorder_);
+    }
+    return 1;
+}
+
+int sender_handle_stoprecording(struct mcast_sender * p_sender)
+{
+    debug_outputln("%4.4u %s", __LINE__, __FILE__);
+    assert(NULL != p_sender->recorder_);
+    dxaudio_recorder_stop(p_sender->recorder_);
+    dxaudio_recorder_destroy(p_sender->recorder_);
+    p_sender->recorder_ = NULL; 
+    return 1;
+}
+
 

@@ -81,14 +81,14 @@
 #   include <sys/types.h>
 #   include <signal.h>
 #   include <unistd.h>
-
 typedef uint32_t DWORD ;
 typedef uint16_t WORD ;
-#define NEAR 
-#define FAR 
-#endif
+#   define NEAR 
+#   define FAR 
+#endif /* __linux__ */
 
 #include "std-int.h" /* Wrapper for <stdint.h> which is not avaiable on every compiler. */
+#define COUNTOF_ARRAY(x) (sizeof(x)/sizeof(x[0]))
 
 #endif /* PCC_H_10C143CE_7FF9_4E22_8187_6EBF9DAEAA7B */
 
