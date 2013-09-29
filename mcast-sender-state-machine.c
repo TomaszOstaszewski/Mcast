@@ -79,6 +79,37 @@ struct mcast_sender {
     HANDLE hSenderThread_; /*!< Handle of the sender thread. */
 };
 
+/**
+ * @brief Simple resampling from 11025 Hz to 8000 Hz
+ * @details This works exactly in a way that Bresenham line drawing algorithm works
+ * @param[in]
+ * @param[in]
+ * @param[in, out]
+ * @param[in]
+ */ 
+size_t resample_16_bit_11025_to_8000(uint16_t const * input, size_t input_size, uint16_t * output, size_t output_size)
+{
+    static int error = 0;
+#define DELTA_X 441
+#define DELTA_Y 320
+    size_t in_idx;
+    size_t out_idx;
+    for (in_idx = 0, out_idx = 0; in_idx < input_size && out_idx < output_size; ++in_idx)
+    {
+        output[out_idx] = input[in_idx];
+        if (2 * (error + DELTA_Y) < DELTA_X)
+        {
+            error = error + DELTA_Y;
+        }
+        else
+        {
+            error = error + DELTA_Y - DELTA_X;
+            out_idx = out_idx + 1;
+        }
+    }
+    return out_idx;
+}
+
 /*!
  * @brief Sender thread function.
  * @details Spins a loop in which it checks whether it was signalled to exit. If so, exits.
@@ -90,6 +121,7 @@ struct mcast_sender {
 static DWORD WINAPI SendThreadProc(LPVOID param)
 {
     DWORD dwResult;
+    static uint8_t data_received[1024*sizeof(uint16_t)] = {0};
     static uint8_t data_to_send[1024*sizeof(uint16_t)] = {0};
     struct mcast_sender * p_sender;
 
@@ -99,11 +131,16 @@ static DWORD WINAPI SendThreadProc(LPVOID param)
     {
         int result;
         size_t data_retrived_size;
-        uint32_t retrieved_data_size = sizeof(data_to_send);
-        data_retrived_size = fifo_circular_buffer_fetch_item(p_sender->p_circular_buffer_, data_to_send, &retrieved_data_size);
+        uint32_t retrieved_data_size = sizeof(data_received);
+        data_retrived_size = fifo_circular_buffer_fetch_item(p_sender->p_circular_buffer_, 
+            &data_received[0], &retrieved_data_size);
         if (data_retrived_size > 0)
         {
-            result = mcast_sendto(p_sender->conn_, &data_to_send[0], retrieved_data_size);
+            size_t data_to_send_size = resample_16_bit_11025_to_8000(
+                (uint16_t const*)&data_received[0], 
+                data_retrived_size/sizeof(uint16_t),
+                (uint16_t *)&data_to_send[0], sizeof(data_to_send)/sizeof(uint16_t));
+            result = mcast_sendto(p_sender->conn_, &data_to_send[0], sizeof(uint16_t)*data_to_send_size);
             if (SOCKET_ERROR == result)
             {
                 debug_outputln("%4.4u %s : %p %u", __LINE__, __FILE__, &data_to_send[0], retrieved_data_size);
