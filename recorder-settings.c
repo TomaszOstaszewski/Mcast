@@ -49,7 +49,7 @@
  */
 #define DEFAULT_RECORDER_CHANNELS (1)
 
-#define DEFAULT_RECORDER_SAMPLES_BUFFER_SIZE (4096)
+#define DEFAULT_RECORDER_SAMPLES_BUFFER_SIZE (2048)
 
 /*!
  * @brief Defines defaults for WAVEFORMATEX structure

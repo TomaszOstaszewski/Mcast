@@ -68,7 +68,7 @@
 #include "debug_helpers.h"
 #include "dsound-recorder.h"
 #include "wave_utils.h"
-#include "circular-buffer-uint8.h"
+#include "circular-buffer-uint16.h"
 #include "recorder-settings.h"
 #include "perf-counter-itf.h"
 
@@ -101,7 +101,8 @@
 struct dxaudio_recorder {
     IDirectSoundCapture8 * p_capture8_; /*!< */
     IDirectSoundCaptureBuffer8 * p_capture_buffer8_; /*!< . */
-    struct fifo_circular_buffer * fifo_; /*!< A fifo queue - from that queue we fetch the data and feed to the buffers.*/
+    void * context_;
+    SEND_ROUTINE callback_;
     DWORD dw_notify_marks_begin_[NOTIFY_MARKS_COUNT];
     DSBPOSITIONNOTIFY notify_marks_[NOTIFY_MARKS_COUNT];
     HANDLE hWatcherThread_;
@@ -150,7 +151,6 @@ static DWORD WINAPI recorder_thread(LPVOID param)
                 {
                     if (dwWaitResult - WAIT_OBJECT_0 == idx)
                     {
-                        size_t items_pushed;
                         LPVOID p_ptr_1 = NULL, p_ptr_2 = NULL;
                         DWORD dw_offset_1 = 0, dw_offset_2 = 0;
                         /* Acknowledge notification */
@@ -162,7 +162,7 @@ static DWORD WINAPI recorder_thread(LPVOID param)
                                 &p_ptr_1, &dw_offset_1,
                                 &p_ptr_2, &dw_offset_2,
                                 0);
-                        items_pushed = fifo_circular_buffer_push_item(p_recorder->fifo_, (uint8_t*) p_ptr_1, dw_offset_1);
+                        (p_recorder->callback_)(p_recorder->context_, p_ptr_1, dw_offset_1);
                         p_recorder->p_capture_buffer8_->Unlock(p_ptr_1, dw_offset_1, p_ptr_2, dw_offset_2);
 #if 0
                         debug_outputln("%4.4u %s :" "%u" " %u %u %p %p %u %u", __LINE__, __FILE__, 
@@ -182,7 +182,7 @@ static DWORD WINAPI recorder_thread(LPVOID param)
 
 extern "C" dxaudio_recorder_t dxaudio_recorder_create(
  struct recorder_settings const * p_settings, 
- struct fifo_circular_buffer * p_fifo)
+ void * context, SEND_ROUTINE p_send_routine)
 {
     struct dxaudio_recorder * p_retval = NULL;
     p_retval = (struct dxaudio_recorder *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dxaudio_recorder));
@@ -190,8 +190,8 @@ extern "C" dxaudio_recorder_t dxaudio_recorder_create(
     {
         HRESULT hr;
         /* Get the reference to fifo queue. */
-        p_retval->fifo_= p_fifo;
-        assert(NULL != p_retval->fifo_);
+        p_retval->callback_ = p_send_routine;
+        p_retval->context_ = context;
         /* 1st step - create the DirectSound capture object and get its interface */
         hr = DirectSoundCaptureCreate8(recorder_settings_get_guid(p_settings), &p_retval->p_capture8_, NULL);
         if (SUCCEEDED(hr))

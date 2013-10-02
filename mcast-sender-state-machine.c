@@ -39,7 +39,7 @@
 #include "mcast-sender-state-machine.h"
 #include "sender-settings.h"
 #include "abstract-tone.h"
-#include "circular-buffer-uint8.h"
+#include "circular-buffer-uint16.h"
 #include "dsound-recorder.h"
 #include "recorder-settings.h"
 
@@ -63,20 +63,9 @@ struct mcast_sender {
     /** @brief */
     struct dxaudio_recorder * recorder_;
     /** @brief */
-    struct fifo_circular_buffer * p_circular_buffer_;
+    struct circular_buffer_uint16 * p_circular_buffer_;
     /** @brief */
     recorder_settings_t rec_settings_;
-    HANDLE hStopEvent_; /*!< Handle to the event used to stop the sending thread. */
-    /*!
-     * @brief Handle to the event used to stop the sending thread. 
-     * @details This is a copy of the handle stored in hStopEvent_ member. To avoid
-     * race conditions between the sender thread and the main thread, there are 2 handles 
-     * that describe the very same event. Both the main thread and the sender thread operate
-     * on their own copy, therefore avoid race conditions between CloseHandle() calls.
-     * @sa hStopEvent_
-     */
-    HANDLE hStopEventThread_; /*!< */
-    HANDLE hSenderThread_; /*!< Handle of the sender thread. */
 };
 
 /**
@@ -110,65 +99,19 @@ size_t resample_16_bit_11025_to_8000(uint16_t const * input, size_t input_size, 
     return out_idx;
 }
 
-/*!
- * @brief Sender thread function.
- * @details Spins a loop in which it checks whether it was signalled to exit. If so, exits.
- * Otherwise, sends out next chunk of data over the multicast connected socket. The data wraps
- * around the beginning if end of data is exhibited.
- * @param[in] param pointer to the mcast_sender structure
- * @return returns 0 if a thread has completed successfully, otherwise <>0.
- */
-static DWORD WINAPI SendThreadProc(LPVOID param)
+static void mcast_send_data_packet(void * p_context, void * data, size_t data_size)
 {
-    DWORD dwResult;
-    static uint8_t data_received[1024*sizeof(uint16_t)] = {0};
-    static uint8_t data_to_send[1024*sizeof(uint16_t)] = {0};
-    struct mcast_sender * p_sender;
-
-    p_sender = (struct mcast_sender *)param;
-    assert(p_sender);
-    for (;;)
-    {
-        int result;
-        size_t data_retrived_size;
-        uint32_t retrieved_data_size = sizeof(data_received);
-        data_retrived_size = fifo_circular_buffer_fetch_item(p_sender->p_circular_buffer_, 
-            &data_received[0], &retrieved_data_size);
-        if (data_retrived_size > 0)
-        {
-            size_t data_to_send_size = resample_16_bit_11025_to_8000(
-                (uint16_t const*)&data_received[0], 
-                data_retrived_size/sizeof(uint16_t),
-                (uint16_t *)&data_to_send[0], sizeof(data_to_send)/sizeof(uint16_t));
-            result = mcast_sendto(p_sender->conn_, &data_to_send[0], sizeof(uint16_t)*data_to_send_size);
-            if (SOCKET_ERROR == result)
-            {
-                debug_outputln("%4.4u %s : %p %u", __LINE__, __FILE__, &data_to_send[0], retrieved_data_size);
-            }
-            debug_outputln("%4.4u %s : %d %u %u", 
-                __LINE__, __FILE__, 
-                result, data_retrived_size, fifo_circular_buffer_get_items_count(p_sender->p_circular_buffer_));
-        }
-        dwResult = WaitForSingleObject(p_sender->hStopEventThread_, 0);
-        if (WAIT_TIMEOUT == dwResult)
-        {
-            continue;
-        }
-        else if (WAIT_OBJECT_0 == dwResult)
-        {
-            dwResult = 0;
-            break;
-        }
-        else 
-        {
-            dwResult = -1;
-            debug_outputln("%s %4.4u : %d", __FILE__, __LINE__, dwResult);
-            break;
-        }
-    }
-    CloseHandle(p_sender->hStopEventThread_);
-    p_sender->hStopEventThread_ = NULL;
-    return dwResult;
+    struct mcast_sender * p_sender = (struct mcast_sender *)p_context;
+#if 0
+    static uint16_t resampled_buffer[1024];
+    size_t resampled_size;
+    resampled_size = resample_16_bit_11025_to_8000((uint16_t const *)data, data_size/sizeof(uint16_t), &resampled_buffer[0], COUNTOF_ARRAY(resampled_buffer));
+    mcast_sendto(p_sender->conn_, &resampled_buffer[0], resampled_size*sizeof(uint16_t));
+    debug_outputln("%4.4u %s : %p %u %u", __LINE__, __FILE__, data, data_size/sizeof(uint16_t), resampled_size*sizeof(uint16_t));
+#else
+    mcast_sendto(p_sender->conn_, data, data_size);
+    debug_outputln("%4.4u %s : %8p %4.4u ", __LINE__, __FILE__, data, data_size);
+#endif
 }
 
 /**
@@ -220,65 +163,12 @@ static int sender_handle_mcastleave_internal(struct mcast_sender * p_sender)
 }
 
 /**
- * @brief Starts sending data over the multicast connection.
- * @param[in] p_sender pointer to the sender description structure.
- * @return returns non-zero on success, 0 otherwise.
- */
-static int sender_handle_startsending_internal(struct mcast_sender * p_sender)
-{
-    int result = 0;
-    assert(NULL == p_sender->hStopEventThread_);
-    assert(NULL == p_sender->hStopEvent_);
-    if (NULL == p_sender->hStopEventThread_ && NULL == p_sender->hStopEvent_)
-    {
-        p_sender->hStopEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
-        if (NULL != p_sender->hStopEvent_)
-        {
-            if (DuplicateHandle(GetCurrentProcess(), p_sender->hStopEvent_, GetCurrentProcess(), &p_sender->hStopEventThread_, 0, FALSE, DUPLICATE_SAME_ACCESS))
-            {
-                p_sender->hSenderThread_ = CreateThread(NULL, 0, SendThreadProc, p_sender, 0, NULL);
-                assert(NULL != p_sender->hSenderThread_);
-                if (NULL != p_sender->hSenderThread_)
-                {
-                    result = 1;
-                }
-            }
-        }
-    }
-    if (!result)
-    {
-        if (NULL != p_sender->hStopEvent_)
-        {
-            CloseHandle(p_sender->hStopEvent_);
-            p_sender->hStopEvent_ = NULL;
-        }
-        if (NULL != p_sender->hStopEventThread_)
-        {
-            CloseHandle(p_sender->hStopEventThread_);
-            p_sender->hStopEventThread_ = NULL;
-        }
-    }
-    assert(result);
-    return result;
-}
-
-/**
  * @brief Stops sending data over the multicast connection.
  * @param[in] p_sender pointer to the sender description structure.
  * @return returns non-zero on success, 0 otherwise.
  */
 static int sender_handle_stopsending_internal(struct mcast_sender * p_sender)
 {
-    DWORD dwWaitResult;
-    SetEvent(p_sender->hStopEvent_);   
-    CloseHandle(p_sender->hStopEvent_);
-    dwWaitResult = WaitForSingleObject(p_sender->hSenderThread_, INFINITE); 
-    if (WAIT_OBJECT_0 == dwWaitResult)
-    {
-        CloseHandle(p_sender->hSenderThread_);
-    }
-    p_sender->hStopEvent_ = NULL;
-    p_sender->hSenderThread_ = NULL;
     dxaudio_recorder_stop(p_sender->recorder_);
     dxaudio_recorder_destroy(p_sender->recorder_);
     p_sender->recorder_ = NULL; 
@@ -330,7 +220,7 @@ int sender_handle_startrecording(struct mcast_sender * p_sender)
     debug_outputln("%4.4u %s", __LINE__, __FILE__);
     if (NULL == p_sender->p_circular_buffer_)
     {
-       p_sender->p_circular_buffer_ = circular_buffer_create_with_size(16);
+       p_sender->p_circular_buffer_ = circular_buffer_uint16_create_with_size(16);
     }
     assert(NULL != p_sender->p_circular_buffer_);
     if (NULL == p_sender->rec_settings_)
@@ -342,16 +232,13 @@ int sender_handle_startrecording(struct mcast_sender * p_sender)
     {
         p_sender->recorder_ = dxaudio_recorder_create(
             p_sender->rec_settings_, 
-            p_sender->p_circular_buffer_);     
+            p_sender,
+            mcast_send_data_packet);     
     }
-    if (sender_handle_startsending_internal(p_sender))
-    {
-        assert(NULL != p_sender->rec_settings_);
-        dxaudio_recorder_start(p_sender->recorder_);
-        p_sender->state_ = SENDER_SENDING;
-        return 1;
-    }
-    return 0;
+    assert(NULL != p_sender->rec_settings_);
+    dxaudio_recorder_start(p_sender->recorder_);
+    p_sender->state_ = SENDER_SENDING;
+    return 1;
 }
 
 int sender_handle_stoprecording(struct mcast_sender * p_sender)

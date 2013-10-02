@@ -46,7 +46,7 @@ extern "C" {
 /*!
  * @brief Forward declaration.
  */
-struct fifo_circular_buffer;
+struct circular_buffer_uint16;
 
 /*!
  * @brief Forward declaration.
@@ -58,6 +58,8 @@ struct recorder_settings;
  */
 typedef struct dxaudio_recorder * dxaudio_recorder_t;
 
+typedef void (*SEND_ROUTINE)(void * p_context, void * data, size_t data_size);
+
 /*!
  * @brief Creates a DirectSound player.
  * @param[in] hWnd handle to the player window. This is to use specific cooperation functions. Can be NULL, in this case
@@ -66,7 +68,7 @@ typedef struct dxaudio_recorder * dxaudio_recorder_t;
  * @param[in] p_fifo pointer to the fifo queue to be used by player. The player will fetch waveform data from that buffer.
  * @return returns the handle to the DirectSound player.
  */
-dxaudio_recorder_t dxaudio_recorder_create(struct recorder_settings const * p_settings, struct fifo_circular_buffer * p_fifo);
+dxaudio_recorder_t dxaudio_recorder_create(struct recorder_settings const * p_settings, void * context, SEND_ROUTINE p_send_routine);
 
 /*!
  * @brief Destroys the DirectSound player.
