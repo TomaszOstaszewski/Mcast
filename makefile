@@ -32,13 +32,13 @@ cscope:
 
 #cscope -bk -I$(DXINCLUDE) $(PSDKINCLUDE)
 #.c{$(OUTDIR_OBJ)}.obj::
-#    $(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" $<
+#    $(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" $<
 
 $(OUTDIR_PCC)\pcc.pch: pcc.c pcc.h $(OUTDIR_PCC) $(OUTDIR_OBJ)
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yc /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yc /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_PCC)\pcpp.pch: pcpp.cpp pcc.h $(OUTDIR_PCC) $(OUTDIR_OBJ)
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yc /Fp$(OUTDIR_PCC)\pcpp.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yc /Fp$(OUTDIR_PCC)\pcpp.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\sender.res: sender.rc sender-res.h sender.exe.manifest play.wav $(OUTDIR_OBJ)
 	@$(rc) $(rcflags) $(rcvars) /fo $@ %s
@@ -53,114 +53,114 @@ $(OUTDIR_OBJ)\common-dialogs.res: common-dialogs.rc common-dialogs-res.h $(OUTDI
 	@$(rc) $(rcflags) $(rcvars) /fo $@ %s
 
 $(OUTDIR_OBJ)\abstract-tone.obj: abstract-tone.c abstract-tone.h wave_utils.h $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\about-dialog.obj: about-dialog.c about-dialog.h $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\resample.obj: resample.c
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /O2 /Oy /I$(DXINCLUDE)  /W3 /WX /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /O2 /Oy /I$(DXINCLUDE)  /W3 /WX /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\mcast_utils.obj: mcast_utils.c mcast_utils.h resolve.h $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\resolve.obj: resolve.c resolve.h debug_helpers.h $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\timeofday.obj: timeofday.c timeofday.h $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\mcast-sender-state-machine.obj: mcast-sender-state-machine.c mcast-sender-state-machine.h sender-settings.h mcast_setup.h wave_utils.h abstract-tone.h $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE) /I.\soxr-0.1.1-Source\soxr-0.1.1-Source\src /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE) /I.\soxr-0.1.1-Source\soxr-0.1.1-Source\src /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\mcast-receiver-state-machine.obj: mcast-receiver-state-machine.c mcast-receiver-state-machine.h receiver-settings.h play-settings.h mcast_setup.h dsoundplay.h circular-buffer-uint8.h wave_utils.h $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\mcast_setup.obj: mcast_setup.c mcast_setup.h mcast_utils.h resolve.h mcast-settings.h $(OUTDIR_OBJ)
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\debug_helpers.obj: debug_helpers.c pcc.h debug_helpers.h pcc.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE) /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE) /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\mcast-receiver-dlg.obj: mcast-receiver-dlg.c pcc.h dsoundplay.h mcast_setup.h mcast-settings.h mcast-receiver-state-machine.h circular-buffer-uint8.h receiver-settings.h play-settings.h wave_utils.h receiver-res.h $(OUTDIR_OBJ)
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\mcast-sender-dlg.obj: mcast-sender-dlg.c sender-settings-dlg.h mcast-sender-state-machine.h pcc.h sender-settings.h sender-res.h abstract-tone.h wave_utils.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\mcast-settings.obj: mcast-settings.c mcast-settings.h pcc.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\mcast-settings-dlg.obj: mcast-settings-dlg.c mcast-settings-dlg.h pcc.h common-dialogs-res.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\sender-settings-dlg.obj: sender-settings-dlg.c pcc.h sender-settings-dlg.h sender-settings.h sender-res.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\recorder-settings.obj: recorder-settings.c pcc.h recorder-settings.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\sender-settings.obj: sender-settings.c pcc.h sender-settings.h wave_utils.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\platform-sockets.obj: platform-sockets.c platform-sockets.h pcc.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\receiver-settings.obj: receiver-settings.c pcc.h receiver-settings.h play-settings.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\receiver-settings-dlg.obj: receiver-settings-dlg.c pcc.h receiver-settings.h play-settings.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\wave_utils.obj: wave_utils.c wave_utils.h pcc.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\dsoundplay.obj: dsoundplay.cpp dsoundplay.h pcc.h wave_utils.h circular-buffer-uint8.h input-buffer.h receiver-settings.h play-settings.h perf-counter-itf.h  $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcpp.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcpp.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcpp.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\dsound-recorder.obj: dsound-recorder.cpp dsound-recorder.h pcc.h wave_utils.h circular-buffer-uint8.h input-buffer.h receiver-settings.h play-settings.h perf-counter-itf.h  $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcpp.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcpp.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcpp.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
 
 
 $(OUTDIR_OBJ)\message-loop.obj: message-loop.c message-loop.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\circular-buffer-uint16.obj: circular-buffer-uint16.c circular-buffer-uint16.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     @if exist "$(OUTDIR_OBJ)\$(@B).S" del /Q /F "$(OUTDIR_OBJ)\$(@B).S"
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\circular-buffer-uint8.obj: circular-buffer-uint8.c circular-buffer-uint8.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     @if exist "$(OUTDIR_OBJ)\$(@B).S" del /Q /F "$(OUTDIR_OBJ)\$(@B).S"
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\input-buffer.obj: input-buffer.c input-buffer.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\play-settings.obj: play-settings.c play-settings.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\perf-counter-itf.obj: perf-counter-itf.c perf-counter-itf.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\ut-input-buffer.obj: ut-input-buffer.c input-buffer.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\ut-debug-helpers.obj: ut-debug-helpers.c debug_helpers.c $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\ut-circular-buffer-uint8.obj: ut-circular-buffer-uint8.c circular-buffer-uint8.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\ex-perf-counter.obj: ex-perf-counter.c perf-counter-itf.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     @if exist "$(OUTDIR_OBJ)\$(@B).S" del /Q /F "$(OUTDIR_OBJ)\$(@B).S"
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\dialog-utils.obj: dialog-utils.c dialog-utils.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     @if exist "$(OUTDIR_OBJ)\$(@B).S" del /Q /F "$(OUTDIR_OBJ)\$(@B).S"
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\ut-abstract-tone.obj: ut-abstract-tone.c abstract-tone.h sender-res.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
-    @$(cc) $(cdebug) $(cvarsdll) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
 
 # Tests
 $(OUTDIR)\ut-abstract-tone.exe: $(OUTDIR_OBJ)\ut-abstract-tone.obj $(OUTDIR_OBJ)\abstract-tone.obj $(OUTDIR_OBJ)\debug_helpers.obj $(OUTDIR_OBJ)\wave_utils.obj $(OUTDIR_OBJ)\sender.res 
