@@ -42,6 +42,7 @@
 #include "circular-buffer-uint16.h"
 #include "dsound-recorder.h"
 #include "recorder-settings.h"
+#include "soxr-lsr.h"
 
 /*!
  * @brief Maximum number of payload bytes that will fit a single 100BaseT Ethernet packet.
@@ -101,16 +102,43 @@ size_t resample_16_bit_11025_to_8000(uint16_t const * input, size_t input_size, 
 
 static void mcast_send_data_packet(void * p_context, void * data, size_t data_size)
 {
-    struct mcast_sender * p_sender = (struct mcast_sender *)p_context;
-#if 0
-    static uint16_t resampled_buffer[1024];
-    size_t resampled_size;
-    resampled_size = resample_16_bit_11025_to_8000((uint16_t const *)data, data_size/sizeof(uint16_t), &resampled_buffer[0], COUNTOF_ARRAY(resampled_buffer));
-    mcast_sendto(p_sender->conn_, &resampled_buffer[0], resampled_size*sizeof(uint16_t));
-    debug_outputln("%4.4u %s : %p %u %u", __LINE__, __FILE__, data, data_size/sizeof(uint16_t), resampled_size*sizeof(uint16_t));
+#if 1
+#define INPUT_SAMPLING_FREQ (11025.0)
+#define OUTPUT_SAMPLING_FREQ (8000.0)
+
+    static float f_temp_input_samples[1024];
+    static float f_temp_output_samples[1024];
+    static uint16_t output_samples[1024];
+    static struct SRC_DATA conversion_params;
+
+    size_t idx;
+    struct mcast_sender * p_sender;
+    int16_t const * input_samples;
+    int error;
+
+    p_sender = (struct mcast_sender *)p_context;
+    input_samples = (int16_t const *)data;
+
+    for (idx = 0; idx < COUNTOF_ARRAY(f_temp_input_samples) && idx < data_size/sizeof(input_samples[0]); ++idx)
+        f_temp_input_samples[idx] = input_samples[idx];
+    /* Do resampling here */
+    conversion_params.data_in = f_temp_input_samples;
+    conversion_params.data_out = f_temp_output_samples;
+    conversion_params.input_frames = idx;
+    conversion_params.output_frames = COUNTOF_ARRAY(f_temp_output_samples);
+    conversion_params.src_ratio = OUTPUT_SAMPLING_FREQ/INPUT_SAMPLING_FREQ;
+    error = src_simple(&conversion_params, SRC_SINC_FASTEST, 1);
+    if (0 == error)
+    {
+        /* Get back the samples */
+        for (idx = 0; idx < COUNTOF_ARRAY(output_samples) && idx < (size_t)conversion_params.output_frames_gen; ++idx)
+            output_samples[idx] = (int16_t)f_temp_output_samples[idx];
+        mcast_sendto(p_sender->conn_, output_samples, (size_t)conversion_params.output_frames_gen*sizeof(int16_t));
+    }
 #else
+    struct mcast_sender * p_sender;
+    p_sender = (struct mcast_sender *)p_context;
     mcast_sendto(p_sender->conn_, data, data_size);
-    debug_outputln("%4.4u %s : %8p %4.4u ", __LINE__, __FILE__, data, data_size);
 #endif
 }
 
