@@ -59,11 +59,13 @@
 #   endif
 #endif
 
-#include <memory.h>
 #include <assert.h>
 #include <limits.h>
+#include <memory.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <errno.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -81,14 +83,42 @@
 #   include <sys/types.h>
 #   include <signal.h>
 #   include <unistd.h>
-
 typedef uint32_t DWORD ;
 typedef uint16_t WORD ;
-#define NEAR 
-#define FAR 
-#endif
+#   define NEAR 
+#   define FAR 
+#endif /* __linux__ */
 
 #include "std-int.h" /* Wrapper for <stdint.h> which is not avaiable on every compiler. */
+
+#ifdef _WIN32
+/* Work-around for broken file-I/O on MS-Windows: */
+#   include <io.h>
+#   include <fcntl.h>
+#   define USE_STD_STDIO do { _setmode(_fileno(stdout), _O_BINARY), _setmode(_fileno(stdin ), _O_BINARY) } while(0) ;
+/* Sometimes missing, so ensure that it is defined: */
+#   undef M_PI
+#   define M_PI 3.14159265358979323846
+#else
+#   define USE_STD_STDIO
+#endif
+//#undef int16_t
+////#define int16_t short
+////#undef int32_t
+#if LONG_MAX > 2147483647L
+#   define int32_t int
+#elif LONG_MAX < 2147483647L
+#   error this programme requires that 'long int' has at least 32-bits
+#else
+#   define int32_t long
+#endif
+
+#undef min
+#undef max
+#define min(x,y) ((x)<(y)?(x):(y))
+#define max(x,y) ((x)>(y)?(x):(y))
+
+#define COUNTOF_ARRAY(x) (sizeof(x)/sizeof(x[0]))
 
 #endif /* PCC_H_10C143CE_7FF9_4E22_8187_6EBF9DAEAA7B */
 

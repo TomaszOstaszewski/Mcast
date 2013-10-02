@@ -39,9 +39,7 @@
 typedef enum sender_state { 
     SENDER_INITIAL = 0,         /*!< Initial state, no sending, no receiving. */
     SENDER_MCAST_JOINED = 1,    /*!< Sender successfully joined a multicast group. */
-    SENDER_TONE_SELECTED = 2,   /*!< Sender has a valid tone selected. */
-    SENDER_MCASTJOINED_TONESELECTED = 3, /*!< Sender has a tone selected and has joined multicast group. */
-    SENDER_SENDING = 4,         /*!< Sender sending data. */
+    SENDER_SENDING = 2,         /*!< Sender sending data. */
 } sender_state_t;
 
 #endif /* SENDER_SM_STATES_B5AE1FBE_0B24_46AE_B274_3F8340C25E41 */

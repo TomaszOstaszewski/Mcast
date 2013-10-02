@@ -78,44 +78,9 @@ int sender_handle_mcastjoin(struct mcast_sender * p_sender);
  */
 int sender_handle_mcastleave(struct mcast_sender * p_sender);
 
-/*! 
- * @brief Selects a particular tone to be send via multicast.
- * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
- * @param[in] p_tone handle of the tone whose to be selected to send.
- * @return returns non-zero on success, a zero value otherwise. 
- * @sa sender_handle_deselecttone()
- */
-int sender_handle_selecttone(struct mcast_sender * p_sender, struct abstract_tone * p_tone);
+int sender_handle_startrecording(struct mcast_sender * p_sender);
 
-/*! 
- * @brief Indicates, that the tone shall no longer be send onto the multicast group.
- * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
- * @return returns non-zero on success, a zero value otherwise. 
- * @sa sender_handle_selecttone()
- */
-int sender_handle_deselecttone(struct mcast_sender * p_sender);
-
-/*! 
- * @brief Causes the sender to start sending data (if it was not doing so).
- * @details If the sender is in the SENDER_MCAST_JOINED state, then it transits to the
- * SENDER_SENDING state. Otherwise, does nothing. While in the SENDER_SENDING state, 
- * the sender runs a background thread that sends the WAV file over and over again to the
- * multicast group.
- * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
- * @return returns non-zero on success, a zero value otherwise. 
- * @sa sender_create()
- */
-int sender_handle_startsending(struct mcast_sender * p_sender);
-
-/*! 
- * @brief Causes the sender to stop sending data (if it was doing so).
- * @details If the sender is in the SENDER_SENDING state, then it transits to the
- * SENDER_MCAST_JOINED state. Otherwise, does nothing.
- * @param[in] p_sender pointer to the sender object obtained via call to sender_create()
- * @return returns non-zero on success, a zero value otherwise. 
- * @sa sender_create()
- */
-int sender_handle_stopsending(struct mcast_sender * p_sender);
+int sender_handle_stoprecording(struct mcast_sender * p_sender);
 
 #endif /*!defined MCAST_SENDER_BF6FAC88_2286_488B_9256_997E81B13E49*/
 
