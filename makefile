@@ -208,7 +208,7 @@ $(OUTDIR)\dsoundplay.lib:\
  $(OUTDIR_OBJ)\play-settings.obj\
  $(OUTDIR_OBJ)\perf-counter-itf.obj\
  $(OUTDIR_OBJ)\wave_utils.obj
-	@$(link) /DEF:dsoundplay.def /dll $(ldebug) $(guiflags) /NOLOGO /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$(OUTDIR)\$(@B).dll $** $(guilibs) dsound.lib winmm.lib dxguid.lib 
+	@$(link) /DEF:dsoundplay.def /dll $(ldebug) $(guiflags) /NOLOGO /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$(OUTDIR)\$(@B).dll $** $(guilibs) dsound.lib winmm.lib dxguid.lib ole32.lib
 
 $(OUTDIR)\mcast.lib: \
  $(OUTDIR)\debughelpers.lib \

@@ -93,105 +93,78 @@
 
 #define MAX_WAIT_TIMEOUT_FOR_THREAD (2*MAX_THREAD_WAIT_TIMEOUT_MS)
 
+typedef enum capture_thread_state {
+    CAPTURE_THREAD_IDLE,
+    CAPTURE_THREAD_WORKING,
+    CAPTURE_THREAD_EXITTING,
+} capture_thread_state_t;
+
 /*!
  * @brief The sound player descriptor. 
  * @details Gathers all the variables needed to successfully play chunks of PCM
  * data using DirectSound.
  */
 struct dxaudio_recorder {
-    IDirectSoundCapture8 * p_capture8_; /*!< */
-    IDirectSoundCaptureBuffer8 * p_capture_buffer8_; /*!< . */
+    HANDLE hWatcherThread_;
+    HANDLE hSignalStartRec_;
+    HANDLE hSignalStopRec_;
+    HANDLE hSignalExit_;
+    struct recorder_settings * rec_settings_;
     void * context_;
     SEND_ROUTINE callback_;
-    DWORD dw_notify_marks_begin_[NOTIFY_MARKS_COUNT];
-    DSBPOSITIONNOTIFY notify_marks_[NOTIFY_MARKS_COUNT];
-    HANDLE hWatcherThread_;
-    HANDLE hWatcherThreadRunning_;
 };
 
-static DWORD WINAPI recorder_thread(LPVOID param)
+typedef struct dxaudio_recorder_thread_information_block {
+    IDirectSoundCapture8 * p_capture8_; /*!< */
+    IDirectSoundCaptureBuffer8 * p_capture_buffer8_; /*!< . */
+    DWORD dw_notify_marks_begin_[NOTIFY_MARKS_COUNT];
+    DSBPOSITIONNOTIFY notify_marks_[NOTIFY_MARKS_COUNT];
+    capture_thread_state_t e_state_;
+    HANDLE wait_object_handles_[3 + NOTIFY_MARKS_COUNT];
+} dxaudio_recorder_thread_information_block_t;
+
+static HRESULT set_notification_positions(DSCBUFFERDESC const * p_buf_desc, dxaudio_recorder_thread_information_block_t * p_tib, IDirectSoundCaptureBuffer8 * p_capture_buffer8)
 {
-    struct dxaudio_recorder * p_recorder = (struct dxaudio_recorder *)param;
-    HANDLE  h_wait_table[1 + NOTIFY_MARKS_COUNT];
-    size_t idx;
-    DWORD runLoop = 0xffffffff;
-    assert(NULL != p_recorder);
-    assert(NULL != p_recorder->hWatcherThreadRunning_);
-    h_wait_table[0] = p_recorder->hWatcherThreadRunning_;
-    for (idx  = 0; idx < NOTIFY_MARKS_COUNT; ++idx)
+    HRESULT hr;
+    /* We set up to NOTIFY_MARKS_COUNT notification positions */
+    IDirectSoundNotify8 * p_notify8 = NULL;
+    hr = p_capture_buffer8->QueryInterface(IID_IDirectSoundNotify8, (void **)&p_notify8);
+    if (SUCCEEDED(hr))
     {
-        assert(NULL != p_recorder->notify_marks_[idx].hEventNotify);
-        h_wait_table[idx+1] = p_recorder->notify_marks_[idx].hEventNotify;
-    }
-    for (;runLoop;)
-    {
-        DWORD dwWaitResult;
-        dwWaitResult = WaitForMultipleObjects(COUNTOF_ARRAY(h_wait_table), &h_wait_table[0], FALSE, INFINITE);
-        switch (dwWaitResult)
+        size_t idx;
+        for (idx = 0; idx < NOTIFY_MARKS_COUNT; ++idx)
         {
-            /* Handle WAIT_TIMEOUT */
-            case WAIT_TIMEOUT:
-                //debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
-                break;
-            /* Handle WAIT_FAILED */
-            case WAIT_FAILED:
-                //debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
-                break;
-            /* Handle WAIT_OBJECT_0 which indicates that we shall exit now. */
-            case WAIT_OBJECT_0:
-                /* Ack interrupt */
-                ResetEvent(p_recorder->hWatcherThreadRunning_);
-                //debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
-                runLoop = 0;
-                break;
-            /* All the rest is a notification from our recorder, that the buffer is now ready to be processed */
-            /* We ignore WAIT_ABANDONED_0..N, as we wait for event objects, which do not have 'ABANDONED' state */
-            default:
-                for (idx = 1; idx <= NOTIFY_MARKS_COUNT; ++idx)
-                {
-                    if (dwWaitResult - WAIT_OBJECT_0 == idx)
-                    {
-                        LPVOID p_ptr_1 = NULL, p_ptr_2 = NULL;
-                        DWORD dw_offset_1 = 0, dw_offset_2 = 0;
-                        /* Acknowledge notification */
-                        ResetEvent(p_recorder->notify_marks_[idx-1].hEventNotify);
-                        /* Retrive data just captured */
-                        //debug_outputln("%4.4u %s :" " %u %u", __LINE__, __FILE__, dwWaitResult, idx); 
-                        p_recorder->p_capture_buffer8_->Lock(p_recorder->dw_notify_marks_begin_[idx-1],
-                                p_recorder->notify_marks_[idx-1].dwOffset - p_recorder->dw_notify_marks_begin_[idx-1] + 1,
-                                &p_ptr_1, &dw_offset_1,
-                                &p_ptr_2, &dw_offset_2,
-                                0);
-                        (p_recorder->callback_)(p_recorder->context_, p_ptr_1, dw_offset_1);
-                        p_recorder->p_capture_buffer8_->Unlock(p_ptr_1, dw_offset_1, p_ptr_2, dw_offset_2);
-#if 0
-                        debug_outputln("%4.4u %s :" "%u" " %u %u %p %p %u %u", __LINE__, __FILE__, 
-                                items_pushed,
-                                p_recorder->dw_notify_marks_begin_[idx-1],
-                                p_recorder->notify_marks_[idx-1].dwOffset - p_recorder->dw_notify_marks_begin_[idx-1] + 1,
-                                p_ptr_1, p_ptr_2, dw_offset_1, dw_offset_2);
-#endif
-                    }
-                } 
-                break;
+            p_tib->dw_notify_marks_begin_[idx] = ((p_buf_desc->dwBufferBytes*idx)/NOTIFY_MARKS_COUNT); 
+            p_tib->notify_marks_[idx].dwOffset = ((p_buf_desc->dwBufferBytes*(idx+1))/NOTIFY_MARKS_COUNT) - 1; 
+            p_tib->notify_marks_[idx].hEventNotify = ::CreateEvent(NULL, TRUE, FALSE, NULL);
+
+            debug_outputln("%4.4u %s : %u %u %8.8x", __LINE__, __FILE__, 
+                    p_tib->dw_notify_marks_begin_[idx],     
+                    p_tib->notify_marks_[idx].dwOffset,
+                    p_tib->notify_marks_[idx].hEventNotify);
+        } 
+        hr = p_notify8->SetNotificationPositions(NOTIFY_MARKS_COUNT, p_tib->notify_marks_);
+        if (FAILED(hr))
+        {
+            debug_outputln("%4.4u %s %8.8x", __LINE__, __FILE__, hr);
         }
     }
-    debug_outputln("%4.4u %s", __LINE__, __FILE__);
-    return 0;
+    if (NULL != p_notify8)
+        p_notify8->Release();
+    return hr;
 }
 
-extern "C" dxaudio_recorder_t dxaudio_recorder_create(
- struct recorder_settings const * p_settings, 
- void * context, SEND_ROUTINE p_send_routine)
+static dxaudio_recorder_thread_information_block_t * create_audio_thred_information_block(
+        struct recorder_settings const * p_settings, 
+        void * context, SEND_ROUTINE p_send_routine)
 {
-    struct dxaudio_recorder * p_retval = NULL;
-    p_retval = (struct dxaudio_recorder *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dxaudio_recorder));
+    dxaudio_recorder_thread_information_block_t * p_retval = NULL;
+    p_retval = (dxaudio_recorder_thread_information_block_t*)
+        HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(dxaudio_recorder_thread_information_block_t));
     if (NULL != p_retval)
     {
         HRESULT hr;
         /* Get the reference to fifo queue. */
-        p_retval->callback_ = p_send_routine;
-        p_retval->context_ = context;
         /* 1st step - create the DirectSound capture object and get its interface */
         hr = DirectSoundCaptureCreate8(recorder_settings_get_guid(p_settings), &p_retval->p_capture8_, NULL);
         if (SUCCEEDED(hr))
@@ -213,41 +186,12 @@ extern "C" dxaudio_recorder_t dxaudio_recorder_create(
                 {
                     /* 4th step - set notification positions */
                     /* We set up to NOTIFY_MARKS_COUNT notification positions */
-                    IDirectSoundNotify8 * p_notify8 = NULL;
-                    hr = p_retval->p_capture_buffer8_->QueryInterface(IID_IDirectSoundNotify8, (void **)&p_notify8);
+                    hr = set_notification_positions(&dsc_buffer_desc, p_retval, p_retval->p_capture_buffer8_);
                     if (SUCCEEDED(hr))
                     {
-                        size_t idx;
-                        for (idx = 0; idx < NOTIFY_MARKS_COUNT; ++idx)
-                        {
-                            p_retval->dw_notify_marks_begin_[idx] = ((dsc_buffer_desc.dwBufferBytes*idx)/NOTIFY_MARKS_COUNT); 
-                            p_retval->notify_marks_[idx].dwOffset = ((dsc_buffer_desc.dwBufferBytes*(idx+1))/NOTIFY_MARKS_COUNT) - 1; 
-                            p_retval->notify_marks_[idx].hEventNotify = ::CreateEvent(NULL, TRUE, FALSE, NULL);
-
-                            debug_outputln("%4.4u %s : %u %u %8.8x", __LINE__, __FILE__, 
-                                p_retval->dw_notify_marks_begin_[idx],     
-                                p_retval->notify_marks_[idx].dwOffset,
-                                p_retval->notify_marks_[idx].hEventNotify);
-                        } 
-                        hr = p_notify8->SetNotificationPositions(NOTIFY_MARKS_COUNT, p_retval->notify_marks_);
-                        if (SUCCEEDED(hr))
-                        {
-                            p_retval->hWatcherThreadRunning_ = ::CreateEvent(NULL, TRUE, FALSE, NULL);
-                            if (NULL != p_retval->hWatcherThreadRunning_)
-                            {
-                                p_retval->hWatcherThread_ = ::CreateThread(NULL, 0, recorder_thread, p_retval, 0, NULL);
-                                if (NULL != p_retval->hWatcherThread_)
-                                {
-                                    p_notify8->Release();
-                                    p_capture_buffer->Release();
-                                    return p_retval;
-                                }
-                                CloseHandle(p_retval->hWatcherThreadRunning_);
-                            } 
-                            debug_outputln("%4.4u %s %8.8x", __LINE__, __FILE__, hr);
-                        }
-                        debug_outputln("%4.4u %s %8.8x", __LINE__, __FILE__, hr);
-                        p_notify8->Release();
+                        debug_outputln("%4.4u %s", __LINE__, __FILE__);
+                        p_capture_buffer->Release();
+                        return p_retval;
                     }
                     debug_outputln("%4.4u %s %8.8x", __LINE__, __FILE__, hr);
                     p_retval->p_capture_buffer8_->Release();
@@ -266,25 +210,186 @@ extern "C" dxaudio_recorder_t dxaudio_recorder_create(
     return p_retval;
 }
 
-extern "C" void dxaudio_recorder_destroy(dxaudio_recorder_t handle) 
+static void destroy_audio_thread_information_block(dxaudio_recorder_thread_information_block_t * p_tib)
 {
     size_t idx;
+    for (idx = 0; idx < NOTIFY_MARKS_COUNT; ++idx)
+    {
+        CloseHandle(p_tib->notify_marks_[idx].hEventNotify);
+    } 
+    p_tib->p_capture8_->Release();
+    p_tib->p_capture_buffer8_->Release();
+    HeapFree(GetProcessHeap(), 0, p_tib);
+}
+
+static void recorder_thread_on_start_recording(dxaudio_recorder_thread_information_block_t * p_tib, HANDLE hEvent)
+{
+    HRESULT hr;
+    ResetEvent(hEvent);
+    hr = p_tib->p_capture_buffer8_->Start(DSCBSTART_LOOPING);
+    debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, hr, ::GetLastError());
+}
+
+static void recorder_thread_on_stop_recording(dxaudio_recorder_thread_information_block_t * p_tib, HANDLE hEvent)
+{
+    HRESULT hr;
+    ResetEvent(hEvent);
+    hr = p_tib->p_capture_buffer8_->Stop();
+    debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, hr, ::GetLastError());
+}
+
+static void recorder_thread_on_exit(dxaudio_recorder_thread_information_block_t * p_tib, HANDLE hEvent)
+{
+    HRESULT hr;
+    ResetEvent(hEvent);
+    debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
+    hr = p_tib->p_capture_buffer8_->Stop();
+    p_tib->e_state_ = CAPTURE_THREAD_EXITTING;
+}
+
+static DWORD WINAPI recorder_thread(LPVOID param)
+{
+    HRESULT hr;
+    hr = CoInitialize(NULL);
+    if (SUCCEEDED(hr))
+    {
+        struct dxaudio_recorder * p_recorder;
+        dxaudio_recorder_thread_information_block_t * p_tib;
+        HANDLE * p_wait_handles;
+        size_t idx;
+
+        p_recorder = (struct dxaudio_recorder *)param;
+        p_tib = create_audio_thred_information_block(p_recorder->rec_settings_, 
+                p_recorder->context_, p_recorder->callback_);
+        assert(NULL != p_tib);
+        p_wait_handles = &p_tib->wait_object_handles_[0];
+        assert(NULL != p_recorder);
+        assert(NULL != p_recorder->hSignalStartRec_);
+        assert(NULL != p_recorder->hSignalExit_);
+        *p_wait_handles = p_recorder->hSignalStartRec_;
+        ++p_wait_handles;
+        *p_wait_handles = p_recorder->hSignalStopRec_;
+        ++p_wait_handles;
+        *p_wait_handles = p_recorder->hSignalExit_;
+        ++p_wait_handles;
+        for (idx  = 0; idx < NOTIFY_MARKS_COUNT; ++idx, ++p_wait_handles)
+        {
+            assert(NULL != p_tib->notify_marks_[idx].hEventNotify);
+            *p_wait_handles = p_tib->notify_marks_[idx].hEventNotify;
+        }
+        while (CAPTURE_THREAD_EXITTING != p_tib->e_state_)
+        {
+            DWORD dwWaitResult;
+            dwWaitResult = WaitForMultipleObjects(COUNTOF_ARRAY(p_tib->wait_object_handles_), 
+                    &p_tib->wait_object_handles_[0], FALSE, INFINITE);
+            switch (dwWaitResult)
+            {
+                case WAIT_TIMEOUT:
+                    debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
+                    break;
+                case WAIT_FAILED:
+                    debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
+                    break;
+                default:
+                    switch (dwWaitResult-WAIT_OBJECT_0)
+                    {
+                        case 0:
+                            recorder_thread_on_start_recording(p_tib, p_tib->wait_object_handles_[0]);
+                            break;
+                        case 1:
+                            recorder_thread_on_stop_recording(p_tib, p_tib->wait_object_handles_[1]);
+                            break;
+                        case 2:
+                            recorder_thread_on_exit(p_tib, p_tib->wait_object_handles_[2]);
+                            break;
+                        default:
+                            for (idx = 3; idx < 3+NOTIFY_MARKS_COUNT; ++idx)
+                            {
+                                if (dwWaitResult - WAIT_OBJECT_0 == idx)
+                                {
+                                    LPVOID p_ptr_1 = NULL, p_ptr_2 = NULL;
+                                    DWORD dw_offset_1 = 0, dw_offset_2 = 0;
+                                    /* Acknowledge notification */
+                                    ResetEvent(p_tib->wait_object_handles_[idx]);
+                                    /* Retrive data just captured */
+                                    hr = p_tib->p_capture_buffer8_->Lock(p_tib->dw_notify_marks_begin_[idx-3],
+                                            p_tib->notify_marks_[idx-3].dwOffset - p_tib->dw_notify_marks_begin_[idx-3] + 1,
+                                            &p_ptr_1, &dw_offset_1,
+                                            &p_ptr_2, &dw_offset_2,
+                                            0);
+                                    /* Call callback method */
+                                    (p_recorder->callback_)(p_recorder->context_, p_ptr_1, dw_offset_1);
+                                    /* Unlock buffer, let the capture to continue */
+                                    p_tib->p_capture_buffer8_->Unlock(p_ptr_1, dw_offset_1, p_ptr_2, dw_offset_2);
+                                }
+                            }
+                            break;
+                    } 
+                    break;
+            }
+        }
+        destroy_audio_thread_information_block(p_tib);
+        debug_outputln("%4.4u %s", __LINE__, __FILE__);
+    }
+    else
+    {
+        debug_outputln("%4.4u %s : 0x%8.8x", __LINE__, __FILE__, hr);
+    }
+    return 0;
+}
+
+extern "C" dxaudio_recorder_t dxaudio_recorder_create(
+        struct recorder_settings const * p_settings, 
+        void * context, SEND_ROUTINE p_send_routine)
+{
+    struct dxaudio_recorder * p_retval = NULL;
+    p_retval = (struct dxaudio_recorder *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dxaudio_recorder));
+    if (NULL != p_retval)
+    {
+        p_retval->rec_settings_ = recorder_settings_get_default();
+        recorder_settings_copy(p_retval->rec_settings_, p_settings);
+        p_retval->callback_ = p_send_routine;
+        p_retval->context_ = context;
+        p_retval->hSignalStartRec_ = ::CreateEvent(NULL, TRUE, FALSE, NULL);
+        if (NULL != p_retval->hSignalStartRec_)
+        {
+            p_retval->hSignalExit_ = ::CreateEvent(NULL, TRUE, FALSE, NULL);
+            if (NULL != p_retval->hSignalExit_)
+            {
+                p_retval->hSignalStopRec_ = ::CreateEvent(NULL, TRUE, FALSE, NULL);
+                if (NULL != p_retval->hSignalStopRec_)
+                {
+                    p_retval->hWatcherThread_ = ::CreateThread(NULL, 0, recorder_thread, p_retval, 0, NULL);
+                    if (NULL != p_retval->hWatcherThread_)
+                    {
+                        return p_retval;
+                    }
+                    CloseHandle(p_retval->hSignalStopRec_);
+                }
+                CloseHandle(p_retval->hSignalExit_);
+            }
+            CloseHandle(p_retval->hSignalStartRec_);
+        } 
+    }
+    return p_retval;
+}
+
+extern "C" void dxaudio_recorder_destroy(dxaudio_recorder_t handle) 
+{
+    DWORD dwWaitResult;
     struct dxaudio_recorder * p_recorder = (struct dxaudio_recorder* )handle;
     assert(NULL != p_recorder);
     /* Notify watcher thread that we are about to exit */
-    SetEvent(p_recorder->hWatcherThreadRunning_);
+    SetEvent(p_recorder->hSignalExit_);
     /* Wait for notification ack */
-    WaitForSingleObject(p_recorder->hWatcherThread_, MAX_WAIT_TIMEOUT_FOR_THREAD);
-    CloseHandle(p_recorder->hWatcherThread_);
-    CloseHandle(p_recorder->hWatcherThreadRunning_);
+    dwWaitResult = WaitForSingleObject(p_recorder->hWatcherThread_, MAX_WAIT_TIMEOUT_FOR_THREAD);
+    debug_outputln("%4.4u %s : %8.8x %8.8x", __LINE__, __FILE__, dwWaitResult, WAIT_TIMEOUT);
     /* Cleanup actions */
+    CloseHandle(p_recorder->hSignalStartRec_);
+    CloseHandle(p_recorder->hSignalStopRec_);
+    CloseHandle(p_recorder->hSignalExit_);
+    CloseHandle(p_recorder->hWatcherThread_);
     /* Close all the event handles */
-    for (idx = 0; idx < NOTIFY_MARKS_COUNT; ++idx)
-    {
-        CloseHandle(p_recorder->notify_marks_[idx].hEventNotify);
-    } 
-    p_recorder->p_capture8_->Release();
-    p_recorder->p_capture_buffer8_->Release();
     HeapFree(GetProcessHeap(), 0, p_recorder);
     debug_outputln("%4.4u %s", __LINE__, __FILE__);
 }
@@ -292,26 +397,14 @@ extern "C" void dxaudio_recorder_destroy(dxaudio_recorder_t handle)
 extern "C" int dxaudio_recorder_start(dxaudio_recorder_t handle)
 {
     int result = 0;
-    HRESULT hr;
-    assert(NULL != handle);
-    hr = handle->p_capture_buffer8_->Start(DSCBSTART_LOOPING);
-    if (SUCCEEDED(hr))
-        result = 0;
-    else
-        debug_outputln("%4.4u %s %8.8x", __LINE__, __FILE__, hr);
+    SetEvent(handle->hSignalStartRec_);
     return result;
 }
 
 extern "C" int dxaudio_recorder_stop(dxaudio_recorder_t handle) 
 {
     int result = 0;
-    HRESULT hr;
-    assert(NULL != handle);
-    hr = handle->p_capture_buffer8_->Stop();
-    if (SUCCEEDED(hr))
-        result = 0;
-    else
-        debug_outputln("%4.4u %s %8.8x", __LINE__, __FILE__, hr);
+    SetEvent(handle->hSignalStopRec_);
     return result;
 }
 
