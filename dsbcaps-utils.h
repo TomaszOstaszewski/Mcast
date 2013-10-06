@@ -14,6 +14,6 @@
  * @return returns S_OK if succeeded, any other value indicates an error.
  * @sa http://bit.ly/zP10oa
  */
-int get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb);
+int get_buffer_caps(const char * prefix, LPDIRECTSOUNDBUFFER lpdsb);
 
 #endif /*if defined DSCBCAPS_UTILS_H_7E22DE32_F500_4BD5_8820_1AE28831497F */

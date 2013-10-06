@@ -69,7 +69,7 @@ static struct dword_2_desc flags_to_descs[] = {
  * @return returns 1 if succeeded, any other value indicates an error.
  * @sa http://bit.ly/zP10oa
  */
-int get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb)
+int get_buffer_caps(const char * prefix, LPDIRECTSOUNDBUFFER lpdsb)
 {
     DSBCAPS caps;
     HRESULT hr;
@@ -80,8 +80,9 @@ int get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb)
     {
         size_t index;
         
-        debug_outputln("%s %4.4u : %8.8x %8.8u %8.8u %8.8u"
-                ,__FILE__, __LINE__
+        debug_outputln("%4.4u %20s : 0x%8.8x %8u %8u %8u"
+                ,__LINE__ 
+		,prefix
                 ,caps.dwFlags
                 ,caps.dwBufferBytes
                 ,caps.dwUnlockTransferRate
