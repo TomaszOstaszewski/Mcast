@@ -56,6 +56,8 @@
  */
 #define MINIMUM_CIRCULAR_BUFFER_LEVEL (5)
 
+#define RECEIVER_DEFAULT_SAMPLES_PER_SEC (8000)
+
 
 int receiver_settings_get_default(struct receiver_settings * p_settings)
 {
@@ -63,11 +65,11 @@ int receiver_settings_get_default(struct receiver_settings * p_settings)
     p_settings->circular_buffer_level_  = DEFAULT_CIRCULAR_BUFFER_LEVEL;
     p_settings->wfex_.wFormatTag        = WAVE_FORMAT_PCM;
     p_settings->wfex_.nChannels         = 1;
-    p_settings->wfex_.nSamplesPerSec    = 8000;
-    p_settings->wfex_.nAvgBytesPerSec   = 16000;
-    p_settings->wfex_.nBlockAlign 	    = 2;
+    p_settings->wfex_.nSamplesPerSec    = RECEIVER_DEFAULT_SAMPLES_PER_SEC;
     p_settings->wfex_.wBitsPerSample	= 16;
-    p_settings->wfex_.cbSize 			= sizeof(WAVEFORMATEX);
+    p_settings->wfex_.nAvgBytesPerSec   = p_settings->wfex_.nSamplesPerSec*p_settings->wfex_.wBitsPerSample/8;
+    p_settings->wfex_.nBlockAlign 	    = 2;
+    p_settings->wfex_.cbSize 			= 0;
     play_settings_get_default(&p_settings->play_settings_);
     mcast_settings_get_default(&p_settings->mcast_settings_);
 	return 1;

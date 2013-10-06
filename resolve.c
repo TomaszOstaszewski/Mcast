@@ -11,45 +11,81 @@
 #include "resolve.h"
 #include "debug_helpers.h"
 
+#if defined WIN32
+
+static int format_string_into_buffer(char * addrbuf, size_t addrbuflen, const char * format_string, ...)
+{
+    HRESULT hr; 
+    int retval = -1;
+    char * p_end;
+    va_list args;
+    va_start(args, format_string);
+	hr = StringCchVPrintfEx(addrbuf, 
+            addrbuflen, 
+            &p_end, 
+            NULL, 
+            0, 
+            format_string, 
+        args);
+    if (SUCCEEDED(hr))
+    {
+        retval = 0;
+    }
+    va_end(args);
+    return retval;
+}
+
+#else
+
+static int format_string_into_buffer(char * addrbuf, size_t addrbuflen, const char * format_string, ...)
+{
+    va_list args;
+    va_start(args, format_string);
+    vsnprintf(addrbuf, addrbuflen, format_string, args);
+    va_end(args);
+    return 0;     
+}
+
+#endif
+
 int FormatAddress(struct sockaddr *sa, int salen, char *addrbuf, int addrbuflen)
 {
-    HRESULT hr;
     char    host[NI_MAXHOST],
-            serv[NI_MAXSERV];
+            service[NI_MAXSERV];
     int     hostlen = NI_MAXHOST,
             servlen = NI_MAXSERV,
             rc;
 
     /* Validate input */
     if ((sa == NULL) || (addrbuf == NULL))
-        return WSAEFAULT;
+        return (-1);
     /* Format the name */
-    rc = getnameinfo(sa, salen, host, hostlen, serv, servlen, NI_NUMERICHOST | NI_NUMERICSERV /* Convert to numeric representation */);
+    rc = getnameinfo(sa, salen, host, hostlen, service, servlen, NI_NUMERICHOST | NI_NUMERICSERV /* Convert to numeric representation */);
     if (rc != 0)
     {
         debug_outputln("%s %u : %d", __FILE__, __LINE__, rc);
         return rc;
     }
-    if ( (strlen(host) + strlen(serv) + 1) > (unsigned)addrbuflen)
-        return WSAEFAULT;
-    if (strncmp(serv, "0", 1) != 0)
+    if ( (strlen(host) + strlen(service) + 1) > (unsigned)addrbuflen)
+        return (-1);
+    if (strncmp(service, "0", 1) != 0)
     {
         if (sa->sa_family == AF_INET)
         {
-            hr = StringCchPrintf(addrbuf, addrbuflen, "%s:%s", host, serv);
+            rc = format_string_into_buffer(addrbuf, addrbuflen, "%s:%s", host, service);
         }
         else if (sa->sa_family == AF_INET6)
         {
-            hr = StringCchPrintf(addrbuf, addrbuflen, "[%s]:%s", host, serv);
+            rc = format_string_into_buffer(addrbuf, addrbuflen, "%s:%s", host, service);
         }
         else
             addrbuf[0] = '\0';
     }
     else
     {
-        hr = StringCchPrintf(addrbuf, addrbuflen, "%s", host);
+        rc = format_string_into_buffer(addrbuf, addrbuflen, "%s", host);
     }
-    return S_OK == hr ? NO_ERROR : -1;
+    return rc;
 }
 
 static struct addrinfo *sResolveAddress(char *addr, char *port, int af, int type, int proto, int flags)
@@ -85,6 +121,7 @@ struct addrinfo *ResolveAddressWithFlags(char *addr, char *port, int af, int typ
     return sResolveAddress(addr, port, af, type, proto, flags);
 }
 
+#if 0
 struct addrinfo *resolve_address_ipv4(struct sockaddr_in const * p_in_addr, int type, int proto, int flags)
 {
     HRESULT hr;
@@ -107,4 +144,5 @@ struct addrinfo *resolve_address_ipv4(struct sockaddr_in const * p_in_addr, int 
     }
     return NULL;
 }
+#endif
 

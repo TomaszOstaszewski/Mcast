@@ -128,7 +128,7 @@ struct receiver_settings_dlg_controls
      */
     HWND circularbuffer_combo_;
     /*!
-     * @brief Handle to the Multimedit timer timeout spin control.
+     * @brief Handle to the OK button.
      */
     HWND btok_;
 };

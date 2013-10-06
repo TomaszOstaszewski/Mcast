@@ -33,12 +33,19 @@
 #include "sender-settings.h"
 #include "mcast-settings.h"
 #include "dialog-utils.h"
-#include "sender-res.h"
+#include "sender.h"
 
 /*!
  * @brief Maximum number of digits in the dialogs edit controls.
  */
 #define TEXT_LIMIT (4)
+
+#define MAX_RECORDING_FORMAT_LENGTH (64)
+
+struct recording_format { 
+    GUID guid_;
+    DWORD dwFormatTag_;
+};
 
 /*!
  * @brief A container for UI controls and variables, which are displayed by those UI controls.
@@ -72,6 +79,8 @@ struct ui_controls
      * @details This control is enabled or disabled depending on the outcome of dialog data validation.
      */
     HWND btok_;
+    
+    HWND hformatCombo_;
 
     /*!
      * @brief A master copy of the sender settings object that this dialog operates on.
@@ -108,9 +117,38 @@ struct ui_controls
      */
     struct sender_settings copy_for_edits_;
 
+    struct recording_format rec_format_table[MAX_RECORDING_FORMAT_LENGTH];     
+    size_t rec_format_count_;
 };
 
 static struct ui_controls * g_controls;
+
+static BOOL CALLBACK capture_dev_enum_function(
+    LPGUID lpGuid,
+    LPCSTR lpcstrDescription,
+    LPCSTR lpcstrModule,
+    LPVOID lpContext)
+{
+#if 0
+    struct ui_controls * p_controls = (struct ui_controls*)lpContext;
+    struct recording_format * p_rec_format;
+    if (MAX_RECORDING_FORMAT_LENGTH == p_controls->rec_format_count_)
+        return FALSE;
+    p_rec_format = &p_controls->rec_format_table[p_controls->rec_format_count_]; 
+    CopyMemory(&p_rec_format->guid_, lpGuid, sizeof(p_rec_format->guid_));
+    debug_outputlnA("%4.4u %s : %s %s", __LINE__, __FILE__, lpcstrDescription, lpcstrModule);
+    ++p_controls->rec_format_count_;
+    return TRUE;
+#else
+    struct ui_controls * p_controls = (struct ui_controls*)lpContext;
+    if (NULL != lpGuid && MAX_RECORDING_FORMAT_LENGTH > p_controls->rec_format_count_)
+    {
+        struct ui_controls * p_controls = (struct ui_controls*)lpContext;
+        debug_outputlnA("%4.4u %s : %p %p %s %s", __LINE__, __FILE__, p_controls, lpGuid, lpcstrDescription, lpcstrModule);
+    }
+    return TRUE;
+#endif
+}
 
 static void update_calculated_controls(struct ui_controls * p_controls, struct sender_settings const * p_settings)
 {
@@ -128,6 +166,8 @@ static void data_to_controls(struct ui_controls * p_controls, struct sender_sett
     put_in_edit_control_uint16(p_controls->packet_length_ms_edit_, p_settings->chunk_size_ms_);
     update_calculated_controls(p_controls, p_settings);
 }
+
+
 
 /*!
  * @brief Transfer data from UI to the object.
@@ -171,10 +211,13 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(p_controls->packet_length_ms_spin_);
     p_controls->btok_ = GetDlgItem(hwnd, IDOK);
     assert(p_controls->btok_);
+    p_controls->hformatCombo_ = GetDlgItem(hwnd, IDC_SENDER_REC_FORMAT);
+    assert(p_controls->hformatCombo_);
     SendMessage(p_controls->packet_length_ms_spin_, UDM_SETBUDDY, (WPARAM)p_controls->packet_length_ms_edit_, (LPARAM)0);
     SendMessage(p_controls->packet_length_ms_spin_, UDM_SETPOS, (WPARAM)0, (LPARAM)0);
     SendMessage(p_controls->packet_length_ms_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     data_to_controls(p_controls, &p_controls->g_settings);
+    DirectSoundCaptureEnumerate(capture_dev_enum_function, p_controls);
     return TRUE;
 }
 
@@ -272,6 +315,7 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 int sender_settings_from_dialog(HWND hWndParent, struct sender_settings * p_settings)
 {
     struct ui_controls controls;
+    ZeroMemory(&controls, sizeof(controls));
     sender_settings_copy(&controls.g_settings, p_settings);
     /* NULL hInst means = read dialog template from this application's resource file */
     if (IDOK == DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_SENDER_SETTINGS), hWndParent, McastSettingsProc, (LPARAM)&controls))

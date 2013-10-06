@@ -11,7 +11,7 @@
  * 	1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  *	2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
  * 	and/or other materials provided with the distribution.
-  * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
+ * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
  * IN NO EVENT SHALL Tomasz Ostaszewski OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
@@ -21,7 +21,7 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
-  * The views and conclusions contained in the software and documentation are those of the 
+ * The views and conclusions contained in the software and documentation are those of the 
  * authors and should not be interpreted as representing official policies, 
  * either expressed or implied, of Tomasz Ostaszewski.
  * @endcode
@@ -35,7 +35,7 @@
 #include "about-dialog.h"
 #include "abstract-tone.h"
 #include "wave_utils.h"
-#include "sender-res.h"
+#include "resource.h"
 
 /*! 
  * @brief Length of the text displayed in the preview window.
@@ -46,14 +46,9 @@
  * @brief Defines all the possible states of the UI.
  */
 typedef enum e_sender_ui_state {
-    UI_SENDER_INITIAL = 0, /*!< Initial state, no tone is selected, no mcast group joined, not sending anything. */
-    UI_SENDER_MCASTJOINED, /*!< The multicast group has been joined, but no tone is selected. */
-    UI_SENDER_TESTTONE_SELECTED, /*!< The test tone is selected. */
-    UI_SENDER_EXTTONE_SELECTED, /*!<  The external tone is selected. */
-    UI_SENDER_MCASTJOINED_TESTTONESELECTED, /*!< The multicast group has been joined, the test tone is selected.*/
-    UI_SENDER_MCASTJOINED_EXTTONESELECTED, /*!< The multicast group has been joined, the external tone is selected.*/
-    UI_SENDER_SENDING_TESTTONESELECTED, /*!< Sending out the test tone. */
-    UI_SENDER_SENDING_EXTTONESELECTED, /*!< Sending out the external tone.*/
+    UI_SENDER_INITIAL = 0, /*!< Initial state, no mcast group joined, not sending anything. */
+    UI_SENDER_IN_MCAST_GROUP = 0x1, /*!< . */
+    UI_SENDER_IN_MCAST_SENDING = 0x3, /*!< . */
 } sender_ui_state_t;
 
 /*!
@@ -61,24 +56,11 @@ typedef enum e_sender_ui_state {
  */
 struct sender_dialog {
     struct mcast_sender * sender_; /*!< The sender object. This sends out the data on the multicast group. */
-    struct abstract_tone * tone_selected_; /*!< Currently selected tone to be played. */
     struct sender_settings settings_; /*!< The sender settings object. Here are multicast group settings stored, and how many bytes to send with each packet. */
     sender_ui_state_t ui_state_; /*!< The UI state. */
-    TCHAR wav_preview_text_[WAV_PREVIEW_LENGTH+1];
     HWND hDlg_; /*!< Handle to the main dialog */
-    HWND hWavPreview_; /*!< Handle to the static control in which WAV file details will be displayed. */
     HMENU hMainMenu; /*!< Handle to the main menu. */
     HINSTANCE hInst_; /*!< @brief Global Application instance.  Required for various Windows related stuff. */
-};
-
-/*!
- * @brief Defines the state (enabled/disabled, checked/unchecke) of the UI control.
- */
-struct ui_control_state {
-    sender_ui_state_t state_; /*!< The UI state */
-    UINT nID_; /*!< Control's ID. The control with this ID will be enabled/disabled and checked/unchecked upon entering the UI state */
-    BOOL enabled_; /*!< Whether or not to enable item. */
-    BOOL checked_; /*!< Whether or not to check item. */
 };
 
 /*!
@@ -92,98 +74,51 @@ struct ui_focus {
 /*!
  * @brief Defines which control shall get the inital focus in each UI state.
  */
-static struct ui_focus focus_table[] = {
-    {UI_SENDER_INITIAL, ID_TEST_TONE},
-    {UI_SENDER_MCASTJOINED, ID_TEST_TONE},
-    {UI_SENDER_TESTTONE_SELECTED, ID_SENDER_JOINMCAST},
-    {UI_SENDER_EXTTONE_SELECTED, ID_SENDER_JOINMCAST},
-    {UI_SENDER_MCASTJOINED_TESTTONESELECTED, ID_SENDER_STARTSENDING},
-    {UI_SENDER_MCASTJOINED_EXTTONESELECTED, ID_SENDER_STARTSENDING},
-    {UI_SENDER_SENDING_TESTTONESELECTED, ID_SENDER_STOPSENDING},
-    {UI_SENDER_SENDING_EXTTONESELECTED, ID_SENDER_STOPSENDING},
+static const struct ui_focus focus_table[] = {
+    {UI_SENDER_INITIAL, ID_SENDER_JOINMCAST},
+    {UI_SENDER_IN_MCAST_GROUP, ID_SENDER_START_RECORDING},
+    {UI_SENDER_IN_MCAST_SENDING, ID_SENDER_STOP_RECORDING},
 };
- 
+
+/*!
+ * @brief Defines the state (enabled/disabled, checked/unchecke) of the UI control.
+ */
+struct ui_control_state {
+    sender_ui_state_t state_; /*!< The UI state */
+    UINT nID_; /*!< Control's ID. The control with this ID will be enabled/disabled and checked/unchecked upon entering the UI state */
+    BOOL enabled_; /*!< Whether or not to enable item. */
+    BOOL checked_; /*!< Whether or not to check item. */
+};
+
 /*!
  * @brief Defines how controls shall be ghosted-out/enabled or checked in each UI state.
  */
-static struct ui_control_state controls_state_table[] = {
+static const struct ui_control_state controls_state_table[] = {
     /* Controls state for 'UI_SENDER_INITIAL' state */
     {UI_SENDER_INITIAL,ID_SENDER_SETTINGS, TRUE, FALSE},
     {UI_SENDER_INITIAL,ID_SENDER_JOINMCAST, TRUE, FALSE},
     {UI_SENDER_INITIAL,ID_SENDER_LEAVEMCAST, FALSE, FALSE},
-    {UI_SENDER_INITIAL,ID_SENDER_STARTSENDING, FALSE, FALSE},
-    {UI_SENDER_INITIAL,ID_SENDER_STOPSENDING, FALSE, FALSE},
-    {UI_SENDER_INITIAL,ID_OPEN_WAV, TRUE, FALSE},
-    {UI_SENDER_INITIAL,ID_CLOSE_WAV, FALSE, FALSE},
-    {UI_SENDER_INITIAL,ID_TEST_TONE, TRUE, FALSE},
-    /* Controls state for 'UI_SENDER_TESTTONE_SELECTED' state */
-    {UI_SENDER_TESTTONE_SELECTED,ID_SENDER_SETTINGS, TRUE, FALSE},
-    {UI_SENDER_TESTTONE_SELECTED,ID_SENDER_JOINMCAST, TRUE, FALSE},
-    {UI_SENDER_TESTTONE_SELECTED,ID_SENDER_LEAVEMCAST, FALSE, FALSE},
-    {UI_SENDER_TESTTONE_SELECTED,ID_SENDER_STARTSENDING, FALSE, FALSE},
-    {UI_SENDER_TESTTONE_SELECTED,ID_SENDER_STOPSENDING, FALSE, FALSE},
-    {UI_SENDER_TESTTONE_SELECTED,ID_OPEN_WAV, FALSE, FALSE},
-    {UI_SENDER_TESTTONE_SELECTED,ID_CLOSE_WAV, FALSE, FALSE},
-    {UI_SENDER_TESTTONE_SELECTED,ID_TEST_TONE, TRUE, TRUE},
-    /* Controls state for 'UI_SENDER_EXTTONE_SELECTED' state */
-    {UI_SENDER_EXTTONE_SELECTED,ID_SENDER_SETTINGS, TRUE, FALSE},
-    {UI_SENDER_EXTTONE_SELECTED,ID_SENDER_JOINMCAST, TRUE, FALSE},
-    {UI_SENDER_EXTTONE_SELECTED,ID_SENDER_LEAVEMCAST, FALSE, FALSE},
-    {UI_SENDER_EXTTONE_SELECTED,ID_SENDER_STARTSENDING, FALSE, FALSE},
-    {UI_SENDER_EXTTONE_SELECTED,ID_SENDER_STOPSENDING, FALSE, FALSE},
-    {UI_SENDER_EXTTONE_SELECTED,ID_OPEN_WAV, FALSE, FALSE},
-    {UI_SENDER_EXTTONE_SELECTED,ID_CLOSE_WAV, TRUE, FALSE},
-    {UI_SENDER_EXTTONE_SELECTED,ID_TEST_TONE, FALSE, FALSE},
-     /* Controls state for 'UI_SENDER_MCASTJOINED' state */
-    {UI_SENDER_MCASTJOINED,ID_SENDER_SETTINGS, FALSE, FALSE},
-    {UI_SENDER_MCASTJOINED,ID_SENDER_JOINMCAST, FALSE, FALSE},
-    {UI_SENDER_MCASTJOINED,ID_SENDER_LEAVEMCAST, TRUE, FALSE},
-    {UI_SENDER_MCASTJOINED,ID_SENDER_STARTSENDING, FALSE, FALSE},
-    {UI_SENDER_MCASTJOINED,ID_SENDER_STOPSENDING, FALSE, FALSE},
-    {UI_SENDER_MCASTJOINED,ID_OPEN_WAV, TRUE, FALSE},
-    {UI_SENDER_MCASTJOINED,ID_CLOSE_WAV, FALSE, FALSE},
-    {UI_SENDER_MCASTJOINED,ID_TEST_TONE, TRUE, FALSE},
-    /* Controls state for 'UI_SENDER_MCASTJOINED_TONESELECTED' state */
-    {UI_SENDER_MCASTJOINED_TESTTONESELECTED,ID_SENDER_SETTINGS, FALSE, FALSE},
-    {UI_SENDER_MCASTJOINED_TESTTONESELECTED,ID_SENDER_JOINMCAST, FALSE, FALSE},
-    {UI_SENDER_MCASTJOINED_TESTTONESELECTED,ID_SENDER_LEAVEMCAST, TRUE, FALSE},
-    {UI_SENDER_MCASTJOINED_TESTTONESELECTED,ID_SENDER_STARTSENDING, TRUE, FALSE},
-    {UI_SENDER_MCASTJOINED_TESTTONESELECTED,ID_SENDER_STOPSENDING, FALSE, FALSE},
-    {UI_SENDER_MCASTJOINED_TESTTONESELECTED,ID_OPEN_WAV, FALSE, FALSE},
-    {UI_SENDER_MCASTJOINED_TESTTONESELECTED,ID_CLOSE_WAV, FALSE, FALSE},
-    {UI_SENDER_MCASTJOINED_TESTTONESELECTED,ID_TEST_TONE, TRUE, TRUE},
-    /* Controls state for 'UI_SENDER_MCASTJOINED_EXTSELECTED' state */
-    {UI_SENDER_MCASTJOINED_EXTTONESELECTED,ID_SENDER_SETTINGS, FALSE, FALSE},
-    {UI_SENDER_MCASTJOINED_EXTTONESELECTED,ID_SENDER_JOINMCAST, FALSE, FALSE},
-    {UI_SENDER_MCASTJOINED_EXTTONESELECTED,ID_SENDER_LEAVEMCAST, TRUE, FALSE},
-    {UI_SENDER_MCASTJOINED_EXTTONESELECTED,ID_SENDER_STARTSENDING, TRUE, FALSE},
-    {UI_SENDER_MCASTJOINED_EXTTONESELECTED,ID_SENDER_STOPSENDING, FALSE, FALSE},
-    {UI_SENDER_MCASTJOINED_EXTTONESELECTED,ID_OPEN_WAV, FALSE, FALSE},
-    {UI_SENDER_MCASTJOINED_EXTTONESELECTED,ID_CLOSE_WAV, TRUE, FALSE},
-    {UI_SENDER_MCASTJOINED_EXTTONESELECTED,ID_TEST_TONE, FALSE, FALSE},
-    /* Controls state for 'UI_SENDER_SENDING_TESTTONESELECTED' state */
-    {UI_SENDER_SENDING_TESTTONESELECTED,ID_SENDER_SETTINGS, FALSE, FALSE},
-    {UI_SENDER_SENDING_TESTTONESELECTED,ID_SENDER_JOINMCAST, FALSE, FALSE},
-    {UI_SENDER_SENDING_TESTTONESELECTED,ID_SENDER_LEAVEMCAST, FALSE, FALSE},
-    {UI_SENDER_SENDING_TESTTONESELECTED,ID_SENDER_STARTSENDING, FALSE, FALSE},
-    {UI_SENDER_SENDING_TESTTONESELECTED,ID_SENDER_STOPSENDING, TRUE, FALSE},
-    {UI_SENDER_SENDING_TESTTONESELECTED,ID_OPEN_WAV, FALSE, FALSE},
-    {UI_SENDER_SENDING_TESTTONESELECTED,ID_CLOSE_WAV, FALSE, FALSE},
-    {UI_SENDER_SENDING_TESTTONESELECTED,ID_TEST_TONE, FALSE, TRUE},
-    /* Controls state for 'UI_SENDER_SENDING_EXTTONESELECTED' state */
-    {UI_SENDER_SENDING_EXTTONESELECTED,ID_SENDER_SETTINGS, FALSE, FALSE},
-    {UI_SENDER_SENDING_EXTTONESELECTED,ID_SENDER_JOINMCAST, FALSE, FALSE},
-    {UI_SENDER_SENDING_EXTTONESELECTED,ID_SENDER_LEAVEMCAST, FALSE, FALSE},
-    {UI_SENDER_SENDING_EXTTONESELECTED,ID_SENDER_STARTSENDING, FALSE, FALSE},
-    {UI_SENDER_SENDING_EXTTONESELECTED,ID_SENDER_STOPSENDING, TRUE, FALSE},
-    {UI_SENDER_SENDING_EXTTONESELECTED,ID_OPEN_WAV, FALSE, FALSE},
-    {UI_SENDER_SENDING_EXTTONESELECTED,ID_CLOSE_WAV, FALSE, FALSE},
-    {UI_SENDER_SENDING_EXTTONESELECTED,ID_TEST_TONE, FALSE, FALSE},
+    {UI_SENDER_INITIAL,ID_SENDER_STOP_RECORDING, FALSE, FALSE},
+    {UI_SENDER_INITIAL,ID_SENDER_START_RECORDING, FALSE, FALSE},
+    /* Controls state for 'UI_SENDER_IN_MCAST_GROUP' state */
+    {UI_SENDER_IN_MCAST_GROUP,ID_SENDER_SETTINGS, FALSE, FALSE},
+    {UI_SENDER_IN_MCAST_GROUP,ID_SENDER_JOINMCAST, FALSE, FALSE},
+    {UI_SENDER_IN_MCAST_GROUP,ID_SENDER_LEAVEMCAST, TRUE, FALSE},
+    {UI_SENDER_IN_MCAST_GROUP,ID_SENDER_START_RECORDING, TRUE, FALSE},
+    {UI_SENDER_IN_MCAST_GROUP,ID_SENDER_STOP_RECORDING, FALSE, FALSE},
+    /* Controls state for 'UI_SENDER_IN_MCAST_SENDING' state */
+    {UI_SENDER_IN_MCAST_SENDING,ID_SENDER_SETTINGS, FALSE, FALSE},
+    {UI_SENDER_IN_MCAST_SENDING,ID_SENDER_JOINMCAST, FALSE, FALSE},
+    {UI_SENDER_IN_MCAST_SENDING,ID_SENDER_LEAVEMCAST, FALSE, FALSE},
+    {UI_SENDER_IN_MCAST_SENDING,ID_SENDER_START_RECORDING, FALSE, FALSE},
+    {UI_SENDER_IN_MCAST_SENDING,ID_SENDER_STOP_RECORDING, TRUE, FALSE},
 };
 
 /**
  * @brief Entry point for the user interface widgets update.
- * @details Compares the previous and current sender state.
+ * @details Compares the previous and current sender state. Updates the UI widgets state
+ * if it detects a change. We need to handle this manually here. Otherwise, the focus may
+ * stay with a ghosted out item, which is not desirable, as it puzzles and perplexes the end user.
  * @param hwnd handle to the main dialog window, holding the user interface widgets.
  */
 static void UpdateUI(HWND hwnd)
@@ -199,35 +134,35 @@ static void UpdateUI(HWND hwnd)
     curr_state = p_dlg->ui_state_;
     if (prev_state != curr_state)
     {
-        HWND hwnd;
-        struct ui_control_state const * const p_past_end = &controls_state_table[sizeof(controls_state_table)/sizeof(controls_state_table[0])];
-        struct ui_focus const * const p_focus_past_end = &focus_table[sizeof(focus_table)/sizeof(focus_table[0])];
-        struct ui_control_state * p_item = &controls_state_table[0];
-        struct ui_focus * p_focus_item = &focus_table[0];
-        /* Find all the rows matching current state */
-        for (; p_item != p_past_end; ++p_item)
+        size_t idx;
+        /* Iterate over the entire UI widget enable/disable table */
+        /* find all rows that matche current UI state */
+        /* Update enable/disable/check state UI according to the table */
+        for (idx = 0; idx < COUNTOF_ARRAY(controls_state_table); ++idx)
         {
-            if (curr_state == p_item->state_)
+            if (controls_state_table[idx].state_ == curr_state)
             {
                 UINT nMenuEnabled = MF_GRAYED, nMenuChecked = MF_UNCHECKED;
-                if (p_item->enabled_)
+                if (controls_state_table[idx].enabled_)
                     nMenuEnabled  = MF_ENABLED;
-                if (p_item->checked_)
+                if (controls_state_table[idx].checked_)
                     nMenuChecked = MF_CHECKED;
-                EnableMenuItem(p_dlg->hMainMenu, p_item->nID_, MF_BYCOMMAND | nMenuEnabled);
-                CheckMenuItem(p_dlg->hMainMenu, p_item->nID_, MF_BYCOMMAND | nMenuChecked);
-                hwnd = GetDlgItem(p_dlg->hDlg_, p_item->nID_);
+                EnableMenuItem(p_dlg->hMainMenu, controls_state_table[idx].nID_, MF_BYCOMMAND | nMenuEnabled);
+                CheckMenuItem(p_dlg->hMainMenu, controls_state_table[idx].nID_, MF_BYCOMMAND | nMenuChecked);
+                hwnd = GetDlgItem(p_dlg->hDlg_, controls_state_table[idx].nID_);
                 assert(hwnd);
-                EnableWindow(hwnd, p_item->enabled_);
-                Button_SetCheck(hwnd, p_item->checked_);
+                EnableWindow(hwnd, controls_state_table[idx].enabled_);
+                Button_SetCheck(hwnd, controls_state_table[idx].checked_);
             } 
         }
-        /* Set the focus */
-        for (; p_focus_item != p_focus_past_end; ++p_focus_item)
+        /* Iterate over the entire UI widget focus table */
+        /* find all rows that matche current UI state */
+        /* Update focus UI according to the table */
+        for (idx = 0; idx < COUNTOF_ARRAY(focus_table); ++idx)
         {
-            if (p_focus_item->state_ == curr_state)
+            if (focus_table[idx].state_ == curr_state)
             {
-                hwnd = GetDlgItem(p_dlg->hDlg_, p_focus_item->nID_);
+                hwnd = GetDlgItem(p_dlg->hDlg_, focus_table[idx].nID_);
                 assert(hwnd);
                 SetFocus(hwnd); 
             }
@@ -235,62 +170,6 @@ static void UpdateUI(HWND hwnd)
         prev_state = curr_state;
     }
 }
-
-static LPCTSTR getWavFileName(HWND hwnd)
-{
-    static TCHAR pszFileNameBuffer[MAX_PATH+1];
-    OPENFILENAME ofn;
-    ZeroMemory(&ofn, sizeof(ofn));
-    ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = hwnd;
-    ofn.lpstrFile = pszFileNameBuffer;
-    ofn.lpstrFile[0] = '\0';
-    ofn.nMaxFile = sizeof(pszFileNameBuffer);
-    ofn.lpstrFilter = "WAV (*.wav)\0*.wav\0All\0*.*\0";
-    ofn.nFilterIndex = 1;
-    ofn.lpstrFileTitle = NULL;
-    ofn.nMaxFileTitle = 0;
-    ofn.lpstrInitialDir = NULL;
-    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-
-    if (GetOpenFileName(&ofn)==TRUE) 
-        return pszFileNameBuffer;
-    return NULL;
-}
-
-static int handle_select_tone(struct sender_dialog * p_dlg, tone_type_t e_type, LPCTSTR tone_id)
-{
-    assert (NULL == p_dlg->tone_selected_);
-    p_dlg->tone_selected_ = abstract_tone_create(e_type, tone_id);
-    assert(p_dlg->tone_selected_);
-    abstract_tone_dump(p_dlg->tone_selected_, p_dlg->wav_preview_text_, WAV_PREVIEW_LENGTH);
-    SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
-    return sender_handle_selecttone(p_dlg->sender_, p_dlg->tone_selected_);
-}
-
-static int handle_select_ext_tone(struct sender_dialog * p_dlg)
-{
-    LPCTSTR pszFileName = getWavFileName(p_dlg->hDlg_);
-    assert (NULL == p_dlg->tone_selected_);
-    if (NULL != pszFileName)
-    {
-        handle_select_tone(p_dlg, EXTERNAL_WAV_TONE, pszFileName);
-        debug_outputln("%s %4.4u : %s %p", __FILE__, __LINE__, pszFileName, p_dlg->tone_selected_);
-        return 1;
-    }
-    return 0;
-}
-
-static int handle_close_tone(struct sender_dialog * p_dlg)
-{
-    assert(p_dlg->tone_selected_);
-    sender_handle_deselecttone(p_dlg->sender_);
-    abstract_tone_destroy(p_dlg->tone_selected_);
-    p_dlg->tone_selected_ = NULL;
-    p_dlg->wav_preview_text_[0] = _T('\0');
-    SetWindowText(p_dlg->hWavPreview_, p_dlg->wav_preview_text_);
-    return 1;
-} 
 
 /*!
  * @brief Handler for WM_INITDIALOG message.
@@ -314,16 +193,10 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(p_dlg->hDlg_);
     p_dlg->hMainMenu = GetMenu(hwnd);
     assert(p_dlg->hMainMenu);
-    p_dlg->hWavPreview_ = GetDlgItem(hwnd, IDC_WAV_PREVIEW);
-    assert(p_dlg->hWavPreview_);
     result = get_default_settings(&p_dlg->settings_);
     assert(result);
     p_dlg->sender_ = sender_create(&p_dlg->settings_);
     assert(p_dlg->sender_);
-    result = handle_select_tone(p_dlg, EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1));
-    assert(result);
-    if (result)
-        p_dlg->ui_state_ = UI_SENDER_TESTTONE_SELECTED;
     UpdateUI(hwnd);
     return TRUE;
 }
@@ -347,29 +220,26 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
     switch (uMessage)
     {
         case WM_INITDIALOG:
-           return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
-       case WM_COMMAND:
+            return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
+        case WM_COMMAND:
             assert(p_dlg);
             switch(LOWORD(wParam))
             {
+                case IDM_SENDER_ABOUT:
+                    display_about_dialog(hDlg, _T("Sender"));
+                    break;
                 case ID_SENDER_SETTINGS:
                     switch (p_dlg->ui_state_)
                     {
                         case UI_SENDER_INITIAL:
-                        case UI_SENDER_TESTTONE_SELECTED:
-                        case UI_SENDER_EXTTONE_SELECTED:
-                            if (sender_settings_from_dialog(hDlg, &p_dlg->settings_)) /* Open up the settings dialog with the MCAST settings parameters */
+                            /* Open up the settings dialog with the MCAST settings parameters */
+                            if (sender_settings_from_dialog(hDlg, &p_dlg->settings_))
                             {
                                 if (p_dlg->sender_)
                                     sender_destroy(p_dlg->sender_);
                                 p_dlg->sender_ = sender_create(&p_dlg->settings_);
                                 assert(p_dlg->sender_);
-                                if (UI_SENDER_TESTTONE_SELECTED == p_dlg->ui_state_ || UI_SENDER_EXTTONE_SELECTED == p_dlg->ui_state_)
-                                {
-                                    assert(p_dlg->tone_selected_);
-                                    sender_handle_selecttone(p_dlg->sender_, p_dlg->tone_selected_);
-                                }
-                             }
+                            }
                             break;
                         default:
                             assert(0);
@@ -377,71 +247,58 @@ static INT_PTR CALLBACK SenderDlgProc(HWND hDlg, UINT uMessage, WPARAM wParam, L
                     }
                     break;
                 case ID_SENDER_JOINMCAST:
-                    if (UI_SENDER_INITIAL == p_dlg->ui_state_ && sender_handle_mcastjoin(p_dlg->sender_))
-                        p_dlg->ui_state_ = UI_SENDER_MCASTJOINED;
-                    else if (UI_SENDER_TESTTONE_SELECTED == p_dlg->ui_state_ && sender_handle_mcastjoin(p_dlg->sender_))
-                        p_dlg->ui_state_ = UI_SENDER_MCASTJOINED_TESTTONESELECTED;
-                    else if (UI_SENDER_EXTTONE_SELECTED == p_dlg->ui_state_ && sender_handle_mcastjoin(p_dlg->sender_))
-                        p_dlg->ui_state_ = UI_SENDER_MCASTJOINED_EXTTONESELECTED;
-                    else
-                        assert(0);
+                    switch (p_dlg->ui_state_)
+                    {
+                        case UI_SENDER_INITIAL:
+                            if (sender_handle_mcastjoin(p_dlg->sender_))
+                                p_dlg->ui_state_ = UI_SENDER_IN_MCAST_GROUP;
+                            break;
+                        default:
+                            assert(0);
+                            break;
+                    }
                     break;
                 case ID_SENDER_LEAVEMCAST:
-                    if (UI_SENDER_MCASTJOINED == p_dlg->ui_state_ && sender_handle_mcastleave(p_dlg->sender_))
-                        p_dlg->ui_state_ = UI_SENDER_INITIAL;
-                    else if (UI_SENDER_MCASTJOINED_TESTTONESELECTED == p_dlg->ui_state_ && sender_handle_mcastleave(p_dlg->sender_))
-                        p_dlg->ui_state_ = UI_SENDER_TESTTONE_SELECTED;
-                    else if (UI_SENDER_MCASTJOINED_EXTTONESELECTED == p_dlg->ui_state_ && sender_handle_mcastleave(p_dlg->sender_))
-                        p_dlg->ui_state_ = UI_SENDER_EXTTONE_SELECTED;
-                    else
-                        assert(0);
+                    switch (p_dlg->ui_state_)
+                    {
+                        case UI_SENDER_IN_MCAST_GROUP:
+                            if (sender_handle_mcastleave(p_dlg->sender_))
+                                p_dlg->ui_state_ = UI_SENDER_INITIAL;
+                            break;
+                        default:
+                            assert(0);
+                            break;
+                    }
                     break;
-                case ID_SENDER_STARTSENDING:
-                    if (UI_SENDER_MCASTJOINED_TESTTONESELECTED == p_dlg->ui_state_ && sender_handle_startsending(p_dlg->sender_))
-                        p_dlg->ui_state_ = UI_SENDER_SENDING_TESTTONESELECTED;
-                    else if (UI_SENDER_MCASTJOINED_EXTTONESELECTED == p_dlg->ui_state_ && sender_handle_startsending(p_dlg->sender_))
-                        p_dlg->ui_state_ = UI_SENDER_SENDING_EXTTONESELECTED;
-                    else
-                        assert(0);
+                case ID_SENDER_STOP_RECORDING:
+                    debug_outputln("%4.4u %s ", __LINE__, __FILE__);
+                    switch (p_dlg->ui_state_)
+                    {
+                        case UI_SENDER_IN_MCAST_SENDING:
+                            if (sender_handle_stoprecording(p_dlg->sender_))
+                            {
+                                p_dlg->ui_state_ = UI_SENDER_IN_MCAST_GROUP;
+                            }
+                            break;
+                        default:
+                            debug_outputln("%4.4u %s ", __LINE__, __FILE__);
+                            break;
+                    }
                     break;
-                case ID_SENDER_STOPSENDING:
-                    if ( UI_SENDER_SENDING_TESTTONESELECTED == p_dlg->ui_state_ && sender_handle_stopsending(p_dlg->sender_))
-                        p_dlg->ui_state_ = UI_SENDER_MCASTJOINED_TESTTONESELECTED;
-                    else if (UI_SENDER_SENDING_EXTTONESELECTED == p_dlg->ui_state_ && sender_handle_stopsending(p_dlg->sender_))
-                        p_dlg->ui_state_ = UI_SENDER_MCASTJOINED_EXTTONESELECTED;
-                    else
-                        assert(0);
-                    break;
-                case ID_TEST_TONE:
-                    if (UI_SENDER_MCASTJOINED_TESTTONESELECTED == p_dlg->ui_state_ && handle_close_tone(p_dlg))
-                        p_dlg->ui_state_ = UI_SENDER_MCASTJOINED;
-                    else if (UI_SENDER_TESTTONE_SELECTED == p_dlg->ui_state_ && handle_close_tone(p_dlg))
-                        p_dlg->ui_state_ = UI_SENDER_INITIAL;
-                    else if (UI_SENDER_MCASTJOINED == p_dlg->ui_state_ && handle_select_tone(p_dlg, EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1)))
-                        p_dlg->ui_state_ = UI_SENDER_MCASTJOINED_TESTTONESELECTED;
-                    else if (UI_SENDER_INITIAL == p_dlg->ui_state_ && handle_select_tone(p_dlg, EMBEDDED_TEST_TONE, MAKEINTRESOURCE(IDR_0_1)))
-                        p_dlg->ui_state_ = UI_SENDER_TESTTONE_SELECTED;
-                    else
-                        assert(0);
-                    break;
-                case ID_OPEN_WAV:
-                    if (UI_SENDER_INITIAL == p_dlg->ui_state_ && handle_select_ext_tone(p_dlg))
-                        p_dlg->ui_state_ = UI_SENDER_EXTTONE_SELECTED;
-                    else if (UI_SENDER_MCASTJOINED == p_dlg->ui_state_ && handle_select_ext_tone(p_dlg))
-                        p_dlg->ui_state_ = UI_SENDER_MCASTJOINED_EXTTONESELECTED;
-                    else
-                        assert(0);
-                    break;
-                case ID_CLOSE_WAV:
-                    if (UI_SENDER_MCASTJOINED_EXTTONESELECTED == p_dlg->ui_state_ && handle_close_tone(p_dlg))
-                        p_dlg->ui_state_ = UI_SENDER_MCASTJOINED;
-                    else if (UI_SENDER_EXTTONE_SELECTED == p_dlg->ui_state_ && handle_close_tone(p_dlg))
-                        p_dlg->ui_state_ = UI_SENDER_INITIAL;
-                    else
-                        assert(0);
-                    break;
-               case IDM_SENDER_ABOUT:
-                    display_about_dialog(hDlg, _T("Sender"));
+                case ID_SENDER_START_RECORDING:
+                    switch (p_dlg->ui_state_)
+                    {
+                        case UI_SENDER_IN_MCAST_GROUP:
+                            debug_outputln("%4.4u %s ", __LINE__, __FILE__);
+                            if (sender_handle_startrecording(p_dlg->sender_))
+                            {
+                                p_dlg->ui_state_ = UI_SENDER_IN_MCAST_SENDING;
+                            }
+                            break;
+                        default:
+                            debug_outputln("%4.4u %s ", __LINE__, __FILE__);
+                            break;
+                    }
                     break;
                 case IDOK:
                 case IDCANCEL: 
@@ -501,18 +358,19 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     /* Init Winsock */
     if ((rc = WSAStartup(MAKEWORD(1, 1), &wsd)) != 0)
         return 0;
-    /* Init COM */
+    /* Init COM, this is needed for DirectX */
     hr = CoInitializeEx(0, COINIT_APARTMENTTHREADED);
     if (FAILED(hr))
         return 0;
     sender_dlg.hInst_ = hInstance;
-    //required to use the common controls
+    /* required to use the common controls */
     InitCommonControls();
-    
+
     hDlg = CreateDialogParam(hInstance, MAKEINTRESOURCE(IDD_MAIN_SENDER), NULL, SenderDlgProc, (LPARAM)&sender_dlg);
     if (NULL == hDlg)
         return 0;
     message_loop(hDlg, &on_idle);
+    CoUninitialize();
     return (int)0;
 }
 

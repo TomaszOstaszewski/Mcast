@@ -36,7 +36,7 @@
             </Directory>
             <Directory Id="ProgramMenuFolder" Name="Programs">
                 <Directory Id='ProgramMenuDirVendor' Name="Motorola Solutions">
-                    <Component Id="ProgramMenuDirVendor" Guid="22be4d82-3d3c-4f49-b88a-4b5271dcc77d">
+                    <Component Id="C_ProgramMenuDirVendor" Guid="22be4d82-3d3c-4f49-b88a-4b5271dcc77d">
                         <RemoveFolder Id='ProgramMenuDirVendor' On='uninstall' />
                         <RegistryValue Root='HKCU' Key='Software\Motorola Solutions\Multicast player' Type='string' Value='1' KeyPath='yes'/>
                     </Component>
@@ -44,22 +44,54 @@
             </Directory>
             <Directory Id="DesktopFolder" Name="Desktop" />
         </Directory>
+        <DirectoryRef Id='INSTALLDIR'>
+        <Directory Id="DirectXRedistDirectory" Name="DirectX9.0c">
+        <Component Id="C_DirectXRedist" Guid="A6DB6F7E-6668-468d-8162-352F1EC7AEBA">
+            <File Id="DXSETUP.EXE" Source="..\redist\dxsetup.exe" KeyPath="yes" Checksum="yes"/>
+            <File Id="dxupdate.cab" Source="..\redist\dxupdate.cab"/>
+            <File Id="dxdllreg_x86.cab" Source="..\redist\dxdllreg_x86.cab"/>
+            <File Id="dsetup32.dll" Source="..\redist\dsetup32.dll"/>
+            <File Id="dsetup.dll" Source="..\redist\dsetup.dll"/>
+            <File Id="Jun2010_XACT_x86.cab" Source="..\redist\Jun2010_XACT_x86.cab"/>
+        </Component>
+        </Directory>
+        </DirectoryRef>
+
         <Feature Id='Complete' Title='Foobar 1.0' Description='The complete package.' Display='expand' Level='1' ConfigurableDirectory='INSTALLDIR'>
-            <Feature Id='MainApplications' Level='1'>
-            <ComponentRef Id='C_ReceiverExecutable' />
-            <ComponentRef Id='C_SenderApplication' />
-            <ComponentRef Id='C_debuglibrary' />
-            <ComponentRef Id='C_DsoundPlayDll' />
-            <ComponentRef Id='C_McastDll' />
-            <ComponentRef Id='ProgramMenuDirVendor' />
+            <Feature Id="DirectXRedist" Title="FeatureDirectX" AllowAdvertise="no" Display="hidden" Level="1"> 
+             <ComponentRef Id="C_DirectXRedist"/>
+            </Feature>
+            <Feature Id='MainApplications' Title='Eseentials' Description='Multicast player' Level='1'>
+                <ComponentRef Id='C_ReceiverExecutable' />
+                <ComponentRef Id='C_SenderApplication' />
+                <ComponentRef Id='C_debuglibrary' />
+                <ComponentRef Id='C_DsoundPlayDll' />
+                <ComponentRef Id='C_McastDll' />
+                <ComponentRef Id='C_ProgramMenuDirVendor' />
             </Feature>
             <Feature Id='SampleWavFiles' Title='Samples' Description='Sample wav files to play' Level='1'>
-            <ComponentRef Id='C_sampleFiles' />
+                <ComponentRef Id='C_sampleFiles' />
             </Feature>
         </Feature>
         <UIRef Id="WixUI_Mondo" />
         <UIRef Id="WixUI_ErrorProgressText" />
         <WixVariable Id="WixUILicenseRtf" Value="..\License.rtf" />
         <Icon Id="receiver.exe" SourceFile="receiver.exe" />
-    </Product>
+
+        <CustomAction Id="InstallDirectX"
+        FileKey="DXSETUP.EXE"
+        ExeCommand="/silent"
+        Execute="deferred"
+        Impersonate="no"
+        Return="check"/>
+
+        <InstallExecuteSequence>
+        <Custom Action="InstallDirectX" Before="InstallFinalize">
+        <![CDATA[NOT REMOVE]]>
+        </Custom>
+        </InstallExecuteSequence>
+<UI>
+    <ProgressText Action="InstallDirectX">Installing DirectX 9.0c</ProgressText>
+</UI>
+        </Product>
 </Wix>

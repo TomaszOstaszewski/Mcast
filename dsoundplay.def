@@ -17,4 +17,11 @@ EXPORTS
 	dump_pcmwaveformat @33
  	copy_pcmwaveformat_2_WAVEFORMATEX @34
 	waveformat_normalize @35
-	init_master_riff @36
+	LoadWavFromResoure @36
+        get_wave_data @37
+        get_wave_data_size @38
+	dxaudio_recorder_create @39
+	dxaudio_recorder_destroy @40
+	dxaudio_recorder_start @41
+	dxaudio_recorder_stop @42
+	recorder_settings_get_default @43

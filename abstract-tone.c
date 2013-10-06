@@ -7,9 +7,9 @@
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
- * 	1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
- *	2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
- * 	and/or other materials provided with the distribution.
+ *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation 
+ *  and/or other materials provided with the distribution.
  * THIS SOFTWARE IS PROVIDED BY Tomasz Ostaszewski AS IS AND ANY 
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
@@ -74,7 +74,7 @@ struct abstract_tone * abstract_tone_create(tone_type_t eType, LPCTSTR psz_tone_
                 }
                 break;
             case EMBEDDED_TEST_TONE:
-                if (init_master_riff(&retval->mriff_, NULL, psz_tone_name))
+                if (LoadWavFromResoure(&retval->mriff_, NULL, psz_tone_name))
                     return retval;
                 assert(0);
                 break;
@@ -105,17 +105,11 @@ tone_type_t abstract_tone_get_type(struct abstract_tone * p_tone)
 }
 #endif
 
-PCMWAVEFORMAT const * abstract_tone_get_pcmwaveformat(struct abstract_tone const * p_tone)
-{
-    assert(p_tone);
-    return &p_tone->mriff_->format_chunk_.format_;
-}
-
 void const * abstract_tone_get_wave_data(struct abstract_tone const * p_tone, size_t * p_data_size)
 {
     assert(p_tone);
-    *p_data_size = p_tone->mriff_->format_chunk_.subchunk_.subchunk_size_;
-    return &p_tone->mriff_->format_chunk_.subchunk_.samples8_;
+    *p_data_size = get_wave_data_size(p_tone->mriff_);
+    return get_wave_data(p_tone->mriff_);
 }
 
 size_t abstract_tone_dump(struct abstract_tone const * p_tone, LPTSTR pszBuffer, size_t size)
@@ -132,18 +126,18 @@ size_t abstract_tone_dump(struct abstract_tone const * p_tone, LPTSTR pszBuffer,
             {
                 hr = StringCchLength(pszBuffer, size, &retval); 
             }
-           assert(SUCCEEDED(hr));
-           pszBuffer += retval;
-           *pszBuffer = _T('\n');
-           pszBuffer++;
-           break;
+            assert(SUCCEEDED(hr));
+            pszBuffer += retval;
+            *pszBuffer = _T('\n');
+            pszBuffer++;
+            break;
         default:
             assert(0);
             break;
     }
     if (SUCCEEDED(hr))
     {
-        dump_pcmwaveformat(pszBuffer, size, abstract_tone_get_pcmwaveformat(p_tone));
+        //dump_pcmwaveformat(pszBuffer, size, abstract_tone_get_pcmwaveformat(p_tone));
     } 
     return retval;
 }

@@ -1,5 +1,6 @@
 LIBRARY DEBUGHELPERS
 EXPORTS
-	debug_outputln @1
+	debug_outputlnA @1
 	debug_output_flush @2
-	debug_outputln_buffered @3
+	debug_outputln_bufferedA @3
+	debug_outputlnW @11

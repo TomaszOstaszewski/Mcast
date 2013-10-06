@@ -40,7 +40,7 @@
 /*!
  * @brief An assert macro that works with RELEASE builds.
  */
-#define MY_ASSERT(cond) do { if(!(cond)) fprintf(stderr, "%s %u\n", __FILE__, __LINE__), __debugbreak(); } while(0)
+#define MY_ASSERT(cond) do { if(!(cond)) fprintf(stderr, "%s %u\n", __FILE__, __LINE__), abort(); } while(0)
 
 static void test_create_destroy_0(void)
 {
@@ -279,6 +279,7 @@ static void test_default_queue_overflow(void)
 
 int main(int argc, char ** argv)
 {
+    printf("Hello, world.\n");
     srand((unsigned int)time(NULL));
     test_create_destroy_0();
     test_create_destroy_1();
