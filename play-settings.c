@@ -73,7 +73,7 @@
  * @brief Default number of play chunk.s
  * @details Total buffer occupied by PCM data used for replaying it will be : number_of_chunks * size_of_single_chunk
  */
-#define DEFAULT_NUMBER_OF_CHUNKS (4)
+#define DEFAULT_NUMBER_OF_CHUNKS (2)
 
 /*!
  * @brief Default timeout, in milliseconds, for multimedia play timer.
