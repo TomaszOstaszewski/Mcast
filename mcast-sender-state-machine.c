@@ -62,7 +62,7 @@ struct mcast_sender {
     /** @brief Copy of the sender settings. */
     struct sender_settings settings_; 
     /** @brief */
-    struct dxaudio_recorder * recorder_;
+    struct dxaudio_recorder_block * recorder_;
     /** @brief */
     struct circular_buffer_uint16 * p_circular_buffer_;
     /** @brief */

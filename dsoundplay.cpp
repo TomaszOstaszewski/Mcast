@@ -8,39 +8,35 @@
  * is to alter the contents of that array so the playback goes smoothly.
 
  * For the moment let's assume, that we have this buffer and it's 8192 bytes long. Then we tell the DirectSound subsystem to playback the data from this buffer.
- * The DirectSound will consequently ready bytes form that buffer and feed them to the sound card. This is a sequential process, i.e. not the entire 
- * buffer will be consumed at time. Instead, we may query DirectSound which part of the buffer is currently accessed by the sound card hardware. 
- * This part, to which the hardware has an access, is off-limits for us. However, with the rest of the buffer we may do as we please. 
- * This query is called a GetCurrentPosition() in DirectSound lingo, and the outputs are so called cursors positions. There are 2 cursors, the read cursor and 
- * the write cursor. What is there from read to write cursor, is off-limits. What is there from write to read cursor - we may change. The gab between
- * the read and write is the guard period. This guard period shall give us sufficient time to fill the remaining part of the buffer before the time will come
- * for us to play it.
- *
- * So imagine that we have a 10ms timer ticking, and with each timer tick we check the cursors. Here's an example output:
- * \code
+ * The DirectSound consequently reads bytes form that buffer and feeds them to the sound card. This is a sequential process, i.e. not the entire 
+ * buffer will be consumed at time. The speed, at which this buffer is consumed, depends on what is the sampling rate, how many bits per sample are there, how many channels and so on (please see nAvgBytesPerSec member of the WAVEFORMATEX structure).
+ * The DirectSound subsytem reserves a part of the buffer, couple of milliseconds long, 
+ * to secure the needs of the hardware sound card buffer. 
+ * This part, from so called read cursor to the write cursor, is off limits - we shall 
+ * not access it. This is also the the guard period. This guard period shall give us sufficient time 
+ * to fill the remaining part of the buffer before the times comes to play it.
+ * The rest of the buffer, from write cursor to the end of the buffer 
+ * and then wrapped around beginning to the read cursor, can be accessed freely. 
+ * So imagine that we have a 10ms timer ticking, and with each timer tick we check the cursors. 
+ * Our buffer is 8192 bytes long.  Here's an example output:
+ * <pre>
  *   0ms Read:    0 bytes, Write:  480 bytes
- *
  *  10ms Read:  380 bytes, Write:  860 bytes 
- *
  *  20ms Read:  760 bytes, Write: 1240 bytes 
- *
- *  ...
- *
+ *  .. rest of lines removed for brevity ..
  * 210ms Read: 7980 bytes, Write:  268 bytes
- * \endcode
- *
- * As can be easily seen, cursors wrap around. Therefore, a small buffer, of couple kB long, can be used to play much larger files, provided we alter the contents
- * of the buffer fast enough.
- *
- * What we may change, is the area from the write cursor to the read cursor. The area from read to write cursor, the guard period, should not be changed. 
- * The are is about 480 bytes long on my PC. Assuming 8000 Hz sampling rate and 2 bytes per sample, this yields 30 milliseconds to fill the next chunk of the buffer.
- * Even given the medicore realtime capabilities of the Windows platform, this timespan usually suffices to successfully complete this task.
- *
- * With clever buffer organization, one can buy himself much more time, trading it for space. Let's assume that the 8192 bytes long buffer is divided into 2 chunks of 4096 bytes each.
- * We we notice that both the read and write currsor are in the range from 0 to 4095 bytes inclusive, then we fill entire 2nd chunk starting from 4096 up to 8191.
- * If both cursors move to range from 4096 to 8191 inclusive, we fill entire 1st chunk starting from 0 up to 4095.
- * Given the same 8000 samples per second and 2 bytes per sample it gives us about 256 milliseconds time to fill next chunk. This is more than enough for even low end machine.
- *
+ *  .. rest of lines removed for brevity ..
+ * <pre>
+ * As can be easily seen, cursors wrap around. 
+ * Therefore, a small buffer, of couple kB long, can be used to play much larger files, 
+ * provided we alter the contents of the buffer fast enough.
+ * How fast is fast enough? Well, it took about 200ms to play entire buffer. 
+ * So it takes about 100ms to play the first half of it. The guard period is about 30 ms long (480 bytes) on my PC. 
+ * If we then divide this buffer into 2 halves, 4096 bytes each, we can alternate between those two buffers, playing one, 
+ * and then, at the same time, filling the other one. We have about 100 +/- 30 ms to do this. We only need to care about 
+ * filling a buffer, as the hardware automatically plays the other one.
+ * Even given the medicore realtime capabilities of the Windows platform, 
+ * this timespan usually more then sufficient on even the very low-end hardware.
  * @author T. Ostaszewski
  * @par License
  * @code Copyright 2012 Tomasz Ostaszewski. All rights reserved.
@@ -72,6 +68,7 @@
 #include "input-buffer.h"
 #include "receiver-settings.h"
 #include "perf-counter-itf.h"
+#include "dsbcaps-utils.h"
 
 /*!
  * @brief Indicates that a chunk is being played and can be filled after playing is done.
@@ -112,102 +109,6 @@ struct dsound_data {
     size_t                  number_of_chunks_; 
     DWORD   buffer_markers_[MAX_CHUNKS_COUNT];             /*!< Array of markers whether a buffer has been filled or played. */
 };
-
-/*!
- * @brief Macro that creates a DirectSound buffer descriptor structures.
- * @details This is here to make the creation of a table of structures a bit easier. 
- * Instead of writting:
- * @code
- * static struct flag_2_desc {
- *  DWORD flag_;
- *  LPCTSTR desc_;
- * } flags_to_descs[] = {
- *  { DSBCAPS_PRIMARYBUFFER, "DSBCAPS_PRIMARYBUFFER" },
- * };
- * @endcode
- * one writes:
- * @code
- * static struct flag_2_desc {
- *     DWORD flag_;
- *     LPCTSTR desc_;
- * } flags_to_descs[] = {
- *     MAKE_FLAG_2_DESC(DSBCAPS_PRIMARYBUFFER),
- * };
- * @endcode
- */
-#define MAKE_FLAG_2_DESC(x) { x, #x }
-
-/*!
- * @brief Maps DWORD flag to its textual counterpart.
- */
-struct dword_2_desc {
-    DWORD flag_; /*!< A flag value.*/
-    LPCTSTR desc_; /*!< Flag's textual description. */
-};
- 
-/*!
- * @brief Description of the DirectSound buffer flags.
- */
-static struct dword_2_desc flags_to_descs[] = {
-    MAKE_FLAG_2_DESC(DSBCAPS_PRIMARYBUFFER),
-    MAKE_FLAG_2_DESC(DSBCAPS_STATIC),
-    MAKE_FLAG_2_DESC(DSBCAPS_LOCHARDWARE),
-    MAKE_FLAG_2_DESC(DSBCAPS_LOCSOFTWARE),
-    MAKE_FLAG_2_DESC(DSBCAPS_CTRL3D),
-    MAKE_FLAG_2_DESC(DSBCAPS_CTRLFREQUENCY),
-    MAKE_FLAG_2_DESC(DSBCAPS_CTRLPAN),
-    MAKE_FLAG_2_DESC(DSBCAPS_CTRLVOLUME),
-    MAKE_FLAG_2_DESC(DSBCAPS_CTRLPOSITIONNOTIFY),
-    MAKE_FLAG_2_DESC(DSBCAPS_CTRLFX),
-    MAKE_FLAG_2_DESC(DSBCAPS_STICKYFOCUS),
-    MAKE_FLAG_2_DESC(DSBCAPS_GLOBALFOCUS),
-    MAKE_FLAG_2_DESC(DSBCAPS_GETCURRENTPOSITION2),
-    MAKE_FLAG_2_DESC(DSBCAPS_MUTE3DATMAXDISTANCE),
-    MAKE_FLAG_2_DESC(DSBCAPS_LOCDEFER),
-    /* For that one we don't have a define unless we compile under Vista */
-#if _WIN32_WINNT >= 0x0600
-    { DSBCAPS_TRUEPLAYPOSITION, "DSBCAPS_TRUEPLAYPOSITION" },
-#endif
-};
-
-/**
- * @brief Helper routine, gets the device capabilities.
- * @param[in] lpdsb pointer to the direct sound buffer, either primary or secondary.
- * @return returns S_OK if succeeded, any other value indicates an error.
- * @sa http://bit.ly/zP10oa
- */
-static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb)
-{
-    DSBCAPS caps;
-    HRESULT hr;
-    ZeroMemory(&caps, sizeof(DSBCAPS));
-    caps.dwSize = sizeof(DSBCAPS);
-    hr = lpdsb->GetCaps(&caps);
-    if (SUCCEEDED(hr))
-    {
-        size_t index;
-        
-        debug_outputln("%s %4.4u : %8.8x %8.8u %8.8u %8.8u"
-                ,__FILE__, __LINE__
-                ,caps.dwFlags
-                ,caps.dwBufferBytes
-                ,caps.dwUnlockTransferRate
-                ,caps.dwPlayCpuOverhead
-                );    
-        for (index = 0; index <sizeof(flags_to_descs)/sizeof(flags_to_descs[0]); ++index)
-        {
-            if (caps.dwFlags & flags_to_descs[index].flag_)
-                debug_outputln("%s %4.4u : %s"
-                    ,__FILE__, __LINE__
-                    ,flags_to_descs[index].desc_);
-         }
-    }
-    else
-    {
-        debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);    
-    }
-    return hr;
-}
 
 /**
  * @brief Creates the primary buffer and the secondary buffers.
@@ -465,7 +366,7 @@ static void CALLBACK sTimerCallback(UINT uTimerID, UINT uMsg, DWORD dwUser,
     play_data_chunk(p_ds_data);
     perf_counter_mark_after(p_ds_data->counter1_);
     perf_counter_get_duration(p_ds_data->counter1_, &p_ds_data->total, &p_ds_data->avg);
-    //debug_outputln_buffered(" %I64d, %I64d", (1000000*p_ds_data->total)/p_ds_data->freq, (1000000*p_ds_data->avg)/p_ds_data->freq);
+    debug_outputln_bufferedA("%8.8x %I64d, %I64d", ::GetCurrentThreadId(), (1000000*p_ds_data->total)/p_ds_data->freq, (1000000*p_ds_data->avg)/p_ds_data->freq);
 }
 
 extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings const * p_settings, struct fifo_circular_buffer * fifo)
@@ -485,6 +386,7 @@ extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings co
             hr = init_ds_data(hWnd, &p_settings->wfex_, p_retval);
             if (SUCCEEDED(hr))
             {
+                debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetCurrentThreadId());
                 return (DSOUNDPLAY)(p_retval);
             }
             HeapFree(GetProcessHeap(), 0, p_retval);
@@ -509,6 +411,7 @@ extern "C" int dsoundplayer_play(DSOUNDPLAY handle)
     struct dsound_data * p_ds_data = (struct dsound_data*)handle;
 	struct play_settings const * p_set = &p_ds_data->play_settings_;
     LPDIRECTSOUNDBUFFER8 lpdsbStatic = p_ds_data->p_secondary_sound_buffer_;
+    debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetCurrentThreadId());
     p_ds_data->timer_ = timeSetEvent(
 		p_set->timer_delay_, 
 		p_set->timer_resolution_, 
@@ -519,9 +422,10 @@ extern "C" int dsoundplayer_play(DSOUNDPLAY handle)
         hr = lpdsbStatic->SetCurrentPosition(0);
         if (SUCCEEDED(hr))
         {
-            hr = lpdsbStatic->Play( 0, 0, DSBPLAY_LOOPING);
+            hr = lpdsbStatic->Play(0, 0, DSBPLAY_LOOPING);
             if (SUCCEEDED(hr))
             {
+                debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetCurrentThreadId());
                 return 1;
             }
             debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);

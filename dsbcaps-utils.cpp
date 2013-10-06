@@ -1,4 +1,34 @@
+/**
+ *
+ */
 #include "pcc.h"
+#include "dsbcaps-utils.h"
+#include "debug_helpers.h"
+
+/*!
+ * @brief Macro that creates a DirectSound buffer descriptor structures.
+ * @details This is here to make the creation of a table of structures a bit easier. 
+ * Instead of writting:
+ * @code
+ * static struct flag_2_desc {
+ *  DWORD flag_;
+ *  LPCTSTR desc_;
+ * } flags_to_descs[] = {
+ *  { DSBCAPS_PRIMARYBUFFER, "DSBCAPS_PRIMARYBUFFER" },
+ * };
+ * @endcode
+ * one writes:
+ * @code
+ * static struct flag_2_desc {
+ *     DWORD flag_;
+ *     LPCTSTR desc_;
+ * } flags_to_descs[] = {
+ *     MAKE_FLAG_2_DESC(DSBCAPS_PRIMARYBUFFER),
+ * };
+ * @endcode
+ */
+#define MAKE_FLAG_2_DESC(x) { x, #x }
+
 
 /*!
  * @brief Maps DWORD flag to its textual counterpart.
@@ -33,14 +63,13 @@ static struct dword_2_desc flags_to_descs[] = {
 #endif
 };
 
-#if 0
 /**
  * @brief Helper routine, gets the device capabilities.
  * @param[in] lpdsb pointer to the direct sound buffer, either primary or secondary.
- * @return returns S_OK if succeeded, any other value indicates an error.
+ * @return returns 1 if succeeded, any other value indicates an error.
  * @sa http://bit.ly/zP10oa
  */
-static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb)
+int get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb)
 {
     DSBCAPS caps;
     HRESULT hr;
@@ -70,8 +99,6 @@ static HRESULT get_buffer_caps(LPDIRECTSOUNDBUFFER lpdsb)
     {
         debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);    
     }
-    return hr;
+    return SUCCEEDED(hr);
 }
-#endif
-
 
