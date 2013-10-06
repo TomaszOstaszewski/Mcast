@@ -56,7 +56,7 @@ struct recorder_settings;
 /*!
  * @brief Defines a handle to the DirectSound player.
  */
-typedef struct dxaudio_recorder * dxaudio_recorder_t;
+typedef struct dxaudio_recorder_block * dxaudio_recorder_t;
 
 typedef void (*SEND_ROUTINE)(void * p_context, void * data, size_t data_size);
 

@@ -121,6 +121,8 @@ $(OUTDIR_OBJ)\dsoundplay.obj: dsoundplay.cpp dsoundplay.h pcc.h wave_utils.h cir
 $(OUTDIR_OBJ)\dsound-recorder.obj: dsound-recorder.cpp dsound-recorder.h pcc.h wave_utils.h circular-buffer-uint8.h input-buffer.h receiver-settings.h play-settings.h perf-counter-itf.h  $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcpp.pch
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcpp.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
 
+$(OUTDIR_OBJ)\dsbcaps-utils.obj: dsbcaps-utils.cpp dsbcaps-utils.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcpp.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
 $(OUTDIR_OBJ)\message-loop.obj: message-loop.c message-loop.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
@@ -203,12 +205,13 @@ $(OUTDIR)\dsoundplay.lib:\
  $(OUTDIR_OBJ)\dsound-recorder.obj \
  $(OUTDIR_OBJ)\circular-buffer-uint8.obj\
  $(OUTDIR_OBJ)\circular-buffer-uint16.obj \
+ $(OUTDIR_OBJ)\dsbcaps-utils.obj \
  $(OUTDIR_OBJ)\receiver-settings.obj\
  $(OUTDIR_OBJ)\mcast-settings.obj\
  $(OUTDIR_OBJ)\play-settings.obj\
  $(OUTDIR_OBJ)\perf-counter-itf.obj\
  $(OUTDIR_OBJ)\wave_utils.obj
-	@$(link) /DEF:dsoundplay.def /dll $(ldebug) $(guiflags) /NOLOGO /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$(OUTDIR)\$(@B).dll $** $(guilibs) dsound.lib winmm.lib dxguid.lib 
+	@$(link) /DEF:dsoundplay.def /dll $(ldebug) $(guiflags) /NOLOGO /MACHINE:X86 /LIBPATH:$(DXLIB) /MAP:$(OUTDIR)\$(@B).map -out:$(OUTDIR)\$(@B).dll $** $(guilibs) dsound.lib winmm.lib dxguid.lib ole32.lib
 
 $(OUTDIR)\mcast.lib: \
  $(OUTDIR)\debughelpers.lib \

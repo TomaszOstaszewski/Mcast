@@ -409,6 +409,7 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     if (NULL == hMainDlg)
         return (-1);
     message_loop(hMainDlg, &on_idle);
+    CoUninitialize();
     return (int)0;
 }
 
