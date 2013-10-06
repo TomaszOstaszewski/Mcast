@@ -506,8 +506,9 @@ static DWORD WINAPI dxaudio_player_thread(void * p_param)
                 debug_outputln("%4.4u %s : 0x%8.8x", __LINE__, __FILE__, hr);
             }
         }
+        CoUninitialize();
     }
-    return SUCCEEDED(hr);    
+    return 0;    
 }
 
 extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings const * p_settings, struct fifo_circular_buffer * fifo)
