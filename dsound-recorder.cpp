@@ -315,6 +315,7 @@ static DWORD WINAPI recorder_thread(LPVOID param)
         }
         destroy_audio_thread_information_block(p_tib);
         debug_outputln("%4.4u %s", __LINE__, __FILE__);
+        CoUninitialize();
     }
     else
     {

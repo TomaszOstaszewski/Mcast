@@ -91,23 +91,51 @@
 #define MAX_CHUNKS_COUNT (16)
 
 /*!
+ * Number of positions in the replay buffer, upon reaching which, the notification will be send to the player thread.
+ */
+#define NOTIFY_OBJECTS_COUNT (0)
+
+#define MAX_THREAD_WAIT_TIMEOUT_MS (1000)
+
+#define MAX_WAIT_TIMEOUT_FOR_THREAD (2*MAX_THREAD_WAIT_TIMEOUT_MS)
+
+
+typedef enum e_player_state {
+    PLAYER_IDLE,
+    PLAYER_PLAYING,
+    PLAYER_EXITTING
+} e_player_state_t;
+
+struct dsound_data;
+
+typedef struct dxaudio_player_thread_information_block {
+    struct perf_counter * counter1_;
+    _int64 total, avg, freq;
+    LPDIRECTSOUND8          p_direct_sound_8_;              /*!< The DirectSound Object. */
+    LPDIRECTSOUNDBUFFER     p_primary_sound_buffer_;        /*!< The DirectSound primary buffer. */
+    LPDIRECTSOUNDBUFFER8    p_secondary_sound_buffer_;      /*!< The DirectSound secondary buffer. */
+    DWORD   buffer_markers_[MAX_CHUNKS_COUNT];             /*!< Array of markers whether a buffer has been filled or played. */
+    struct dsound_data * p_dsound_data;
+    volatile e_player_state_t e_state_;
+    HANDLE wait_objects_table_[3+NOTIFY_OBJECTS_COUNT]; /*!< Handles of the notification marks plus 3 events for start, stop, and exit */
+} dxaudio_player_thread_information_block_t;
+
+/*!
  * @brief The sound player descriptor. 
  * @details Gathers all the variables needed to successfully play chunks of PCM
  * data using DirectSound.
  */
 struct dsound_data {
-    struct perf_counter * counter1_;
-    _int64 total, avg, freq;
-    WAVEFORMATEX wfe_;
-    LPDIRECTSOUND8          p_direct_sound_8_;              /*!< The DirectSound Object. */
-    LPDIRECTSOUNDBUFFER     p_primary_sound_buffer_;        /*!< The DirectSound primary buffer. */
-    LPDIRECTSOUNDBUFFER8    p_secondary_sound_buffer_;      /*!< The DirectSound secondary buffer. */
-    MMRESULT timer_;                                        /*!< Multimedia timer that feeds the data to the buffers. */
-    size_t                  nSingleBufferSize_;               /*!< Size of a single buffer. */
     struct fifo_circular_buffer * fifo_;	/*!< A fifo queue - from that queue we fetch the data and feed to the buffers.*/
     struct play_settings play_settings_;	/*!< Settings for our player (how many bytes per buffer, timer frequency).*/
+    size_t                  nSingleBufferSize_;               /*!< Size of a single buffer. */
     size_t                  number_of_chunks_; 
-    DWORD   buffer_markers_[MAX_CHUNKS_COUNT];             /*!< Array of markers whether a buffer has been filled or played. */
+    WAVEFORMATEX wfe_;
+    HANDLE hStartPlay_;
+    HANDLE hStopPlay_;
+    HANDLE hExitPlay_;
+    HANDLE hPlayerThread_;
+    HWND hWnd_; /*!< Handle of the application window to be passed to the IDirectSound8::SetCooperativeLevel() */
 };
 
 /**
@@ -119,7 +147,7 @@ struct dsound_data {
  * @param[in] single_buffer_size size of the single play buffer
  * @return
  */
-static HRESULT create_buffers(struct dsound_data * p_ds_data)
+static HRESULT create_buffers(dxaudio_player_thread_information_block_t * p_ds_data)
 {
     HRESULT hr;
     DSBUFFERDESC bufferDesc;
@@ -140,7 +168,7 @@ static HRESULT create_buffers(struct dsound_data * p_ds_data)
         debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
         goto error;
     }
-    hr = p_ds_data->p_primary_sound_buffer_->SetFormat(&p_ds_data->wfe_);
+    hr = p_ds_data->p_primary_sound_buffer_->SetFormat(&p_ds_data->p_dsound_data->wfe_);
     if (FAILED(hr))
     {
         debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);
@@ -148,9 +176,15 @@ static HRESULT create_buffers(struct dsound_data * p_ds_data)
     }
     get_buffer_caps(p_ds_data->p_primary_sound_buffer_);
     /* Secondary buffer */
-    bufferDesc.dwFlags = DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLPAN | DSBCAPS_CTRLFREQUENCY | DSBCAPS_GLOBALFOCUS | DSBCAPS_CTRLPOSITIONNOTIFY;
-    bufferDesc.dwBufferBytes = p_ds_data->number_of_chunks_*p_ds_data->nSingleBufferSize_; /* double buffering - one buffer being played, whereas the other is being filled in */
-    bufferDesc.lpwfxFormat = &p_ds_data->wfe_;
+    bufferDesc.dwFlags = DSBCAPS_CTRLVOLUME /* The buffer has volume control capability. */ 
+        | DSBCAPS_CTRLPAN /* The buffer has pan control capability. */ 
+        | DSBCAPS_CTRLFREQUENCY /* The buffer has frequency control capability. */ 
+        | DSBCAPS_GLOBALFOCUS /* With this flag set, an application using DirectSound can continue to play its buffers if the user switches focus to another application, even if the new application uses DirectSound. */ 
+        | DSBCAPS_CTRLPOSITIONNOTIFY; /* The buffer has position notification capability. */
+
+    /* double buffering - one buffer being played, whereas the other is being filled in */
+    bufferDesc.dwBufferBytes = p_ds_data->p_dsound_data->number_of_chunks_*p_ds_data->p_dsound_data->nSingleBufferSize_;
+    bufferDesc.lpwfxFormat = &p_ds_data->p_dsound_data->wfe_;
     hr = p_ds_data->p_direct_sound_8_->CreateSoundBuffer(&bufferDesc, &lpDSB, NULL);
     if (FAILED(hr))
     {
@@ -213,9 +247,10 @@ error:
  * @param[out] p_ds_data refernce to the structure, whose members will be filled with DirectSound interface pointers.
  * @retrun returns the status of the operation, test it with SUCCEEDED() or FAILED() macros. 
  */
-static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound_data * p_ds_data)
+static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, dxaudio_player_thread_information_block_t * p_ds_data)
 {
-    HRESULT hr;
+    HRESULT hr = E_FAIL;
+#if 0
     hr = DirectSoundCreate8(&DSDEVID_DefaultVoicePlayback, &p_ds_data->p_direct_sound_8_, NULL);
     if (FAILED(hr))
     {
@@ -236,9 +271,9 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, struct dsound
         debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
         goto error;
     }
-    CopyMemory(&p_ds_data->wfe_, p_WFE, sizeof(WAVEFORMATEX));
-    p_ds_data->wfe_.cbSize = sizeof(WAVEFORMATEX);
-    p_ds_data->nSingleBufferSize_ = p_ds_data->play_settings_.play_buffer_size_;
+    CopyMemory(&p_ds_data->p_dsound_data->wfe_, p_WFE, sizeof(WAVEFORMATEX));
+    p_ds_data->p_dsound_data->wfe_.cbSize = sizeof(WAVEFORMATEX);
+    p_ds_data->p_dsound_data->nSingleBufferSize_ = p_ds_data->p_dsound_data->play_settings_.play_buffer_size_;
     hr = create_buffers(p_ds_data);
     if (FAILED(hr))
     {
@@ -252,9 +287,9 @@ error:
         p_ds_data->p_direct_sound_8_->Release();
         p_ds_data->p_direct_sound_8_ = NULL;
     }
+#endif
     return hr;
 }
-
 
 /**
  * @brief Copy the data from "userspace" to the place from which they will be played on the speakers.
@@ -266,6 +301,7 @@ error:
  */
 static HRESULT fill_buffer(DWORD dwOffset, DWORD req_size, LPDIRECTSOUNDBUFFER8 p_buffer, struct buffer_desc * p_input_buffer_desc)
 {
+#if 0
     LPVOID lpvWrite1;
     DWORD dwLength1;
     HRESULT hr;
@@ -301,34 +337,36 @@ static HRESULT fill_buffer(DWORD dwOffset, DWORD req_size, LPDIRECTSOUNDBUFFER8 
         debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);
     }
     return hr;
+#endif
 }
 
 /*!
  * @brief Fills the secondary buffer with audio samples.
  * @param[in] p_ds_data pointer to the player descriptor.
  */
-static void play_data_chunk(struct dsound_data * p_ds_data) 
+static void play_data_chunk(dxaudio_player_thread_information_block_t* p_ds_data) 
 {
+#if 0
     DWORD dwRead, dwWrite;
     HRESULT hr;
     hr = p_ds_data->p_secondary_sound_buffer_->GetCurrentPosition(&dwRead, &dwWrite);
     if (SUCCEEDED(hr))
     {
-        uint8_t * p_data = (uint8_t*)alloca(p_ds_data->nSingleBufferSize_);
-        uint32_t size = p_ds_data->nSingleBufferSize_;
+        uint8_t * p_data = (uint8_t*)alloca(p_ds_data->p_dsound_data->nSingleBufferSize_);
+        uint32_t size = p_ds_data->p_dsound_data->nSingleBufferSize_;
         struct buffer_desc buf_desc;
         unsigned int read_buf_index, write_buf_index;
         buf_desc.p_begin_ = p_data;
-        buf_desc.nMaxOffset_ = p_ds_data->nSingleBufferSize_;
+        buf_desc.nMaxOffset_ = p_ds_data->p_dsound_data->nSingleBufferSize_;
         buf_desc.nCurrentOffset_ = 0;
-        read_buf_index = dwRead / p_ds_data->nSingleBufferSize_;
-        write_buf_index = dwWrite / p_ds_data->nSingleBufferSize_;
+        read_buf_index = dwRead / p_ds_data->p_dsound_data->nSingleBufferSize_;
+        write_buf_index = dwWrite / p_ds_data->p_dsound_data->nSingleBufferSize_;
         /* Check if both write & read cursor point to the same buffer */
         if (read_buf_index == write_buf_index)
         {
-            unsigned int next_buf_index = (read_buf_index + 1) % p_ds_data->number_of_chunks_;
-            assert(next_buf_index < p_ds_data->number_of_chunks_);
-            assert(read_buf_index < p_ds_data->number_of_chunks_);
+            unsigned int next_buf_index = (read_buf_index + 1) % p_ds_data->p_dsound_data->number_of_chunks_;
+            assert(next_buf_index < p_ds_data->p_dsound_data->number_of_chunks_);
+            assert(read_buf_index < p_ds_data->p_dsound_data->number_of_chunks_);
             if (BUFFER_PLAYED == p_ds_data->buffer_markers_[next_buf_index])
             {
                 if (fifo_circular_buffer_get_items_count(p_ds_data->fifo_)>0)
@@ -349,106 +387,161 @@ static void play_data_chunk(struct dsound_data * p_ds_data)
     {
         debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);
     }
+#endif
     return;
 }
 
-/*!
- * @brief A player timer callback.
- * @details This callback fires once a while and checks if there is new data to be played.
- * if so, this new data is placed in the secondary buffer and then automagically played.
- */
-static void CALLBACK sTimerCallback(UINT uTimerID, UINT uMsg, DWORD dwUser, 
-        DWORD dw1 /* reserved - do not use */, 
-        DWORD dw2 /* reserved * - do not use */) 
+static dxaudio_player_thread_information_block_t * create_player_thread_information_block(struct dsound_data * p_data)
 {
-    struct dsound_data * p_ds_data = (struct dsound_data *)dwUser;
-    perf_counter_mark_before(p_ds_data->counter1_);
-    play_data_chunk(p_ds_data);
-    perf_counter_mark_after(p_ds_data->counter1_);
-    perf_counter_get_duration(p_ds_data->counter1_, &p_ds_data->total, &p_ds_data->avg);
-    debug_outputln_bufferedA("%8.8x %I64d, %I64d", ::GetCurrentThreadId(), (1000000*p_ds_data->total)/p_ds_data->freq, (1000000*p_ds_data->avg)/p_ds_data->freq);
+    dxaudio_player_thread_information_block_t * p_player = (dxaudio_player_thread_information_block_t *)
+        HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(dxaudio_player_thread_information_block_t));
+    if (NULL != p_player)
+    {
+        HANDLE * p_wait_objects_table_iter = &p_player->wait_objects_table_[0];
+        *p_wait_objects_table_iter = p_data->hStartPlay_;
+        ++p_wait_objects_table_iter;
+        *p_wait_objects_table_iter = p_data->hStopPlay_;
+        ++p_wait_objects_table_iter;
+        *p_wait_objects_table_iter = p_data->hExitPlay_;
+        ++p_wait_objects_table_iter;
+        return p_player;
+    }
+    return p_player;
+}
+
+static void player_thread_on_start_playing(dxaudio_player_thread_information_block_t * p_tib, HANDLE hEvent)
+{
+    ResetEvent(hEvent);
+    debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
+}
+
+static void player_thread_on_stop_playing(dxaudio_player_thread_information_block_t * p_tib, HANDLE hEvent)
+{
+    ResetEvent(hEvent);
+    debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
+}
+
+static void player_thread_on_exit(dxaudio_player_thread_information_block_t * p_tib, HANDLE hEvent)
+{
+    ResetEvent(hEvent);
+    debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
+    p_tib->e_state_ = PLAYER_EXITTING;
+}
+
+static DWORD WINAPI dxaudio_player_thread(void * p_param)
+{
+    HRESULT hr;
+    hr = CoInitialize(NULL);
+    if (SUCCEEDED(hr))
+    {
+        dxaudio_player_thread_information_block_t  * p_tib;
+        struct dsound_data * p_dsound_data = (struct dsound_data*)p_param;
+        p_tib = create_player_thread_information_block(p_dsound_data);
+        if (NULL != p_dsound_data)
+        {
+            DWORD dwWaitResult;
+            /* Main player loop - here we process notifications from the main thread */
+            while (PLAYER_EXITTING != p_tib->e_state_)
+            {
+                dwWaitResult = WaitForMultipleObjects(COUNTOF_ARRAY(p_tib->wait_objects_table_), 
+                        &p_tib->wait_objects_table_[0], FALSE, INFINITE);
+                switch (dwWaitResult)
+                {
+                    case WAIT_TIMEOUT:
+                        debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
+                        break;
+                    case WAIT_FAILED:
+                        debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetLastError());
+                        break;
+                    default:
+                        switch (dwWaitResult-WAIT_OBJECT_0)
+                        {
+                            case 0:
+                                player_thread_on_start_playing(p_tib, p_tib->wait_objects_table_[0]);
+                                break;
+                            case 1:
+                                player_thread_on_stop_playing(p_tib, p_tib->wait_objects_table_[1]);
+                                break;
+                            case 2:
+                                player_thread_on_exit(p_tib, p_tib->wait_objects_table_[2]);
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                }
+            }
+        }
+    }
+    return SUCCEEDED(hr);    
 }
 
 extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings const * p_settings, struct fifo_circular_buffer * fifo)
 {
-    if (p_settings->play_settings_.play_chunks_count_ <= MAX_CHUNKS_COUNT)
+    struct dsound_data * p_retval = 
+        (struct dsound_data*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dsound_data));
+    if (NULL != p_retval)
     {
-        struct dsound_data * p_retval = 
-            (struct dsound_data*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dsound_data));
-        if (NULL != p_retval)
+        p_retval->fifo_ = fifo;
+        p_retval->number_of_chunks_ = p_settings->play_settings_.play_chunks_count_;
+        play_settings_copy(&p_retval->play_settings_, &p_settings->play_settings_);
+        p_retval->hStartPlay_ = ::CreateEvent(NULL, TRUE, FALSE, NULL);
+        if (NULL != p_retval->hStartPlay_)
         {
-            HRESULT hr;
-            p_retval->fifo_ = fifo;
-            p_retval->counter1_ = perf_counter_create();
-            p_retval->freq = perf_counter_get_freq(p_retval->counter1_);
-            p_retval->number_of_chunks_ = p_settings->play_settings_.play_chunks_count_;
-            play_settings_copy(&p_retval->play_settings_, &p_settings->play_settings_);
-            hr = init_ds_data(hWnd, &p_settings->wfex_, p_retval);
-            if (SUCCEEDED(hr))
+            p_retval->hStopPlay_ = ::CreateEvent(NULL, TRUE, FALSE, NULL);
+            if (NULL != p_retval->hStopPlay_)
             {
-                debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetCurrentThreadId());
-                return (DSOUNDPLAY)(p_retval);
+                p_retval->hExitPlay_ = ::CreateEvent(NULL, TRUE, FALSE, NULL);
+                if (NULL != p_retval->hExitPlay_)
+                {
+                    p_retval->hPlayerThread_ = ::CreateThread(NULL, 0, dxaudio_player_thread, p_retval, CREATE_SUSPENDED, NULL);
+                    if (NULL != p_retval->hPlayerThread_)
+                    {
+                        ::ResumeThread(p_retval->hPlayerThread_);
+                        return (DSOUNDPLAY)(p_retval);
+                    }
+                    CloseHandle(p_retval->hExitPlay_);
+                }
+                CloseHandle(p_retval->hStopPlay_); 
             }
-            HeapFree(GetProcessHeap(), 0, p_retval);
-            p_retval = NULL;
+            CloseHandle(p_retval->hStartPlay_); 
         }
+        HeapFree(GetProcessHeap(), 0, p_retval);
     }
-    return NULL;
+    return (DSOUNDPLAY)p_retval;
 }
 
 extern "C" void dsoundplayer_destroy(DSOUNDPLAY handle) 
 {
+    DWORD dwResult;
     struct dsound_data * p_ds_data = (struct dsound_data*)handle;
-    perf_counter_destroy(p_ds_data->counter1_);
-    p_ds_data->p_secondary_sound_buffer_->Release();
-    p_ds_data->p_primary_sound_buffer_->Release();
-    p_ds_data->p_direct_sound_8_->Release();
+    SetEvent(p_ds_data->hExitPlay_);
+    dwResult = WaitForSingleObject(p_ds_data->hPlayerThread_, MAX_WAIT_TIMEOUT_FOR_THREAD);
+    debug_outputln("%4.4u %s : %8.8x %8.8x", __LINE__, __FILE__, dwResult, WAIT_TIMEOUT);
+    CloseHandle(p_ds_data->hPlayerThread_);
+    CloseHandle(p_ds_data->hExitPlay_);
+    CloseHandle(p_ds_data->hStopPlay_);
+    CloseHandle(p_ds_data->hStartPlay_);
     HeapFree(GetProcessHeap(), 0, p_ds_data);
 }
 
 extern "C" int dsoundplayer_play(DSOUNDPLAY handle) 
 {
     struct dsound_data * p_ds_data = (struct dsound_data*)handle;
-	struct play_settings const * p_set = &p_ds_data->play_settings_;
-    LPDIRECTSOUNDBUFFER8 lpdsbStatic = p_ds_data->p_secondary_sound_buffer_;
-    debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetCurrentThreadId());
-    p_ds_data->timer_ = timeSetEvent(
-		p_set->timer_delay_, 
-		p_set->timer_resolution_, 
-		&sTimerCallback, (DWORD)p_ds_data, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
-    if (NULL != p_ds_data->timer_)
-    {
-        HRESULT hr;
-        hr = lpdsbStatic->SetCurrentPosition(0);
-        if (SUCCEEDED(hr))
-        {
-            hr = lpdsbStatic->Play(0, 0, DSBPLAY_LOOPING);
-            if (SUCCEEDED(hr))
-            {
-                debug_outputln("%4.4u %s : %8.8x", __LINE__, __FILE__, ::GetCurrentThreadId());
-                return 1;
-            }
-            debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);
-        }
-        debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);
-    }
-    debug_outputln("%s %4.4u", __FILE__, __LINE__);
-    return 0;
+    SetEvent(p_ds_data->hStartPlay_);
+    return 1;
 }
 
 extern "C" void dsoundplayer_pause(DSOUNDPLAY handle) 
 {
+    struct dsound_data * p_ds_data = (struct dsound_data*)handle;
+    SetEvent(p_ds_data->hStopPlay_);
 }
 
 extern "C" int dsoundplayer_stop(DSOUNDPLAY handle) 
 {
-    int result = 0;
     struct dsound_data * p_ds_data = (struct dsound_data*)handle;
-    LPDIRECTSOUNDBUFFER8 lpdsbStatic = p_ds_data->p_secondary_sound_buffer_;
-    HRESULT hr = lpdsbStatic->Stop();
-    MMRESULT res = timeKillEvent(p_ds_data->timer_);
-    if (SUCCEEDED(hr) && TIMERR_NOERROR == res)
-        result = 1;
-    return result;
+    SetEvent(p_ds_data->hStopPlay_);
+    return 1;
 }
 
