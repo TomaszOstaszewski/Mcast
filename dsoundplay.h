@@ -56,7 +56,7 @@ struct play_settings;
 /*!
  * @brief Defines a handle to the DirectSound player.
  */
-typedef struct tagDSOUNDPLAY * DSOUNDPLAY;
+typedef struct dsound_data * DSOUNDPLAY;
 
 /*!
  * @brief Creates a DirectSound player.

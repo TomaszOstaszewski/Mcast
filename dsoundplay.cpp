@@ -258,6 +258,7 @@ static HRESULT set_play_notifications(LPDIRECTSOUNDBUFFER8 p_secondary_buffer,
  *     hr = init_ds_data(hWnd, p_WFE, p_retval);
  *     if (SUCCEEDED(hr))
  *     {
+            HeapFree(GetProcessHeap(), 0, p_tib);
  *         return (DSOUNDPLAY)(p_retval);
  *     }
  * }
@@ -330,11 +331,13 @@ error:
 }
 
 /**
- * @brief Copy the data from "userspace" to the place from which they will be played on the speakers.
- * @param[in] dwOffset the offset, from the beginning of the buffer to the first byte of the buffer to be filled. 
- * @param[in] req_size number of bytes to fill the buffer with.
- * @param[in] p_buffer buffer to be filled. 
- * @param[in] p_input_buffer_desc from this source we will fetch the data
+ * @brief Main play routine - fill the buffer to be replayed by DirectSound subsystem.
+ * @details This routine copies the received playback data from the 'userspace' to the
+ * DirectSound provided buffer. This buffer will be then replayed by the DirectSound subsystem if such need
+ * arises. 
+ * @param[in] p_buffer - pointer to the secondary buffer into which data will be replayed.
+ * @param[in] p_fifo - pointer to the FIFO queue from which data will be fetched.
+ * @param[in] idx - index of the part of the DirectSound chunk into which copy data.
  * @return returns S_OK on success, any other result indicates a failure.
  */
 static HRESULT fill_buffer(LPDIRECTSOUNDBUFFER8 p_buffer, fifo_circular_buffer * p_fifo, size_t idx)
@@ -369,6 +372,12 @@ static HRESULT fill_buffer(LPDIRECTSOUNDBUFFER8 p_buffer, fifo_circular_buffer *
     return hr;
 }
 
+/**
+ * @brief
+ * @details
+ * @param[in] 
+ * @return
+ */
 static dxaudio_player_thread_information_block_t * create_player_thread_information_block(struct dsound_data * p_data)
 {
     dxaudio_player_thread_information_block_t * p_player = (dxaudio_player_thread_information_block_t *)
@@ -405,39 +414,58 @@ static dxaudio_player_thread_information_block_t * create_player_thread_informat
     return p_player;
 }
 
+/**
+ * @brief Handler of the 'PLAY' command 
+ * @details
+ * @param[in]
+ * @param[in]
+ */
 static void player_thread_on_start_playing(dxaudio_player_thread_information_block_t * p_tib, HANDLE hEvent)
 {
     HRESULT hr;
     /* Acknowledge interrupt */
-    ResetEvent(hEvent);
+    ::ResetEvent(hEvent);
 
     hr = p_tib->p_secondary_sound_buffer_->Play(0, 0, DSBPLAY_LOOPING); 
     debug_outputln("%4.4u %s : 0x%8.8x 0x%8.8x", __LINE__, __FILE__, hr, S_OK);
 }
 
+/**
+ * @brief Handler of the 'STOP' command 
+ * @details
+ * @param[in]
+ * @param[in]
+ */
 static void player_thread_on_stop_playing(dxaudio_player_thread_information_block_t * p_tib, HANDLE hEvent)
 {
     HRESULT hr;
     /* Acknowledge interrupt */
-    ResetEvent(hEvent);
+    ::ResetEvent(hEvent);
 
     hr = p_tib->p_secondary_sound_buffer_->Stop();
     debug_outputln("%4.4u %s : 0x%8.8x 0x%8.8x", __LINE__, __FILE__, hr, S_OK);
 }
 
+/**
+ * @brief Handler of the 'EXIT' command 
+ * @details
+ * @param[in]
+ * @param[in]
+ */
 static void player_thread_on_exit(dxaudio_player_thread_information_block_t * p_tib, HANDLE hEvent)
 {
+    HRESULT hr;
     /* Acknowledge interrupt */
-    ResetEvent(hEvent);
-
-    debug_outputln("%4.4u %s", __LINE__, __FILE__);
+    ::ResetEvent(hEvent);
+    hr = p_tib->p_secondary_sound_buffer_->Stop();
+    debug_outputln("%4.4u %s : 0x%8.8x 0x%8.8x", __LINE__, __FILE__, hr, S_OK);
     p_tib->e_state_ = PLAYER_EXITTING;
 }
 
 static DWORD WINAPI dxaudio_player_thread(void * p_param)
 {
     HRESULT hr;
-    hr = CoInitialize(NULL);
+    hr = ::CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (SUCCEEDED(hr))
     {
         dxaudio_player_thread_information_block_t  * p_tib;
@@ -445,14 +473,14 @@ static DWORD WINAPI dxaudio_player_thread(void * p_param)
         p_tib = create_player_thread_information_block(p_dsound_data);
         if (NULL != p_dsound_data)
         {
+            size_t idx;
             if (SUCCEEDED(hr))
             {
                 DWORD dwWaitResult;
-                size_t idx;
                 /* Main player loop - here we process notifications from the main thread */
                 while (PLAYER_EXITTING != p_tib->e_state_)
                 {
-                    dwWaitResult = WaitForMultipleObjects(COUNTOF_ARRAY(p_tib->wait_objects_array_), 
+                    dwWaitResult = ::WaitForMultipleObjects(COUNTOF_ARRAY(p_tib->wait_objects_array_), 
                             &p_tib->wait_objects_array_[0], FALSE, INFINITE);
                     switch (dwWaitResult)
                     {
@@ -503,11 +531,16 @@ static DWORD WINAPI dxaudio_player_thread(void * p_param)
             {
                 debug_outputln("%4.4u %s : 0x%8.8x", __LINE__, __FILE__, hr);
             }
-            p_tib->p_primary_sound_buffer_->Release();
             p_tib->p_secondary_sound_buffer_->Release();
+            p_tib->p_primary_sound_buffer_->Release();
             p_tib->p_direct_sound_8_->Release();
+            for (idx = 3; idx < 3 + NOTIFY_OBJECTS_COUNT; ++idx)
+            {
+                ::CloseHandle(p_tib->wait_objects_array_[idx]);
+            }
+            ::HeapFree(GetProcessHeap(), 0, p_tib);
         }
-        CoUninitialize();
+        ::CoUninitialize();
     }
     return 0;    
 }
@@ -541,11 +574,11 @@ extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings co
                     }
                     CloseHandle(p_retval->hExitPlay_);
                 }
-                CloseHandle(p_retval->hStopPlay_); 
+                ::CloseHandle(p_retval->hStopPlay_); 
             }
-            CloseHandle(p_retval->hStartPlay_); 
+            ::CloseHandle(p_retval->hStartPlay_); 
         }
-        HeapFree(GetProcessHeap(), 0, p_retval);
+        ::HeapFree(GetProcessHeap(), 0, p_retval);
     }
     return (DSOUNDPLAY)p_retval;
 }
@@ -553,34 +586,35 @@ extern "C" DSOUNDPLAY dsoundplayer_create(HWND hWnd, struct receiver_settings co
 extern "C" void dsoundplayer_destroy(DSOUNDPLAY handle) 
 {
     DWORD dwResult;
-    struct dsound_data * p_ds_data = (struct dsound_data*)handle;
-    SetEvent(p_ds_data->hExitPlay_);
-    dwResult = WaitForSingleObject(p_ds_data->hPlayerThread_, MAX_WAIT_TIMEOUT_FOR_THREAD);
+    /* Signal the replay thread that we want to exit */
+    ::SetEvent(handle->hExitPlay_);
+    /* Wait for replay thread exit */
+    dwResult = ::WaitForSingleObject(handle->hPlayerThread_, MAX_WAIT_TIMEOUT_FOR_THREAD);
     debug_outputln("%4.4u %s : %8.8x %8.8x", __LINE__, __FILE__, dwResult, WAIT_TIMEOUT);
-    CloseHandle(p_ds_data->hPlayerThread_);
-    CloseHandle(p_ds_data->hExitPlay_);
-    CloseHandle(p_ds_data->hStopPlay_);
-    CloseHandle(p_ds_data->hStartPlay_);
-    HeapFree(GetProcessHeap(), 0, p_ds_data);
+    ::CloseHandle(handle->hPlayerThread_);
+    ::CloseHandle(handle->hExitPlay_);
+    ::CloseHandle(handle->hStopPlay_);
+    ::CloseHandle(handle->hStartPlay_);
+    ::HeapFree(GetProcessHeap(), 0, handle);
 }
 
 extern "C" int dsoundplayer_play(DSOUNDPLAY handle) 
 {
-    struct dsound_data * p_ds_data = (struct dsound_data*)handle;
-    SetEvent(p_ds_data->hStartPlay_);
+    /* Signal that we want to start replay */ 
+    ::SetEvent(handle->hStartPlay_);
     return 1;
 }
 
 extern "C" void dsoundplayer_pause(DSOUNDPLAY handle) 
 {
-    struct dsound_data * p_ds_data = (struct dsound_data*)handle;
-    SetEvent(p_ds_data->hStopPlay_);
+    /* Signal that we want to stop */ 
+    ::SetEvent(handle->hStopPlay_);
 }
 
 extern "C" int dsoundplayer_stop(DSOUNDPLAY handle) 
 {
-    struct dsound_data * p_ds_data = (struct dsound_data*)handle;
-    SetEvent(p_ds_data->hStopPlay_);
+    /* Signal that we want to stop */ 
+    ::SetEvent(handle->hStopPlay_);
     return 1;
 }
 
