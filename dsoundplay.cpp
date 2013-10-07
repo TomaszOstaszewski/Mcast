@@ -360,7 +360,6 @@ static HRESULT fill_buffer(LPDIRECTSOUNDBUFFER8 p_buffer, fifo_circular_buffer *
         {
             fifo_circular_buffer_fetch_item(p_fifo, (uint8_t*)lpvWrite1, &size);
         }
-        debug_outputln("%4.4u %s : %8u 0x%p %8u %u", __LINE__, __FILE__, dwOffset, lpvWrite1, dwLength1, size);
         hr = p_buffer->Unlock(lpvWrite1, dwLength1, NULL, 0);
     }
     else
@@ -485,7 +484,6 @@ static DWORD WINAPI dxaudio_player_thread(void * p_param)
                                             hr = p_tib->p_secondary_sound_buffer_->GetCurrentPosition(&dw_read_cursor, &dw_write_cursor);   
                                             if (SUCCEEDED(hr))
                                             {
-                                                debug_outputln("%4.4u %s : %2u", __LINE__, __FILE__, (idx - 3 + 1)%2);
                                                 fill_buffer(p_tib->p_secondary_sound_buffer_, 
                                                     p_tib->fifo_, (idx - 3 + 1)%2);
                                             }
@@ -505,6 +503,9 @@ static DWORD WINAPI dxaudio_player_thread(void * p_param)
             {
                 debug_outputln("%4.4u %s : 0x%8.8x", __LINE__, __FILE__, hr);
             }
+            p_tib->p_primary_sound_buffer_->Release();
+            p_tib->p_secondary_sound_buffer_->Release();
+            p_tib->p_direct_sound_8_->Release();
         }
         CoUninitialize();
     }

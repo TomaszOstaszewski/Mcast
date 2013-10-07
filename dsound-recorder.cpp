@@ -165,8 +165,8 @@ static void destroy_audio_thread_information_block(dxaudio_recorder_thread_infor
     {
         ::CloseHandle(p_tib->notify_marks_[idx].hEventNotify);
     } 
-    p_tib->p_capture8_->Release();
     p_tib->p_capture_buffer8_->Release();
+    p_tib->p_capture8_->Release();
     ::HeapFree(GetProcessHeap(), 0, p_tib);
 }
 
