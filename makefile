@@ -127,6 +127,9 @@ $(OUTDIR_OBJ)\dsbcaps-utils.obj: dsbcaps-utils.cpp dsbcaps-utils.h $(OUTDIR_OBJ)
 $(OUTDIR_OBJ)\message-loop.obj: message-loop.c message-loop.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /Fd"$(OUTDIR_OBJ)\\" %s
 
+$(OUTDIR_OBJ)\directSound-caps.obj: directSound-caps.c directSound-caps.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
+    @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
+
 $(OUTDIR_OBJ)\circular-buffer-uint16.obj: circular-buffer-uint16.c circular-buffer-uint16.h $(OUTDIR_OBJ) $(OUTDIR_PCC)\pcc.pch
     @if exist "$(OUTDIR_OBJ)\$(@B).S" del /Q /F "$(OUTDIR_OBJ)\$(@B).S"
     @$(cc) $(cdebug) $(cvars) $(cflags) /I$(DXINCLUDE)  /W3 /WX /Yupcc.h /Fp$(OUTDIR_PCC)\pcc.pch /Fo"$(OUTDIR_OBJ)\\" /FAcs /Fa"$(OUTDIR_OBJ)\\"$(@B).S /Fd"$(OUTDIR_OBJ)\\" %s
@@ -205,6 +208,7 @@ $(OUTDIR)\dsoundplay.lib:\
  $(OUTDIR_OBJ)\dsound-recorder.obj \
  $(OUTDIR_OBJ)\circular-buffer-uint8.obj\
  $(OUTDIR_OBJ)\circular-buffer-uint16.obj \
+ $(OUTDIR_OBJ)\directSound-caps.obj \
  $(OUTDIR_OBJ)\dsbcaps-utils.obj \
  $(OUTDIR_OBJ)\receiver-settings.obj\
  $(OUTDIR_OBJ)\mcast-settings.obj\
@@ -231,6 +235,7 @@ $(OUTDIR)\receiver.exe: \
  $(OUTDIR_OBJ)\mcast_setup.obj\
  $(OUTDIR_OBJ)\message-loop.obj\
  $(OUTDIR_OBJ)\mcast-receiver-state-machine.obj\
+ $(OUTDIR_OBJ)\directSound-caps.obj \
  $(OUTDIR_OBJ)\receiver-settings.obj\
  $(OUTDIR_OBJ)\mcast-settings.obj\
  $(OUTDIR_OBJ)\play-settings.obj\
@@ -254,6 +259,7 @@ $(OUTDIR)\sender.exe: \
  $(OUTDIR_OBJ)\circular-buffer-uint8.obj \
  $(OUTDIR_OBJ)\circular-buffer-uint16.obj \
  $(OUTDIR_OBJ)\mcast-sender-state-machine.obj\
+ $(OUTDIR_OBJ)\directSound-caps.obj \
  $(OUTDIR_OBJ)\sender-settings.obj\
  $(OUTDIR_OBJ)\recorder-settings.obj\
  $(OUTDIR_OBJ)\dialog-utils.obj\

@@ -69,6 +69,7 @@
 #include "receiver-settings.h"
 #include "perf-counter-itf.h"
 #include "dsbcaps-utils.h"
+#include "directSound-caps.h"
 
 /*!
  * @brief Maximum supported number of buffer chunks.
@@ -278,8 +279,24 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, dxaudio_playe
     hr = DirectSoundCreate8(&DSDEVID_DefaultVoicePlayback, &p_ds_data->p_direct_sound_8_, NULL);
     if (FAILED(hr))
     {
-        debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
+        debug_outputln("%4.4u %s : 0x%8.8x", __LINE__, __FILE__, hr);
         goto error;
+    }
+    {
+        DSCAPS caps;
+        ZeroMemory(&caps, sizeof(caps));
+        caps.dwSize = sizeof(caps);
+        hr = p_ds_data->p_direct_sound_8_->GetCaps(&caps);
+        if (SUCCEEDED(hr))
+        {
+            char buffer[2048];
+            get_caps_desc(&caps, buffer, sizeof(buffer));
+            debug_outputln("%4.4u %s : %s", __LINE__, __FILE__, buffer);
+        }
+        else
+        {
+            debug_outputln("%4.4u %s : 0x%8.8x", __LINE__, __FILE__, hr);
+        }
     }
     if (NULL == hwnd)
     {
@@ -303,12 +320,12 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, dxaudio_playe
     p_ds_data->p_dsound_data->wfe_.cbSize = sizeof(WAVEFORMATEX);
     p_ds_data->p_dsound_data->nSingleBufferSize_ = p_ds_data->p_dsound_data->play_settings_.play_buffer_size_;
     hr = create_buffers(p_ds_data->p_direct_sound_8_, 
-        &p_ds_data->p_dsound_data->wfe_, 
-        p_ds_data->p_dsound_data->number_of_chunks_,
-        p_ds_data->p_dsound_data->nSingleBufferSize_,
-        &p_ds_data->p_primary_sound_buffer_,
-        &p_ds_data->p_secondary_sound_buffer_
-    );
+            &p_ds_data->p_dsound_data->wfe_, 
+            p_ds_data->p_dsound_data->number_of_chunks_,
+            p_ds_data->p_dsound_data->nSingleBufferSize_,
+            &p_ds_data->p_primary_sound_buffer_,
+            &p_ds_data->p_secondary_sound_buffer_
+            );
     if (FAILED(hr))
     {
         debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);

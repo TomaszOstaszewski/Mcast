@@ -97,7 +97,6 @@ void debug_output_flush(void)
     g_write_offset = 0;
 }
 
-
 int debug_outputln_bufferedA(const char * formatString, ...)
 {
 	HRESULT hr;
