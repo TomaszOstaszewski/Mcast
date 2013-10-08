@@ -37,15 +37,6 @@ extern "C" {
  * @brief A structure that describes receiver parameters.
  */
 struct play_settings {
-	/*!
-	 * @brief Default timeout, in milliseconds, for multimedia play timer.
-	 * @details Each time the timeout expires, the DirectSound fill-buffer-and-play function will be invoked.
-	 */
- 	uint16_t 	timer_delay_;
-	/*!
-	 * @brief Timer resolution for multimedia play timer.
-     */
-	uint16_t 	timer_resolution_;
     /*!
   	 * @brief Default size, in bytes, of a single play chunk to be used in DirectSound. 
      * @details 

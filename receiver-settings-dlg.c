@@ -96,14 +96,6 @@ struct receiver_settings_dlg_controls
      */
     HWND play_buffer_size_spin_;
     /*!
-     * @brief Handle to the Multimedit timer timeout edit control.
-     */
-    HWND mmtimer_edit_;
-    /*!
-     * @brief Handle to the Multimedit timer timeout spin control.
-     */
-    HWND mmtimer_spin_;
-    /*!
      * @brief Handle to the # of chunks edit control.
      */
     HWND num_of_chunks_edit_;
@@ -236,7 +228,6 @@ static void data_to_controls(struct receiver_settings const * p_settings, struct
     UINT nCircularBufferSize = 1 << p_settings->circular_buffer_level_;
     put_in_edit_control_uint16(p_controls->poll_sleep_time_edit_, p_settings->poll_sleep_time_);
     put_in_edit_control_uint16(p_controls->play_buffer_size_edit_, p_settings->play_settings_.play_buffer_size_);
-    put_in_edit_control_uint16(p_controls->mmtimer_edit_, p_settings->play_settings_.timer_delay_);
     put_in_edit_control_uint16(p_controls->num_of_chunks_edit_, p_settings->play_settings_.play_chunks_count_);
     /* Find the sample rate that matches the combo box items */
     select_combo_value(sample_rate_values, sizeof(sample_rate_values)/sizeof(sample_rate_values[0]), p_controls->sample_rate_combo_, p_settings->wfex_.nSamplesPerSec);
@@ -254,7 +245,7 @@ static void data_to_controls(struct receiver_settings const * p_settings, struct
 static int edit_controls_to_data(struct receiver_settings * p_settings, struct receiver_settings_dlg_controls * p_controls)
 {
     int result;
-    uint16_t poll_sleep_time, play_buffer_size, timer_delay, play_chunks_count;
+    uint16_t poll_sleep_time, play_buffer_size,  play_chunks_count;
     /* Get values from edit controls */
     result = get_from_edit_uint16_dec(p_controls->poll_sleep_time_edit_, &poll_sleep_time);
     if (result<=0)
@@ -262,13 +253,9 @@ static int edit_controls_to_data(struct receiver_settings * p_settings, struct r
     result = get_from_edit_uint16_dec(p_controls->play_buffer_size_edit_, &play_buffer_size);
     if (result<=0)
         goto error;
-    result = get_from_edit_uint16_dec(p_controls->mmtimer_edit_, &timer_delay);
-    if (result<=0)
-        goto error;
     result = get_from_edit_uint16_dec(p_controls->num_of_chunks_edit_, &play_chunks_count);
     if (result<=0)
         goto error;
-    p_settings->play_settings_.timer_delay_ = timer_delay;
     p_settings->play_settings_.play_buffer_size_ = play_buffer_size;
     p_settings->poll_sleep_time_ = poll_sleep_time;
     p_settings->play_settings_.play_chunks_count_ = play_chunks_count;
@@ -381,10 +368,6 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(g_controls->play_buffer_size_edit_);
     g_controls->play_buffer_size_spin_ = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_SPIN);
     assert(g_controls->play_buffer_size_spin_);
-    g_controls->mmtimer_edit_ = GetDlgItem(hwnd, IDC_MMTIMER_EDIT_CTRL);
-    assert(g_controls->mmtimer_edit_);
-    g_controls->mmtimer_spin_ = GetDlgItem(hwnd, IDC_MMTIMER_SPIN);
-    assert(g_controls->mmtimer_spin_);
     g_controls->sample_rate_combo_ = GetDlgItem(hwnd, IDC_WAV_SAMPLE_RATE);
     assert(g_controls->sample_rate_combo_);
     g_controls->bits_per_sample_combo_ = GetDlgItem(hwnd, IDC_WAV_BITS_PER_SAMPLE);
@@ -401,8 +384,6 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(g_controls->circularbuffer_combo_);
     SendMessage(g_controls->poll_sleep_time_spin_, UDM_SETBUDDY, (WPARAM)g_controls->poll_sleep_time_edit_, (LPARAM)0);
     SendMessage(g_controls->play_buffer_size_spin_, UDM_SETBUDDY, (WPARAM)g_controls->play_buffer_size_edit_, (LPARAM)0);
-    SendMessage(g_controls->mmtimer_spin_, UDM_SETBUDDY, (WPARAM)g_controls->mmtimer_edit_, (LPARAM)0);
-    SendMessage(g_controls->mmtimer_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     SendMessage(g_controls->poll_sleep_time_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     SendMessage(g_controls->play_buffer_size_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     SendMessage(g_controls->num_of_chunks_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
@@ -445,9 +426,6 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                             break;
                         case IDC_PLAY_BUFFER_SIZE_SPIN:
                             g_controls->spins_copy_.play_settings_.play_buffer_size_ -= p_up_down->iDelta;
-                            break;
-                        case IDC_MMTIMER_SPIN:
-                            g_controls->spins_copy_.play_settings_.timer_delay_ -= p_up_down->iDelta;
                             break;
                         case IDC_PLAY_CHUNKS_SPIN:
                             g_controls->spins_copy_.play_settings_.play_chunks_count_ -= p_up_down->iDelta;

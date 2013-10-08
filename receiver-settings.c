@@ -40,6 +40,11 @@
  */
 #define DEFAULT_NETPOLL_SLEEP_TIME (1)
 
+/**
+ * @brief A default value for samples per second.
+ */
+#define RECEIVER_DEFAULT_SAMPLES_PER_SEC (8000)
+
 /*!
  * @brief Default level for the circular buffer.
  * @details The default level of N gives 2^N items to be stored in the circular buffer.
@@ -55,9 +60,6 @@
  * @brief Minimum level for the circular buffer.
  */
 #define MINIMUM_CIRCULAR_BUFFER_LEVEL (5)
-
-#define RECEIVER_DEFAULT_SAMPLES_PER_SEC (8000)
-
 
 int receiver_settings_get_default(struct receiver_settings * p_settings)
 {
