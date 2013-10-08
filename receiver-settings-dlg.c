@@ -26,6 +26,7 @@
  * @endcode
  */
 #include "pcc.h"
+#include "receiver.h" /* resources */
 #include "debug_helpers.h"
 #include "receiver-settings.h"
 #include "receiver-settings-dlg.h"
@@ -99,6 +100,7 @@ struct receiver_settings_dlg_controls
      * @brief Handle to the # of chunks edit control.
      */
     HWND num_of_chunks_edit_;
+    HWND chunk_size_combo_;
     /*!
      * @brief Handle to the # of chunks spin control.
      */
@@ -159,6 +161,14 @@ static struct val_2_combo circularbuffer_size_values[] = {
     { 65536 },
 };
 
+static struct val_2_combo single_chunk_size_values[] = {
+    { 512 },
+    { 1024 },
+    { 2048 },
+    { 4096 },
+    { 8192 },
+    { 16384 },
+};
 
 static struct val_2_combo bits_per_sample_values[] = {
     { 8 },
@@ -382,11 +392,14 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(g_controls->channels_combo_);
     g_controls->circularbuffer_combo_ = GetDlgItem(hwnd, IDC_CIRCBUFFER_COMBO);
     assert(g_controls->circularbuffer_combo_);
+    //g_controls->chunk_size_combo_ = GetDlgItem(hwnd, IDC_COMBO1);
+    //assert(g_controls->chunk_size_combo_);
     SendMessage(g_controls->poll_sleep_time_spin_, UDM_SETBUDDY, (WPARAM)g_controls->poll_sleep_time_edit_, (LPARAM)0);
     SendMessage(g_controls->play_buffer_size_spin_, UDM_SETBUDDY, (WPARAM)g_controls->play_buffer_size_edit_, (LPARAM)0);
     SendMessage(g_controls->poll_sleep_time_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     SendMessage(g_controls->play_buffer_size_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     SendMessage(g_controls->num_of_chunks_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+    //fill_combo(g_controls->chunk_size_combo_, single_chunk_size_values, COUNTOF_ARRAY(single_chunk_size_values));
     fill_combo(g_controls->sample_rate_combo_, sample_rate_values, sizeof(sample_rate_values)/sizeof(sample_rate_values[0]));
     fill_combo(g_controls->bits_per_sample_combo_, bits_per_sample_values, sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]));
     fill_combo(g_controls->channels_combo_, channel_values, sizeof(channel_values)/sizeof(channel_values[0]));
