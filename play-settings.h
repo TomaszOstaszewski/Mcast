@@ -38,18 +38,17 @@ extern "C" {
  */
 struct play_settings {
     /*!
-  	 * @brief Default size, in bytes, of a single play chunk to be used in DirectSound. 
-     * @details 
-     * The DirectSound play buffer will be a single buffer, divided to \ref play_chunks_count_ equal chunks, each of \ref play_buffer_size_ bytes long.
- 	 */
-	uint16_t	play_buffer_size_;
-    /*!
   	 * @brief Default number of play chunks.
      * @details 
      * The DirectSound play buffer will be a single buffer, divided to \ref play_chunks_count_ equal chunks, each of \ref play_buffer_size_ bytes long.
  	 */
 	uint16_t	play_chunks_count_;
-    uint16_t    play_chunk_size_in_bytes_;
+       /*!
+  	 * @brief Default size, in bytes, of a single play chunk to be used in DirectSound. 
+     * @details 
+     * The DirectSound play buffer will be a single buffer, divided to \ref play_chunks_count_ equal chunks, each of \ref play_buffer_size_ bytes long.
+ 	 */
+ uint16_t    play_chunk_size_in_bytes_;
 };
 
 /*!

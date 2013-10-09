@@ -51,35 +51,39 @@
  * @brief Default number of play chunk.s
  * @details Total buffer occupied by PCM data used for replaying it will be : number_of_chunks * size_of_single_chunk
  */
-#define MAX_NUMBER_OF_CHUNKS (16)
+#define PLAY_SETTINGS_MAX_NUMBER_OF_CHUNKS (16)
 
 /*!
  * @brief Default number of play chunk.s
  * @details Total buffer occupied by PCM data used for replaying it will be : number_of_chunks * size_of_single_chunk
  */
-#define MIN_NUMBER_OF_CHUNKS (2)
+#define PLAY_SETTINGS_MIN_NUMBER_OF_CHUNKS (2)
 
 /*!
  * @brief Default number of play chunk.s
  * @details Total buffer occupied by PCM data used for replaying it will be : number_of_chunks * size_of_single_chunk
  */
-#define DEFAULT_NUMBER_OF_CHUNKS (2)
+#define PLAY_SETTINGS_DEFAULT_NUMBER_OF_CHUNKS (2)
 
+
+#define PLAY_SETTINGS_MIN_CHUNK_SIZE_IN_BYTES (512)
+#define PLAY_SETTINGS_MAX_CHUNK_SIZE_IN_BYTES (32768)
 #define PLAY_SETTINGS_DEFAULT_CHUNK_SIZE_IN_BYTES (1024)
 
 int play_settings_get_default(struct play_settings * p_settings)
 {
-    p_settings->play_buffer_size_ = DEFAULT_PLAY_CHUNK_SIZE;
-    p_settings->play_chunks_count_ = DEFAULT_NUMBER_OF_CHUNKS;
+    p_settings->play_chunks_count_ = PLAY_SETTINGS_DEFAULT_NUMBER_OF_CHUNKS;
     p_settings->play_chunk_size_in_bytes_ = PLAY_SETTINGS_DEFAULT_CHUNK_SIZE_IN_BYTES;
 	return 1;
 }
 
 int play_settings_validate(struct play_settings const * p_settings)
 {
-	if (p_settings->play_buffer_size_ < MIN_PLAY_CHUNK_SIZE || p_settings->play_buffer_size_ > MAX_PLAY_CHUNK_SIZE)
+	if (p_settings->play_chunk_size_in_bytes_ < PLAY_SETTINGS_MIN_CHUNK_SIZE_IN_BYTES
+        || p_settings->play_chunk_size_in_bytes_ > PLAY_SETTINGS_MAX_CHUNK_SIZE_IN_BYTES )
 		return 0;	
-	if (p_settings->play_chunks_count_ < MIN_NUMBER_OF_CHUNKS || p_settings->play_chunks_count_ > MAX_NUMBER_OF_CHUNKS)
+	if (p_settings->play_chunks_count_ < PLAY_SETTINGS_MIN_NUMBER_OF_CHUNKS
+        || p_settings->play_chunks_count_ > PLAY_SETTINGS_MAX_NUMBER_OF_CHUNKS)
 		return 0;	
     return 1;
 }

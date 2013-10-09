@@ -318,7 +318,8 @@ static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, dxaudio_playe
     }
     CopyMemory(&p_ds_data->p_dsound_data->wfe_, p_WFE, sizeof(WAVEFORMATEX));
     p_ds_data->p_dsound_data->wfe_.cbSize = sizeof(WAVEFORMATEX);
-    p_ds_data->p_dsound_data->nSingleBufferSize_ = p_ds_data->p_dsound_data->play_settings_.play_buffer_size_;
+    p_ds_data->p_dsound_data->nSingleBufferSize_ = p_ds_data->p_dsound_data->play_settings_.play_chunk_size_in_bytes_;
+    debug_outputln("%4.4u %s : %u", __LINE__, __FILE__, p_ds_data->p_dsound_data->play_settings_.play_chunk_size_in_bytes_);
     hr = create_buffers(p_ds_data->p_direct_sound_8_, 
             &p_ds_data->p_dsound_data->wfe_, 
             p_ds_data->p_dsound_data->number_of_chunks_,

@@ -89,13 +89,8 @@ struct receiver_settings_dlg_controls
      */
     HWND poll_sleep_time_spin_;
     /*!
-     * @brief Handle to the play buffer size edit control.
+     * @brief Handle to the play buffer size combo control.
      */
-    HWND play_buffer_size_edit_;
-    /*!
-     * @brief Handle to the play buffer size spin control.
-     */
-    HWND play_buffer_size_spin_;
     HWND chunk_size_combo_;
     /*!
      * @brief Handle to the # of chunks edit control.
@@ -239,9 +234,9 @@ static void data_to_controls(struct receiver_settings const * p_settings, struct
 {
     UINT nCircularBufferSize = 1 << p_settings->circular_buffer_level_;
     put_in_edit_control_uint16(p_controls->poll_sleep_time_edit_, p_settings->poll_sleep_time_);
-    put_in_edit_control_uint16(p_controls->play_buffer_size_edit_, p_settings->play_settings_.play_buffer_size_);
     put_in_edit_control_uint16(p_controls->num_of_chunks_edit_, p_settings->play_settings_.play_chunks_count_);
     /* Find the sample rate that matches the combo box items */
+    debug_outputln("%4.4u %s : %u", __LINE__, __FILE__, p_settings->play_settings_.play_chunk_size_in_bytes_);
     select_combo_value(chunk_size_combo_values, COUNTOF_ARRAY(chunk_size_combo_values), p_controls->chunk_size_combo_, p_settings->play_settings_.play_chunk_size_in_bytes_);
     select_combo_value(sample_rate_values, sizeof(sample_rate_values)/sizeof(sample_rate_values[0]), p_controls->sample_rate_combo_, p_settings->wfex_.nSamplesPerSec);
     select_combo_value(bits_per_sample_values, sizeof(bits_per_sample_values)/sizeof(bits_per_sample_values[0]), p_controls->bits_per_sample_combo_, p_settings->wfex_.wBitsPerSample);
@@ -258,18 +253,14 @@ static void data_to_controls(struct receiver_settings const * p_settings, struct
 static int edit_controls_to_data(struct receiver_settings * p_settings, struct receiver_settings_dlg_controls * p_controls)
 {
     int result;
-    uint16_t poll_sleep_time, play_buffer_size,  play_chunks_count;
+    uint16_t poll_sleep_time, play_chunks_count;
     /* Get values from edit controls */
     result = get_from_edit_uint16_dec(p_controls->poll_sleep_time_edit_, &poll_sleep_time);
-    if (result<=0)
-        goto error;
-    result = get_from_edit_uint16_dec(p_controls->play_buffer_size_edit_, &play_buffer_size);
     if (result<=0)
         goto error;
     result = get_from_edit_uint16_dec(p_controls->num_of_chunks_edit_, &play_chunks_count);
     if (result<=0)
         goto error;
-    p_settings->play_settings_.play_buffer_size_ = play_buffer_size;
     p_settings->poll_sleep_time_ = poll_sleep_time;
     p_settings->play_settings_.play_chunks_count_ = play_chunks_count;
     return 1;
@@ -390,10 +381,6 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     assert(g_controls->poll_sleep_time_edit_);
     g_controls->poll_sleep_time_spin_ = GetDlgItem(hwnd, IDC_POLL_SLEEP_TIME_SPIN);
     assert(g_controls->poll_sleep_time_spin_);
-    g_controls->play_buffer_size_edit_ = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_EDIT); 
-    assert(g_controls->play_buffer_size_edit_);
-    g_controls->play_buffer_size_spin_ = GetDlgItem(hwnd, IDC_PLAY_BUFFER_SIZE_SPIN);
-    assert(g_controls->play_buffer_size_spin_);
     g_controls->sample_rate_combo_ = GetDlgItem(hwnd, IDC_WAV_SAMPLE_RATE);
     assert(g_controls->sample_rate_combo_);
     g_controls->bits_per_sample_combo_ = GetDlgItem(hwnd, IDC_WAV_BITS_PER_SAMPLE);
@@ -411,9 +398,7 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
     g_controls->chunk_size_combo_ = GetDlgItem(hwnd, IDC_COMBO1);
     assert(g_controls->chunk_size_combo_);
     SendMessage(g_controls->poll_sleep_time_spin_, UDM_SETBUDDY, (WPARAM)g_controls->poll_sleep_time_edit_, (LPARAM)0);
-    SendMessage(g_controls->play_buffer_size_spin_, UDM_SETBUDDY, (WPARAM)g_controls->play_buffer_size_edit_, (LPARAM)0);
     SendMessage(g_controls->poll_sleep_time_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
-    SendMessage(g_controls->play_buffer_size_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     SendMessage(g_controls->num_of_chunks_edit_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     fill_combo(g_controls->chunk_size_combo_, chunk_size_combo_values, COUNTOF_ARRAY(chunk_size_combo_values));
     fill_combo(g_controls->sample_rate_combo_, sample_rate_values, COUNTOF_ARRAY(sample_rate_values));
@@ -453,9 +438,6 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                     {
                         case IDC_POLL_SLEEP_TIME_SPIN:
                             g_controls->spins_copy_.poll_sleep_time_ -= p_up_down->iDelta;
-                            break;
-                        case IDC_PLAY_BUFFER_SIZE_SPIN:
-                            g_controls->spins_copy_.play_settings_.play_buffer_size_ -= p_up_down->iDelta;
                             break;
                         case IDC_PLAY_CHUNKS_SPIN:
                             g_controls->spins_copy_.play_settings_.play_chunks_count_ -= p_up_down->iDelta;
