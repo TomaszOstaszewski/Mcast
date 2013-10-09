@@ -49,6 +49,7 @@ struct play_settings {
      * The DirectSound play buffer will be a single buffer, divided to \ref play_chunks_count_ equal chunks, each of \ref play_buffer_size_ bytes long.
  	 */
 	uint16_t	play_chunks_count_;
+    uint16_t    play_chunk_size_in_bytes_;
 };
 
 /*!

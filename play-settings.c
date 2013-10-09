@@ -65,10 +65,13 @@
  */
 #define DEFAULT_NUMBER_OF_CHUNKS (2)
 
+#define PLAY_SETTINGS_DEFAULT_CHUNK_SIZE_IN_BYTES (1024)
+
 int play_settings_get_default(struct play_settings * p_settings)
 {
     p_settings->play_buffer_size_ = DEFAULT_PLAY_CHUNK_SIZE;
     p_settings->play_chunks_count_ = DEFAULT_NUMBER_OF_CHUNKS;
+    p_settings->play_chunk_size_in_bytes_ = PLAY_SETTINGS_DEFAULT_CHUNK_SIZE_IN_BYTES;
 	return 1;
 }
 
