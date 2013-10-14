@@ -58,6 +58,7 @@ int mcast_settings_get_default(struct mcast_settings * p_target)
     p_target->nTTL_ = DEFAULT_TTL;
 	memcpy(&p_target->mcast_addr_.sin_addr, &net_addr, sizeof(unsigned long));
 	p_target->mcast_addr_.sin_port = htons(DEFAULT_MCASTPORT);
+	ZeroMemory(&p_target->bind_addr_, sizeof(p_target->bind_addr_));
     return 1;
 }
 

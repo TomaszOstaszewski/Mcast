@@ -47,6 +47,7 @@ struct mcast_settings {
     char * bindAddr_; /*!< Name of the interface to bind to */
 	int nTTL_; /*!< The 'Time To Live' parameter to set on the socket. */
 	struct sockaddr_in mcast_addr_; /*!< IPv4 address and port of the multicast group */
+    struct sockaddr_in bind_addr_;
 };
 
 /*!
