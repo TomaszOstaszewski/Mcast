@@ -56,7 +56,7 @@ struct circular_buffer_uint16 * circular_buffer_uint16_create_with_size(uint8_t 
     if (level >= 2 && level <= 16)
     {
         struct circular_buffer_uint16 * p_buffer;
-        p_buffer = malloc(sizeof(struct circular_buffer_uint16_header)+sizeof(uint8_t)*(1<<level));
+        p_buffer = malloc(sizeof(struct circular_buffer_uint16_header)+sizeof(uint16_t)*(1<<level));
         assert(NULL != p_buffer);
         p_buffer->hdr_.max_items_ = 1 << level;
         p_buffer->hdr_.read_idx_ = 0;
