@@ -145,77 +145,67 @@ static HRESULT create_buffers(LPDIRECTSOUND8 p_ds,
     LPDIRECTSOUNDBUFFER * pp_primary_sound_buffer, 
     LPDIRECTSOUNDBUFFER8 * pp_secondary_sound_buffer)
 {
-    HRESULT hr;
+    HRESULT hr = E_INVALIDARG;
     DSBUFFERDESC bufferDesc;
     LPDIRECTSOUNDBUFFER lpDSB = NULL;
-
-    if (NULL != *pp_primary_sound_buffer || NULL != *pp_secondary_sound_buffer)
+    if (NULL == *pp_primary_sound_buffer && NULL == *pp_secondary_sound_buffer)
+    {
+        ZeroMemory(&bufferDesc, sizeof(bufferDesc));
+        bufferDesc.dwSize = sizeof(bufferDesc);
+        bufferDesc.dwFlags = DSBCAPS_PRIMARYBUFFER; 
+        bufferDesc.guid3DAlgorithm = DS3DALG_DEFAULT;
+        /* All others must be null for primary buffer */
+        hr = p_ds->CreateSoundBuffer(&bufferDesc, pp_primary_sound_buffer, NULL);
+        if (SUCCEEDED(hr))
+        {
+            hr = (*pp_primary_sound_buffer)->SetFormat(p_wfex);
+            if (SUCCEEDED(hr))
+            {
+                get_buffer_caps("Primary: ", *pp_primary_sound_buffer);
+                /* Secondary buffer */
+                bufferDesc.dwFlags = DSBCAPS_CTRLVOLUME /* The buffer has volume control capability. */ 
+                    | DSBCAPS_CTRLPAN /* The buffer has pan control capability. */ 
+                    | DSBCAPS_CTRLFREQUENCY /* The buffer has frequency control capability. */ 
+                    | DSBCAPS_GLOBALFOCUS /* With this flag set, an application using DirectSound can continue      */
+                    /* to play its buffers if the user switches focus to another application, */
+                    /* even if the new application uses DirectSound.                          */ 
+                    | DSBCAPS_CTRLPOSITIONNOTIFY; /* The buffer has position notification capability. */
+                /* multiple buffering - our buffer is composed of multiple chunks */
+                /* while one chunk is being played, the other one is available for change */
+                bufferDesc.dwBufferBytes = number_of_chunks * single_buffer_size;
+                bufferDesc.lpwfxFormat = p_wfex;
+                hr = p_ds->CreateSoundBuffer(&bufferDesc, &lpDSB, NULL);
+                if (SUCCEEDED(hr))
+                {
+                    hr = lpDSB->QueryInterface(IID_IDirectSoundBuffer8, (LPVOID*)pp_secondary_sound_buffer);
+                    if (SUCCEEDED(hr))
+                    {
+                        get_buffer_caps("Secondary: ", *pp_secondary_sound_buffer);
+                        lpDSB->Release();
+                        return hr;
+                    }
+                    lpDSB->Release(); 
+                }
+                else
+                {
+                    debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
+                }
+            }
+            else
+            {
+                debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);
+            }
+            (*pp_primary_sound_buffer)->Release();
+        }
+        else
+        {
+            debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
+        }
+    } 
+    else
     {
         debug_outputln("%s %4.4u : %p %p", __FILE__, __LINE__, *pp_primary_sound_buffer, *pp_secondary_sound_buffer);
         return E_INVALIDARG;
-    }
-    ZeroMemory(&bufferDesc, sizeof(bufferDesc));
-    bufferDesc.dwSize = sizeof(bufferDesc);
-    bufferDesc.dwFlags = DSBCAPS_PRIMARYBUFFER; 
-    bufferDesc.guid3DAlgorithm = DS3DALG_DEFAULT;
-    /* All others must be null for primary buffer */
-    hr = p_ds->CreateSoundBuffer(&bufferDesc, pp_primary_sound_buffer, NULL);
-    if (FAILED(hr))
-    {
-        debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
-        goto error;
-    }
-    hr = (*pp_primary_sound_buffer)->SetFormat(p_wfex);
-    if (FAILED(hr))
-    {
-        debug_outputln("%s %4.4u : %8.8x", __FILE__, __LINE__, hr);
-        goto error;
-    }
-    get_buffer_caps("Primary: ", *pp_primary_sound_buffer);
-    /* Secondary buffer */
-    bufferDesc.dwFlags = DSBCAPS_CTRLVOLUME /* The buffer has volume control capability. */ 
-        | DSBCAPS_CTRLPAN /* The buffer has pan control capability. */ 
-        | DSBCAPS_CTRLFREQUENCY /* The buffer has frequency control capability. */ 
-        | DSBCAPS_GLOBALFOCUS /* With this flag set, an application using DirectSound can continue to play its buffers if the user switches focus to another application, even if the new application uses DirectSound. */ 
-        | DSBCAPS_CTRLPOSITIONNOTIFY; /* The buffer has position notification capability. */
-
-    /* double buffering - one buffer being played, whereas the other is being filled in */
-    bufferDesc.dwBufferBytes = number_of_chunks * single_buffer_size;
-    bufferDesc.lpwfxFormat = p_wfex;
-    hr = p_ds->CreateSoundBuffer(&bufferDesc, &lpDSB, NULL);
-    if (FAILED(hr))
-    {
-        debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
-        goto error;
-    }
-    hr = lpDSB->QueryInterface(IID_IDirectSoundBuffer8, (LPVOID*)pp_secondary_sound_buffer);
-    if (FAILED(hr))
-    {
-        debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
-        goto error;
-    }
-    get_buffer_caps("Secondary: ", *pp_secondary_sound_buffer);
-    if (NULL != lpDSB)
-    {
-        lpDSB->Release();
-        lpDSB = NULL;
-    }
-    return hr;
-error:
-    if (NULL != *pp_secondary_sound_buffer)
-    {
-        (*pp_secondary_sound_buffer)->Release();
-        *pp_secondary_sound_buffer = NULL;
-    }
-    if (NULL != *pp_primary_sound_buffer)
-    {
-        (*pp_primary_sound_buffer)->Release();
-        *pp_primary_sound_buffer = NULL;
-    }
-    if (NULL != lpDSB)
-    {
-        lpDSB->Release();
-        lpDSB = NULL;
     }
     return hr;
 }
@@ -239,13 +229,34 @@ static HRESULT set_play_notifications(LPDIRECTSOUNDBUFFER8 p_secondary_buffer,
     { 
         hr = p_notify_itf->SetNotificationPositions(notify_array_count, notify_array);
         p_notify_itf->Release();
+#if 0
         debug_outputln("%4.4u %s : 0x%8.8x %u", __LINE__, __FILE__, hr, notify_array_count);
         for (size_t idx = 0; idx < notify_array_count; ++idx)
         {
             debug_outputln("%4.4u %s : 0x%8.8x %u", __LINE__, __FILE__, notify_array[idx].hEventNotify, notify_array[idx].dwOffset);
         }    
+#endif
     }
     return hr;
+}
+
+static void dump_dscaps(LPDIRECTSOUND8 p_ds8)
+{
+    HRESULT hr;
+    DSCAPS caps;
+    ZeroMemory(&caps, sizeof(caps));
+    caps.dwSize = sizeof(caps);
+    hr = p_ds8->GetCaps(&caps);
+    if (SUCCEEDED(hr))
+    {
+        char buffer[2048];
+        get_caps_desc(&caps, buffer, sizeof(buffer));
+        debug_outputln("%4.4u %s : %s", __LINE__, __FILE__, buffer);
+    }
+    else
+    {
+        debug_outputln("%4.4u %s : 0x%8.8x", __LINE__, __FILE__, hr);
+    }
 }
 
 /*!
@@ -275,75 +286,58 @@ static HRESULT set_play_notifications(LPDIRECTSOUNDBUFFER8 p_secondary_buffer,
  */
 static HRESULT init_ds_data(HWND hwnd, WAVEFORMATEX const * p_WFE, dxaudio_player_thread_information_block_t * p_ds_data)
 {
-    HRESULT hr = E_FAIL;
+    HRESULT hr;
     hr = DirectSoundCreate8(&DSDEVID_DefaultVoicePlayback, &p_ds_data->p_direct_sound_8_, NULL);
-    if (FAILED(hr))
+    if (SUCCEEDED(hr))
     {
-        debug_outputln("%4.4u %s : 0x%8.8x", __LINE__, __FILE__, hr);
-        goto error;
-    }
-    {
-        DSCAPS caps;
-        ZeroMemory(&caps, sizeof(caps));
-        caps.dwSize = sizeof(caps);
-        hr = p_ds_data->p_direct_sound_8_->GetCaps(&caps);
+        dump_dscaps(p_ds_data->p_direct_sound_8_);
+        if (NULL == hwnd)
+        {
+            hwnd = GetForegroundWindow();
+        }
+        if (NULL == hwnd)
+        {
+            hwnd = GetDesktopWindow();
+        }
+        /* Quoting MSDN: */
+        /* "[..]After creating a device object, you must set the cooperative level  */
+        /* for the device by using the IDirectSound8::SetCooperativeLevel method.  */
+        /* Unless you do this, no sounds will be heard." */
+        hr = p_ds_data->p_direct_sound_8_->SetCooperativeLevel(hwnd, DSSCL_PRIORITY);
         if (SUCCEEDED(hr))
         {
-            char buffer[2048];
-            get_caps_desc(&caps, buffer, sizeof(buffer));
-            debug_outputln("%4.4u %s : %s", __LINE__, __FILE__, buffer);
+            CopyMemory(&p_ds_data->p_dsound_data->wfe_, p_WFE, sizeof(WAVEFORMATEX));
+            p_ds_data->p_dsound_data->wfe_.cbSize = sizeof(WAVEFORMATEX);
+            p_ds_data->p_dsound_data->nSingleBufferSize_ = p_ds_data->p_dsound_data->play_settings_.play_chunk_size_in_bytes_;
+            debug_outputln("%4.4u %s : %u", __LINE__, __FILE__, p_ds_data->p_dsound_data->play_settings_.play_chunk_size_in_bytes_);
+            hr = create_buffers(p_ds_data->p_direct_sound_8_, 
+                    &p_ds_data->p_dsound_data->wfe_, 
+                    p_ds_data->p_dsound_data->number_of_chunks_,
+                    p_ds_data->p_dsound_data->nSingleBufferSize_,
+                    &p_ds_data->p_primary_sound_buffer_,
+                    &p_ds_data->p_secondary_sound_buffer_
+                    );
+            if (SUCCEEDED(hr))
+            {
+                hr = set_play_notifications(p_ds_data->p_secondary_sound_buffer_, 
+                        &p_ds_data->notification_array_[0], COUNTOF_ARRAY(p_ds_data->notification_array_));
+                return hr;
+            }
+            else 
+            {
+                debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
+            }
         }
-        else
+        else 
         {
-            debug_outputln("%4.4u %s : 0x%8.8x", __LINE__, __FILE__, hr);
+            debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
         }
-    }
-    if (NULL == hwnd)
-    {
-        hwnd = GetForegroundWindow();
-    }
-    if (NULL == hwnd)
-    {
-        hwnd = GetDesktopWindow();
-    }
-    /* Quoting MSDN: */
-    /* "[..]After creating a device object, you must set the cooperative level  */
-    /* for the device by using the IDirectSound8::SetCooperativeLevel method.  */
-    /* Unless you do this, no sounds will be heard." */
-    hr = p_ds_data->p_direct_sound_8_->SetCooperativeLevel(hwnd, DSSCL_PRIORITY);
-    if (FAILED(hr))
-    {
-        debug_outputln("%4.4u %s : 0x%8.8x", __LINE__, __FILE__, hr);
-        goto error;
-    }
-    CopyMemory(&p_ds_data->p_dsound_data->wfe_, p_WFE, sizeof(WAVEFORMATEX));
-    p_ds_data->p_dsound_data->wfe_.cbSize = sizeof(WAVEFORMATEX);
-    p_ds_data->p_dsound_data->nSingleBufferSize_ = p_ds_data->p_dsound_data->play_settings_.play_chunk_size_in_bytes_;
-    debug_outputln("%4.4u %s : %u", __LINE__, __FILE__, p_ds_data->p_dsound_data->play_settings_.play_chunk_size_in_bytes_);
-    hr = create_buffers(p_ds_data->p_direct_sound_8_, 
-            &p_ds_data->p_dsound_data->wfe_, 
-            p_ds_data->p_dsound_data->number_of_chunks_,
-            p_ds_data->p_dsound_data->nSingleBufferSize_,
-            &p_ds_data->p_primary_sound_buffer_,
-            &p_ds_data->p_secondary_sound_buffer_
-            );
-    if (FAILED(hr))
-    {
-        debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
-        goto error;
-    }
-    hr = set_play_notifications(p_ds_data->p_secondary_sound_buffer_, &p_ds_data->notification_array_[0], COUNTOF_ARRAY(p_ds_data->notification_array_));
-    if (FAILED(hr))
-    {
-        debug_outputln("%s %4.4u : %x", __FILE__, __LINE__, hr);
-        goto error;
-    }
-    return hr;
-error:
-    if (NULL != p_ds_data->p_direct_sound_8_)
-    {
         p_ds_data->p_direct_sound_8_->Release();
         p_ds_data->p_direct_sound_8_ = NULL;
+    }
+    else
+    {
+        debug_outputln("%4.4u %s : 0x%8.8x", __LINE__, __FILE__, hr);
     }
     return hr;
 }
@@ -377,10 +371,10 @@ static HRESULT fill_buffer(LPDIRECTSOUNDBUFFER8 p_buffer, fifo_circular_buffer *
         size_t size;
         size = 1024;
         /* Copy as many items as you can, no more than chunk size, into the buffer */
-        if (fifo_circular_buffer_get_items_count(p_fifo)>0)
-        {
-            fifo_circular_buffer_fetch_item(p_fifo, (uint8_t*)lpvWrite1, &size);
-        }
+        fifo_circular_buffer_fetch_item(p_fifo, (uint8_t*)lpvWrite1, &size);
+        /* Fill the remaining part, if any, with zeros */
+        ZeroMemory((uint8_t*)lpvWrite1+size, dwLength1-size);
+        /* Return modified buffer to DirectSound */
         hr = p_buffer->Unlock(lpvWrite1, dwLength1, NULL, 0);
     }
     else
