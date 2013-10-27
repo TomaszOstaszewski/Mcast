@@ -32,28 +32,49 @@
 #include "common-dialogs-res.h"
 
 /*!
- * @brief Copy of the mcast_settings object passed by the caller.  
- * @details It is this copy which is being altered by dialog controls. After the dialog is done, 
- * we copy it back.
+ * @brief Maximum number of characters to be typed in the port control.
  */
-static struct mcast_settings g_settings;
+#define TEXT_LIMIT (5)
 
-/*!
- * @brief Handle to the IP address control object.
- */ 
-static HWND g_ipaddr_ctrl;
+struct mcast_settings_dlg {
+    /*!
+     * @brief Copy of the mcast_settings object passed by the caller.  
+     * @details It is this copy which is being altered by dialog controls. After the dialog is done, 
+     * we copy it back.
+     */
+    struct mcast_settings settings_;
+    struct mcast_settings settings_copy_;
+    struct mcast_settings settings_copy_for_spins_;
+    struct mcast_settings settings_copy_for_ip_;
+    /*!
+     * @brief Handle to the main dialog.
+     */
+    HWND hwnd_;
+    /*!
+     * @brief Buffer for characters typed in the port control.
+     */
+    TCHAR port_buffer_[TEXT_LIMIT+1];
 
-/*!
- * @brief Handle to the IP port edit control.
- */
-static HWND g_ipport_edit_ctrl;
+    /*!
+     * @brief Handle to the IP address control object.
+     */ 
+    HWND ipaddr_ctrl_;
 
-static HWND port_spin_;
+    /*!
+     * @brief Handle to the IP port edit control.
+     */
+    HWND ipport_edit_ctrl_;
 
-/*!
- * @brief Handle to the IP port edit control.
- */
-static HWND g_btok;
+    /*!
+     * @brief Handle to the spin control associated with IP port edit control
+     */
+    HWND port_spin_;
+
+    /*!
+     * @brief Handle to the IP port edit control.
+     */
+    HWND btok_;
+};
 
 /*!
  * @brief A table that describes valid multicast address ranges for each of 4 octets of the IPv4 address.
@@ -69,52 +90,56 @@ static const struct mcast_range {
     { 0, 255 },
 };
 
-/*!
- * @brief Maximum number of characters to be typed in the port control.
- */
-#define TEXT_LIMIT (5)
+static int set_dlg_window(HWND hwnd, struct mcast_settings_dlg * p_dlg)
+{
+    LONG result;
+    SetLastError(0);
+    result = SetWindowLong(hwnd, GWL_USERDATA, (LONG)p_dlg);
+    if (0 == result)
+       return 0 == GetLastError();
+    return result;
+}
 
-/*!
- * @brief Buffer for characters typed in the port control.
- */
-static TCHAR port_buffer[TEXT_LIMIT+1];
-
-/*!
- * @brief Handle to the main dialog.
- */
-static HWND g_hwnd;
+static struct mcast_settings_dlg * get_dlg_window(HWND hwnd)
+{
+    struct mcast_settings_dlg * p_retval; 
+    p_retval = (struct mcast_settings_dlg *)GetWindowLong(hwnd, GWL_USERDATA);
+    return p_retval;
+}
 
 /*!
  * @brief Transfer from data to UI
  * @details Takes values from the settings object and presents them on the UI
  * @param[in] p_settings pointer to the settings object whose contents are to be presented on the screen.
  */
-static void data_to_controls(struct mcast_settings const * p_settings)
+static void data_to_controls(struct mcast_settings_dlg * p_dlg, struct mcast_settings const * p_settings)
 {
     NMIPADDRESS ipnotify;
     int result;
     size_t index;
     unsigned long ipaddr_host_order;
     uint8_t ip_addr[4];
-    StringCchPrintf(port_buffer, 8, "%hu", ntohs(p_settings->mcast_addr_.sin_port));
-    SetWindowText(g_ipport_edit_ctrl, port_buffer);
-    ipaddr_host_order = ntohl(g_settings.mcast_addr_.sin_addr.s_addr);
+
+    StringCchPrintf(p_dlg->port_buffer_, 8, "%hu", ntohs(p_settings->mcast_addr_.sin_port));
+    SetWindowText(p_dlg->ipport_edit_ctrl_, p_dlg->port_buffer_);
+    ipaddr_host_order = ntohl(p_dlg->settings_.mcast_addr_.sin_addr.s_addr);
     ip_addr[0] = (uint8_t)(0xff & (ipaddr_host_order >> 24));
     ip_addr[1] = (uint8_t)(0xff & (ipaddr_host_order >> 16));
     ip_addr[2] = (uint8_t)(0xff & (ipaddr_host_order >> 8));
     ip_addr[3] = (uint8_t)(0xff & (ipaddr_host_order >> 0));
-    result = SendMessage(g_ipaddr_ctrl, IPM_SETADDRESS, (WPARAM)0, (LPARAM)MAKEIPADDRESS(ip_addr[0],ip_addr[1],ip_addr[2],ip_addr[3])); 
-    /* The IP control does not send notify messages when address is changed via IPM_SETADDRESS. Therefore, 
-     * simulate those notifications ourselvers.
-     */
-    ipnotify.hdr.hwndFrom = g_ipaddr_ctrl;
+    result = SendMessage(p_dlg->ipaddr_ctrl_, IPM_SETADDRESS, (WPARAM)0, 
+        (LPARAM)MAKEIPADDRESS(ip_addr[0],ip_addr[1],ip_addr[2],ip_addr[3])); 
+    /* The IP control does not send notify messages         */
+    /* when address is changed via IPM_SETADDRESS.          */
+    /* Therefore, simulate those notifications ourselvers.  */
+    ipnotify.hdr.hwndFrom = p_dlg->ipaddr_ctrl_;
     ipnotify.hdr.idFrom = IDC_IPADDRESS1;
     ipnotify.hdr.code = IPN_FIELDCHANGED;
-    for (index = 0; index < sizeof(ip_addr)/sizeof(ip_addr[0]); ++index)
+    for (index = 0; index < COUNTOF_ARRAY(ip_addr); ++index)
     {
         ipnotify.iField = index;
         ipnotify.iValue = ip_addr[index];
-        SendMessage(g_hwnd, WM_NOTIFY, 0, (LPARAM)&ipnotify);
+        SendMessage(p_dlg->hwnd_, WM_NOTIFY, 0, (LPARAM)&ipnotify);
     }
 }
 
@@ -123,25 +148,26 @@ static void data_to_controls(struct mcast_settings const * p_settings)
  * @details Takes values from the settings object and presents them on the UI
  * @param[in] p_settings pointer to the settings object whose contents are to be presented on the screen.
  */
-static int controls_to_data(struct mcast_settings * p_settings)
+static int controls_to_data(struct mcast_settings_dlg * p_dlg, struct mcast_settings * p_settings)
 {
     int result;
     unsigned int port_host_order;
     DWORD address;
-    memset(port_buffer, 0, sizeof(port_buffer));
-    *((WORD *)port_buffer) = TEXT_LIMIT;
-    SendMessage(g_ipport_edit_ctrl, EM_GETLINE, 0, (LPARAM)port_buffer);
-    result = sscanf(port_buffer, "%u", &port_host_order);
+    memset(p_dlg->port_buffer_, 0, sizeof(p_dlg->port_buffer_));
+    *((WORD *)p_dlg->port_buffer_) = TEXT_LIMIT;
+    SendMessage(p_dlg->ipport_edit_ctrl_, EM_GETLINE, 0, (LPARAM)p_dlg->port_buffer_);
+    result = sscanf(p_dlg->port_buffer_, "%u", &port_host_order);
     /* The 5 digit figures in decimal don't fit into 2 bytes of hex.
      * Therefore we may need to make some exceptions for values above 65535 - we enter the 65535 instead.
      */
-    if (result<=0 || port_host_order > USHRT_MAX)
-        goto error;
-    p_settings->mcast_addr_.sin_port = htons((unsigned short)port_host_order);
-    SendMessage(g_ipaddr_ctrl, IPM_GETADDRESS, (WPARAM)0, (LPARAM)&address);
-    p_settings->mcast_addr_.sin_addr.s_addr = htonl(address);
-    return 1;
-error:
+    if (result>0 && port_host_order <= USHRT_MAX)
+    {
+        p_settings->mcast_addr_.sin_port = htons((unsigned short)port_host_order);
+        /* Internet address is not validated - the control itself validates it */
+        SendMessage(p_dlg->ipaddr_ctrl_, IPM_GETADDRESS, (WPARAM)0, (LPARAM)&address);
+        p_settings->mcast_addr_.sin_addr.s_addr = htonl(address);
+        return 1;
+    }
     return 0;
 }
 
@@ -156,29 +182,40 @@ error:
  * handler some client specific data.
  * @param returns TRUE if the window indicated as hWndFocus is to get keyboard focus. Returns FALSE otherwise.
  */
-static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
+static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, struct mcast_settings_dlg * p_dlg)
 {
     int result;
-    g_ipaddr_ctrl = GetDlgItem(hwnd, IDC_IPADDRESS1);
-    assert(g_ipaddr_ctrl);
-    g_ipport_edit_ctrl = GetDlgItem(hwnd, IDC_EDIT1);
-    assert(g_ipport_edit_ctrl);
-    port_spin_ = GetDlgItem(hwnd, IDC_PORT_SPIN);
-    assert(port_spin_);
+    p_dlg->hwnd_ = hwnd;
+    p_dlg->ipaddr_ctrl_ = GetDlgItem(hwnd, IDC_IPADDRESS1);
+    assert(p_dlg->ipaddr_ctrl_);
+    p_dlg->ipport_edit_ctrl_ = GetDlgItem(hwnd, IDC_EDIT1);
+    assert(p_dlg->ipport_edit_ctrl_);
+    p_dlg->port_spin_ = GetDlgItem(hwnd, IDC_PORT_SPIN);
+    assert(p_dlg->port_spin_);
+    p_dlg->btok_ = GetDlgItem(hwnd, IDOK);
+    assert(p_dlg->btok_);
 
-    result = SendMessage(g_ipaddr_ctrl, IPM_SETRANGE, (WPARAM)0, (LPARAM)MAKEIPRANGE(valid_mcast_range_table[0].low_,valid_mcast_range_table[0].high_)); 
+    /* Set controls limits */
+    result = SendMessage(p_dlg->ipaddr_ctrl_, IPM_SETRANGE, (WPARAM)0, 
+        (LPARAM)MAKEIPRANGE(valid_mcast_range_table[0].low_,valid_mcast_range_table[0].high_)); 
     assert(0 != result);
-    result = SendMessage(g_ipaddr_ctrl, IPM_SETRANGE, (WPARAM)1, (LPARAM)MAKEIPRANGE(valid_mcast_range_table[1].low_,valid_mcast_range_table[1].high_)); 
+
+    result = SendMessage(p_dlg->ipaddr_ctrl_, IPM_SETRANGE, (WPARAM)1, 
+        (LPARAM)MAKEIPRANGE(valid_mcast_range_table[1].low_,valid_mcast_range_table[1].high_)); 
     assert(0 != result);
-    result = SendMessage(g_ipaddr_ctrl, IPM_SETRANGE, (WPARAM)2, (LPARAM)MAKEIPRANGE(valid_mcast_range_table[2].low_,valid_mcast_range_table[2].high_)); 
+
+    result = SendMessage(p_dlg->ipaddr_ctrl_, IPM_SETRANGE, (WPARAM)2, 
+        (LPARAM)MAKEIPRANGE(valid_mcast_range_table[2].low_,valid_mcast_range_table[2].high_)); 
     assert(0 != result);
-    result = SendMessage(g_ipaddr_ctrl, IPM_SETRANGE, (WPARAM)3, (LPARAM)MAKEIPRANGE(valid_mcast_range_table[3].low_,valid_mcast_range_table[3].high_)); 
+
+    result = SendMessage(p_dlg->ipaddr_ctrl_, IPM_SETRANGE, (WPARAM)3, 
+        (LPARAM)MAKEIPRANGE(valid_mcast_range_table[3].low_,valid_mcast_range_table[3].high_)); 
     assert(0 != result);
-    SendMessage(g_ipport_edit_ctrl, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
+
+    SendMessage(p_dlg->ipport_edit_ctrl_, EM_SETLIMITTEXT, (WPARAM)TEXT_LIMIT, (LPARAM)0);
     
-    g_btok = GetDlgItem(hwnd, IDOK);
-    assert(g_btok);
-    data_to_controls(&g_settings);
+    /* Init controls with data provided by the client */
+    data_to_controls(p_dlg, &p_dlg->settings_);
     return TRUE;
 } 
 
@@ -193,27 +230,31 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, LPARAM lParam)
  */
 static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
-    static struct mcast_settings settings_copy;
-    static struct mcast_settings settings_copy_for_spins;
-    static struct mcast_settings settings_copy_for_ip;
+    struct mcast_settings_dlg * p_dlg;
     NMHDR * p_nmhdr;
     NMUPDOWN * p_nm_updown;
     NMIPADDRESS * p_nm_ipaddr;
     unsigned short port;
     unsigned long ipaddr;
+
     switch (uMessage)
     {
         case WM_INITDIALOG:
-            g_hwnd = hDlg;
-            return HANDLE_WM_INITDIALOG(hDlg, wParam, lParam, Handle_wm_initdialog);
+            set_dlg_window(hDlg, (struct mcast_settings_dlg*)lParam);
+            p_dlg = get_dlg_window(hDlg);
+            assert(p_dlg);
+            return HANDLE_WM_INITDIALOG(hDlg, wParam, p_dlg, Handle_wm_initdialog);
         case WM_NOTIFY:
+            p_dlg = get_dlg_window(hDlg);
+            assert(p_dlg);
+            
             p_nmhdr = (NMHDR*)lParam;
             switch (p_nmhdr->code)
             {
                 case IPN_FIELDCHANGED:
                     p_nm_ipaddr = (NMIPADDRESS*)p_nmhdr; 
-                    mcast_settings_copy(&settings_copy_for_ip, &g_settings);
-                    ipaddr = ntohl(settings_copy_for_ip.mcast_addr_.sin_addr.s_addr);
+                    mcast_settings_copy(&p_dlg->settings_copy_for_ip_, &p_dlg->settings_);
+                    ipaddr = ntohl(p_dlg->settings_copy_for_ip_.mcast_addr_.sin_addr.s_addr);
                     switch (p_nm_ipaddr->iField)
                     {
                         case 0:
@@ -231,55 +272,59 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                         default:
                             break;
                     }
-                    settings_copy_for_ip.mcast_addr_.sin_addr.s_addr = htonl(ipaddr);
-                    if (mcast_settings_validate(&settings_copy_for_ip))
+                    p_dlg->settings_copy_for_ip_.mcast_addr_.sin_addr.s_addr = htonl(ipaddr);
+                    if (mcast_settings_validate(&p_dlg->settings_copy_for_ip_))
                     {
-                        mcast_settings_copy(&g_settings, &settings_copy_for_ip);
-                        EnableWindow(g_btok, TRUE);
+                        mcast_settings_copy(&p_dlg->settings_, &p_dlg->settings_copy_for_ip_);
+                        EnableWindow(p_dlg->btok_, TRUE);
                     }
                     else
                     {
-                        EnableWindow(g_btok, FALSE);
+                        EnableWindow(p_dlg->btok_, FALSE);
                     }
                     break;
                 case UDN_DELTAPOS:
                     p_nm_updown = (NMUPDOWN *)p_nmhdr;
-                    mcast_settings_copy(&settings_copy_for_spins, &g_settings);
+                    mcast_settings_copy(&p_dlg->settings_copy_for_spins_, &p_dlg->settings_);
                     switch (p_nm_updown->hdr.idFrom)
                     {
                         case IDC_PORT_SPIN:
-                            port = ntohs(settings_copy_for_spins.mcast_addr_.sin_port);
+                            port = ntohs(p_dlg->settings_copy_for_spins_.mcast_addr_.sin_port);
                             port -= p_nm_updown->iDelta;
-                            settings_copy_for_spins.mcast_addr_.sin_port = htons(port);
+                            p_dlg->settings_copy_for_spins_.mcast_addr_.sin_port = htons(port);
                             break;
                         default:
                             break;
                     }
-                    if (!mcast_settings_compare(&settings_copy_for_spins, &g_settings) && mcast_settings_validate(&settings_copy_for_spins))
+                    if (!mcast_settings_compare(&p_dlg->settings_copy_for_spins_, &p_dlg->settings_) 
+                        && mcast_settings_validate(&p_dlg->settings_copy_for_spins_))
                     {
-                        /* No need to enable or disable OK button here - the data_to_controls() triggers notificatinos from edit controls,
-                         * which result in appropriate validation code being run 
-                        */
-                        data_to_controls(&settings_copy_for_spins);
+                        /* No need to enable or disable OK button here.                         */
+                        /* the data_to_controls() triggers notificatinos from edit controls,    */
+                        /* which result in appropriate validation code being run                */
+                        data_to_controls(p_dlg, &p_dlg->settings_copy_for_spins_);
                     }
                 default:
                     break;
             }
             break;
         case WM_COMMAND:
+            p_dlg = get_dlg_window(hDlg);
+            assert(p_dlg);
             /* Handle notifications that come in form of WM_COMMAND messages */
             switch (LOWORD(wParam))
             {
                 case IDC_EDIT1:
-                    mcast_settings_copy(&settings_copy, &g_settings);
-                    if (controls_to_data(&settings_copy) && mcast_settings_validate(&settings_copy))
+                    mcast_settings_copy(&p_dlg->settings_copy_, &p_dlg->settings_);
+                    if (controls_to_data(p_dlg, &p_dlg->settings_copy_) 
+                        && mcast_settings_validate(&p_dlg->settings_copy_))
                     {
-                        mcast_settings_copy(&g_settings, &settings_copy);
-                        EnableWindow(g_btok, TRUE);  
+                        mcast_settings_copy(&p_dlg->settings_, &p_dlg->settings_copy_);
+                        EnableWindow(p_dlg->btok_, TRUE);  
                     }
                     else
                     {
-                        EnableWindow(g_btok, FALSE);  
+                        EnableWindow(p_dlg->btok_, FALSE);  
                     }
                     break;
                 case IDCANCEL:
@@ -297,11 +342,13 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
 
 int get_settings_from_dialog(HWND hParent, struct mcast_settings * p_settings)
 {
-    mcast_settings_copy(&g_settings, p_settings);
+    struct mcast_settings_dlg dlg;
+    ZeroMemory(&dlg, sizeof(struct mcast_settings_dlg));
+    mcast_settings_copy(&dlg.settings_, p_settings);
     /* NULL hInst means = read template from this application's resource file. */
-    if (IDOK == DialogBox(NULL, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc))
+    if (IDOK == DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_MCAST_SETTINGS), hParent, McastSettingsProc, (LPARAM)&dlg))
     {
-        mcast_settings_copy(p_settings, &g_settings);
+        mcast_settings_copy(p_settings, &dlg.settings_);
         return 1;
     }
     return 0;
