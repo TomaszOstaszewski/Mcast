@@ -2,6 +2,7 @@
 #include "pcc.h"
 
 #include <assert.h>
+#include <math.h>
 #include "mcast-settings.h"
 #include "mcast_utils.h"
 #include "wave_utils.h"
@@ -48,6 +49,15 @@ volatile sig_atomic_t g_stop_processing;
 static void sigint_handle(int signal)
 {
     g_stop_processing = 1;
+}
+
+double avg_squar_power(int16_t const * samples, size_t samples_size)
+{
+    double ret_val = 0;
+    size_t idx = 0;
+    for (idx = 0; idx < samples_size; ++idx)
+        ret_val += samples[idx]*samples[idx]/samples_size;
+    return sqrt(ret_val);
 }
 
 int main(int argc, char ** argv)
@@ -109,11 +119,15 @@ int main(int argc, char ** argv)
                         &recv_from_length);  
                     if (bytes_read >= 0)
                     {
-                        fprintf(stdout, "%4.4u %s : %u %s %u %2.2hhx %2.2hhx..\n", __LINE__, __func__, bytes_read, 
+                        int16_t const * p_samples = (int16_t const *)&g_input_buffer[0];
+                        fprintf(stdout, "%4.4u %s : %u %s %u %-8.8f %-5.hd %-5.hd %-5.hd %-5.hd ..\n", __LINE__, __func__, bytes_read, 
                                 inet_ntoa((((struct sockaddr_in *)&recv_from_data)->sin_addr)),
                                 ntohs((((struct sockaddr_in *)&recv_from_data)->sin_port)),
-                                g_input_buffer[0], 
-                                g_input_buffer[1]
+                                avg_squar_power(p_samples, bytes_read/sizeof(int16_t)),
+                                p_samples[0], 
+                                p_samples[1],
+                                p_samples[3],
+                                p_samples[4]
                                );
                     }
                     else

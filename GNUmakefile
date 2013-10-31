@@ -2,7 +2,8 @@
 .PHONY	:= clean
 MINGWPSDKINCLUDE	:=/usr/i586-mingw32msvc/include/
 CROSS_COMPILE:=i586-mingw32msvc-gcc
-CFLAGS 	:=-Wall -Werror -ggdb -O0
+LDFLAGS :=-lm
+CFLAGS 	:=-Wall -Werror -ggdb -O0 -Wstrict-aliasing=2
 
 all: mcast-sender mcast-receiver
 
@@ -12,7 +13,7 @@ mcast-sender: mcast-sender-linux.o mcast_utils.o mcast-setup-linux.o debug_helpe
 	$(CC) $(CFLAGS) -o $(@) $(^)
 
 mcast-receiver: mcast-receiver-linux.o mcast_utils.o mcast-setup-linux.o debug_helpers.o platform-sockets.o resolve.o
-	$(CC) $(CFLAGS) -o $(@) $(^)
+	$(CC) $(CFLAGS) -o $(@) $(^) $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
