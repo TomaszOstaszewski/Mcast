@@ -55,9 +55,14 @@ struct mcast_settings_dlg {
     TCHAR port_buffer_[TEXT_LIMIT+1];
 
     /*!
-     * @brief Handle to the IP address control object.
+     * @brief Handle to the IP address control.
      */ 
     HWND ipaddr_ctrl_;
+
+    /*!
+     * @brief Handle to the bind IP address control.
+     */ 
+    HWND bind_ipaddr_ctrl_;
 
     /*!
      * @brief Handle to the IP port edit control.
@@ -191,6 +196,8 @@ static BOOL Handle_wm_initdialog(HWND hwnd, HWND hWndFocus, struct mcast_setting
     assert(p_dlg->ipport_edit_ctrl_);
     p_dlg->port_spin_ = GetDlgItem(hwnd, IDC_PORT_SPIN);
     assert(p_dlg->port_spin_);
+    p_dlg->bind_ipaddr_ctrl_ = GetDlgItem(hwnd, IDC_IPBINDADDR);
+    assert(p_dlg->bind_ipaddr_ctrl_);
     p_dlg->btok_ = GetDlgItem(hwnd, IDOK);
     assert(p_dlg->btok_);
 
