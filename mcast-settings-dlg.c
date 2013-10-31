@@ -44,7 +44,6 @@ struct mcast_settings_dlg {
      */
     struct mcast_settings settings_;
     struct mcast_settings settings_copy_;
-    struct mcast_settings settings_copy_for_spins_;
     struct mcast_settings settings_copy_for_ip_;
     /*!
      * @brief Handle to the main dialog.
@@ -285,24 +284,28 @@ static INT_PTR CALLBACK McastSettingsProc(HWND hDlg, UINT uMessage, WPARAM wPara
                     break;
                 case UDN_DELTAPOS:
                     p_nm_updown = (NMUPDOWN *)p_nmhdr;
-                    mcast_settings_copy(&p_dlg->settings_copy_for_spins_, &p_dlg->settings_);
+                    /* Duplicate current settings into another copy */
+                    mcast_settings_copy(&p_dlg->settings_copy_, &p_dlg->settings_);
                     switch (p_nm_updown->hdr.idFrom)
                     {
+                        /* Change the copy */
                         case IDC_PORT_SPIN:
-                            port = ntohs(p_dlg->settings_copy_for_spins_.mcast_addr_.sin_port);
+                            port = ntohs(p_dlg->settings_copy_.mcast_addr_.sin_port);
                             port -= p_nm_updown->iDelta;
-                            p_dlg->settings_copy_for_spins_.mcast_addr_.sin_port = htons(port);
+                            p_dlg->settings_copy_.mcast_addr_.sin_port = htons(port);
                             break;
                         default:
                             break;
                     }
-                    if (!mcast_settings_compare(&p_dlg->settings_copy_for_spins_, &p_dlg->settings_) 
-                        && mcast_settings_validate(&p_dlg->settings_copy_for_spins_))
+                    /* If copy does differ from actual settings and does checks up okay */
+                    /* then make the copy your new actual settings                      */
+                    if (!mcast_settings_compare(&p_dlg->settings_copy_, &p_dlg->settings_) 
+                        && mcast_settings_validate(&p_dlg->settings_copy_))
                     {
                         /* No need to enable or disable OK button here.                         */
                         /* the data_to_controls() triggers notificatinos from edit controls,    */
                         /* which result in appropriate validation code being run                */
-                        data_to_controls(p_dlg, &p_dlg->settings_copy_for_spins_);
+                        data_to_controls(p_dlg, &p_dlg->settings_copy_);
                     }
                 default:
                     break;
