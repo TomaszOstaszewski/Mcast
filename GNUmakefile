@@ -3,7 +3,8 @@
 MINGWPSDKINCLUDE	:=/usr/i586-mingw32msvc/include/
 CROSS_COMPILE:=i586-mingw32msvc-gcc
 LDFLAGS :=-lm
-CFLAGS 	:=-Wall -Werror -ggdb -O0 -Wstrict-aliasing=2
+#CFLAGS 	:=-Wall -Werror -ggdb -O0 -Wstrict-aliasing=2
+CFLAGS 	:=-Wall -Werror -O3 -fomit-frame-pointer
 
 all: mcast-sender mcast-receiver
 

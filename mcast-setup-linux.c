@@ -70,15 +70,24 @@ static int set_reuse_addr(SOCKET s)
     return 1;
 }
 
+typedef  union S {
+    struct sockaddr const * p_sockaddr;
+    struct sockaddr_in const * p_sockaddr_in;
+} sock_union_t;
+
 static void dump_locally_bound_socket(SOCKET s, const char * file, unsigned int line)
 {
     int rc;
-    struct sockaddr_in local_bind = { 0 };
+    sock_union_t  sock;
+    struct sockaddr local_bind = { 0 };
+    sock.p_sockaddr = &local_bind;    
     socklen_t local_data_len = sizeof(local_bind);
-    rc = getsockname(s, (struct sockaddr*)&local_bind, &local_data_len);
+    rc = getsockname(s, &local_bind, &local_data_len);
     if (SOCKET_ERROR != rc)
     {
-        debug_outputln("%s %4.4u : %s:%u", file, line, inet_ntoa(local_bind.sin_addr), ntohs(local_bind.sin_port));
+        debug_outputln("%s %4.4u : %s:%u", file, line, 
+            inet_ntoa(sock.p_sockaddr_in->sin_addr), 
+            ntohs(sock.p_sockaddr_in->sin_port));
     }
     else
     {

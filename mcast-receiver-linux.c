@@ -12,16 +12,23 @@
 #define MCAST_PORT_NUMBER "25000"
 #define CHUNK_SIZE (1024)
 #define DEFAULT_TTL (5)
-#define DEFAULT_SLEEP_TIME ((1000000*1024)/8000)
+#define DEFAULT_SLEEP_TIME ((1000000*(CHUNK_SIZE)/8000)
 
 static uint8_t g_input_buffer[CHUNK_SIZE];
 
+typedef  union S {
+    struct sockaddr const * p_sockaddr;
+    struct sockaddr_in const * p_sockaddr_in;
+} sock_union_t;
+
 static void dump_addrinfo(FILE * fp, struct addrinfo const * p_addr)
 {
+    sock_union_t sock;
+    sock.p_sockaddr = p_addr->ai_addr;
     struct addrinfo const * p_idx = p_addr;
     for (; NULL != p_idx; p_idx = p_idx->ai_next)
     {
-        struct sockaddr_in const * p_sock_addr_in = (struct sockaddr_in const *)p_idx->ai_addr;
+        struct sockaddr_in const * p_sock_addr_in = sock.p_sockaddr_in;
         uint8_t const * in_addr = (uint8_t const *)&p_sock_addr_in->sin_addr;
         printf("%hhu.%hhu.%hhu.%hhu\n", in_addr[0], in_addr[1], in_addr[2], in_addr[3]);
     }
@@ -55,8 +62,20 @@ double avg_squar_power(int16_t const * samples, size_t samples_size)
 {
     double ret_val = 0;
     size_t idx = 0;
-    for (idx = 0; idx < samples_size; ++idx)
-        ret_val += samples[idx]*samples[idx]/samples_size;
+    switch (samples_size%4)
+    {
+        for (idx = 0; idx < samples_size/4; idx+=4)
+        {
+            case 0:
+                ret_val += samples[idx]*samples[idx]/samples_size;
+            case 1:
+                ret_val += samples[idx+1]*samples[idx+1]/samples_size;
+            case 2:
+                ret_val += samples[idx+2]*samples[idx+2]/samples_size;
+            case 3:
+                ret_val += samples[idx+3]*samples[idx+3]/samples_size;
+        }
+    }
     return sqrt(ret_val);
 }
 
@@ -120,9 +139,11 @@ int main(int argc, char ** argv)
                     if (bytes_read >= 0)
                     {
                         int16_t const * p_samples = (int16_t const *)&g_input_buffer[0];
+                        sock_union_t sock;
+                        sock.p_sockaddr = &recv_from_data;
                         fprintf(stdout, "%4.4u %s : %u %s %u %-8.8f %-5.hd %-5.hd %-5.hd %-5.hd ..\n", __LINE__, __func__, bytes_read, 
-                                inet_ntoa((((struct sockaddr_in *)&recv_from_data)->sin_addr)),
-                                ntohs((((struct sockaddr_in *)&recv_from_data)->sin_port)),
+                                inet_ntoa(sock.p_sockaddr_in->sin_addr),
+                                ntohs(sock.p_sockaddr_in->sin_port),
                                 avg_squar_power(p_samples, bytes_read/sizeof(int16_t)),
                                 p_samples[0], 
                                 p_samples[1],
