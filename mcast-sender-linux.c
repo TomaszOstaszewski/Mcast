@@ -8,7 +8,7 @@
 #define INTEFACE_BIND_ADDRESS "0.0.0.0"
 #define MCAST_GROUP_ADDRESS "239.0.0.1"
 #define MCAST_PORT_NUMBER "25000"
-#define FILE_TO_SEND_NAME "play.wav"
+#define DEFAULT_FILE_TO_SEND "play.wav"
 #define DEFAULT_TTL (2)
 #define CHUNK_SIZE (640)
 #define DEFAULT_SLEEP_TIME ((useconds_t)((1000000*CHUNK_SIZE)/16000))
@@ -183,7 +183,6 @@ static void send_wav_file_data(int socket, struct addrinfo * p_group_address, st
     }
 }
 
-
 static void send_constant_data(int socket, struct addrinfo * p_group_address, struct mcast_sender_options const * p_opt)
 {
     ssize_t bytes_written;
@@ -217,6 +216,8 @@ int main(int argc, char ** argv)
     memset(&options, 0, sizeof(options));
     if (0 == parse_cmd_line(argv, argc, &options))
     {
+        if (NULL == options.p_file_name_)
+            options.p_file_name_ = DEFAULT_FILE_TO_SEND;
         memset(&a_hints, 0, sizeof(a_hints));
         SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
         assert(s>=0); 
@@ -235,7 +236,7 @@ int main(int argc, char ** argv)
         assert(0 == result);
         {
             int fd;
-            fd = open(FILE_TO_SEND_NAME, O_RDONLY);
+            fd = open(options.p_file_name_, O_RDONLY);
             assert(fd >= 0);
             result = fstat(fd, &st_file);
             assert(0 == result);
