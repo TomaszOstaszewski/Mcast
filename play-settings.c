@@ -33,6 +33,16 @@
 #include "play-settings.h"
 
 /*!
+ * @brief Maximum acceptable multimedia timer timespan.
+ */
+#define MAX_TIMER_DELAY (500)
+
+/*!
+ * @brief Mimimum acceptable multimedia timer timespan.
+ */
+#define MIN_TIMER_DELAY (5)
+
+/*!
  * @brief Default size, in bytes, of a single play chunk.
  */
 #define MAX_PLAY_CHUNK_SIZE (16384)
@@ -51,39 +61,47 @@
  * @brief Default number of play chunk.s
  * @details Total buffer occupied by PCM data used for replaying it will be : number_of_chunks * size_of_single_chunk
  */
-#define PLAY_SETTINGS_MAX_NUMBER_OF_CHUNKS (16)
+#define MAX_NUMBER_OF_CHUNKS (16)
 
 /*!
  * @brief Default number of play chunk.s
  * @details Total buffer occupied by PCM data used for replaying it will be : number_of_chunks * size_of_single_chunk
  */
-#define PLAY_SETTINGS_MIN_NUMBER_OF_CHUNKS (2)
+#define MIN_NUMBER_OF_CHUNKS (2)
 
 /*!
  * @brief Default number of play chunk.s
  * @details Total buffer occupied by PCM data used for replaying it will be : number_of_chunks * size_of_single_chunk
  */
-#define PLAY_SETTINGS_DEFAULT_NUMBER_OF_CHUNKS (2)
+#define DEFAULT_NUMBER_OF_CHUNKS (2)
 
+/*!
+ * @brief Default timeout, in milliseconds, for multimedia play timer.
+ * @details Each time the timeout expires, the DirectSound fill-buffer-and-play function will be invoked.
+ */
+#define DEFAULT_TIMER_DELAY (10)
 
-#define PLAY_SETTINGS_MIN_CHUNK_SIZE_IN_BYTES (512)
-#define PLAY_SETTINGS_MAX_CHUNK_SIZE_IN_BYTES (32768)
-#define PLAY_SETTINGS_DEFAULT_CHUNK_SIZE_IN_BYTES (1024)
+/*!
+ * @brief Timer resolution for multimedia play timer.
+ */
+#define DEFAULT_TIMER_RESOLUTION (1)
 
 int play_settings_get_default(struct play_settings * p_settings)
 {
-    p_settings->play_chunks_count_ = PLAY_SETTINGS_DEFAULT_NUMBER_OF_CHUNKS;
-    p_settings->play_chunk_size_in_bytes_ = PLAY_SETTINGS_DEFAULT_CHUNK_SIZE_IN_BYTES;
+    p_settings->timer_delay_ = DEFAULT_TIMER_DELAY;
+    p_settings->timer_resolution_ = DEFAULT_TIMER_RESOLUTION;
+    p_settings->play_buffer_size_ = DEFAULT_PLAY_CHUNK_SIZE;
+    p_settings->play_chunks_count_ = DEFAULT_NUMBER_OF_CHUNKS;
 	return 1;
 }
 
 int play_settings_validate(struct play_settings const * p_settings)
 {
-	if (p_settings->play_chunk_size_in_bytes_ < PLAY_SETTINGS_MIN_CHUNK_SIZE_IN_BYTES
-        || p_settings->play_chunk_size_in_bytes_ > PLAY_SETTINGS_MAX_CHUNK_SIZE_IN_BYTES )
+	if (p_settings->timer_delay_ < MIN_TIMER_DELAY || p_settings->timer_delay_ > MAX_TIMER_DELAY)
 		return 0;	
-	if (p_settings->play_chunks_count_ < PLAY_SETTINGS_MIN_NUMBER_OF_CHUNKS
-        || p_settings->play_chunks_count_ > PLAY_SETTINGS_MAX_NUMBER_OF_CHUNKS)
+	if (p_settings->play_buffer_size_ < MIN_PLAY_CHUNK_SIZE || p_settings->play_buffer_size_ > MAX_PLAY_CHUNK_SIZE)
+		return 0;	
+	if (p_settings->play_chunks_count_ < MIN_NUMBER_OF_CHUNKS || p_settings->play_chunks_count_ > MAX_NUMBER_OF_CHUNKS)
 		return 0;	
     return 1;
 }
