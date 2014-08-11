@@ -25,6 +25,14 @@ typedef struct AddrInfoSockAddrIn
     struct sockaddr_in sockaddrIn_;
 } AddrInfoSockAddrIn_t;
 
+typedef struct CmdLineOptions {
+    const char * pItfAddr_;
+    const char * pMcastGroupAddr_;
+    unsigned short nPortNumber_;
+} CmdLineOptions_t;
+
+#define DEFAULT_CMD_LINE_OPTIONS { .pItfAddr_ = DEFAULT_INTERFACE, .pMcastGroupAddr_ = DEFAULT_MCAST_GROUP_ADDR };
+
 static void fillDefaultAddrInfo(struct AddrInfoSockAddrIn* pTarget, const char* pAddress)
 {
     struct sockaddr_in* pInet4Addr = &pTarget->sockaddrIn_;
@@ -77,9 +85,58 @@ static void testJoinMcastIpv4(const char * pItfAddr, const char * pMcastGroupAdd
     close(s);
 }
 
+static int parseCmdLine(int argc, char ** argv, CmdLineOptions_t * pCmdLineOpt)
+{
+        do
+    {
+        int result;
+        result = getopt(argc, argv, "i:m:p:");
+        if (-1 == result)
+        {
+            break;
+        }
+        switch (result)
+        {
+            case 'i':
+                /** @todo: Add IP address validation. */
+                pCmdLineOpt->pItfAddr_ = optarg;
+                break;
+        case 'm':
+                pCmdLineOpt->pMcastGroupAddr_ = optarg;
+                break;
+        case 'p':
+                    {
+                int nTokensParsed;
+                unsigned int nPortNumber = (unsigned int)-1;
+                nTokensParsed = sscanf(optarg, "%u", &nPortNumber);
+                if (1 != nTokensParsed || nPortNumber > USHRT_MAX)
+                {
+                    fprintf(stderr, "%4.4u %s : %d %u\n", __LINE__, __func__, nTokensParsed, nPortNumber);
+                    return -1;
+                }
+                else
+                {
+                    pCmdLineOpt->nPortNumber_ = nPortNumber;
+                }
+            }
+            break;
+            default:
+                fprintf(stderr, "Unknown option: %c\n", result);
+                return -1;
+        }
+    } while (1);
+    return 0;
+}
+
 int main(int argc, char* argv[])
 {
-//    testJoinMcastIpv4(DEFAULT_INTERFACE, DEFAULT_MCAST_GROUP_ADDR, DEFAULT_PORT);
-    testJoinMcastIpv4("192.168.0.117", DEFAULT_MCAST_GROUP_ADDR, DEFAULT_PORT);
+    CmdLineOptions_t aCmdLineOpt = DEFAULT_CMD_LINE_OPTIONS;
+    int result;
+    
+    result = parseCmdLine(argc, argv, &aCmdLineOpt);
+    if (0 == result)
+    {
+        testJoinMcastIpv4(aCmdLineOpt.pItfAddr_, aCmdLineOpt.pMcastGroupAddr_, aCmdLineOpt.nPortNumber_);
+    }
     return 0;
 }
