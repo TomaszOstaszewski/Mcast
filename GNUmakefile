@@ -1,11 +1,17 @@
 .DEFAULT_GOAL:=all
+.SECONDEXPANSION:
 .PHONY	:= clean
-CROSS_COMPILE:=arm-davinci2-linux-gnueabi-
+#CROSS_COMPILE:=arm-davinci2-linux-gnueabi-
 CC	:=$(CROSS_COMPILE)gcc
 STRIP	:=$(CROSS_COMPILE)strip
-CFLAGS	:=-Wall -Werror -O3 -ggdb -ffunction-sections -fdata-sections -flto
+CFLAGS	:=-Wall -Werror -O0 -ggdb -ffunction-sections -fdata-sections -flto
+BUILD_ROOT :=$(shell $(CC) -dumpmachine)/
 
-all: mcast-sender mcast-receiver
+all: $(addprefix $(BUILD_ROOT), \
+	mcast-sender \
+	mcast-receiver \
+	ut-mcast-join-leave \
+)
 
 SOURCES:=\
  circular-buffer-uint8.c \
@@ -19,30 +25,35 @@ SOURCES:=\
  ut-circular-buffer-uint8.c\
  ut-mcast-join-leave.c \
 
-OBJECTS:=$(SOURCES:%.c=%.o)
-DEPENDS:=$(SOURCES:%.c=%.d)
+OBJECTS:=$(SOURCES:%.c=$(BUILD_ROOT)%.o)
+DEPENDS:=$(SOURCES:%.c=$(BUILD_ROOT)%.d)
+
+.PRECIOUS: %/.
+%/.:
+	mkdir -pv $(@)
 
 -include $(DEPENDS)
 
-ut-mcast-join-leave: ut-mcast-join-leave.o mcast_utils.o debug_helpers.o platform-sockets.o resolve.o
+$(BUILD_ROOT)ut-mcast-join-leave: $(addprefix $(BUILD_ROOT),ut-mcast-join-leave.o mcast_utils.o debug_helpers.o platform-sockets.o resolve.o)
 	$(CC) $(CFLAGS) -o $(@) $(^)
 
-ut-circular-buffer-uint8: ut-circular-buffer-uint8.o circular-buffer-uint8.o	
-
-mcast-sender: mcast-sender-linux.o mcast_utils.o mcast-setup-linux.o debug_helpers.o platform-sockets.o resolve.o
+$(BUILD_ROOT)ut-circular-buffer-uint8: $(addprefix $(BUILD_ROOT),ut-circular-buffer-uint8.o circular-buffer-uint8.o)
 	$(CC) $(CFLAGS) -o $(@) $(^) -Wl,--gc-sections
 
-mcast-receiver: mcast-receiver-linux.o mcast_utils.o mcast-setup-linux.o debug_helpers.o platform-sockets.o resolve.o
+$(BUILD_ROOT)mcast-sender: $(addprefix $(BUILD_ROOT),mcast-sender-linux.o mcast_utils.o mcast-setup-linux.o debug_helpers.o platform-sockets.o resolve.o)
+	$(CC) $(CFLAGS) -o $(@) $(^) -Wl,--gc-sections
+
+$(BUILD_ROOT)mcast-receiver: $(addprefix $(BUILD_ROOT),mcast-receiver-linux.o mcast_utils.o mcast-setup-linux.o debug_helpers.o platform-sockets.o resolve.o)
 	$(CC) $(CFLAGS) -o $(@) $(^)
 
-%.o: %.c
-	$(CC) -MF $(*).d -MMD $(CFLAGS) -c -o $@ $<
+$(BUILD_ROOT)%.o: %.c | $$(@D)/.
+	$(CC) -MF $(@D)/$(*).d -MMD $(CFLAGS) -c -o $@ $<
 
-smcast-sender: mcast-sender
+$(BUILD_ROOT)smcast-sender: udp-unicast-connmcast-sender
 	$(STRIP) -o $(@) $(^)
 
 .PHONY: send
-send: smcast-sender ut-mcast-join-leave
+send: $(BUILD_ROOT)smcast-sender $(BUILD_ROOT)ut-mcast-join-leave
 	scp $(^) root@10.171.33.103:/mnt/flash/
 
 .PHONY: ut
@@ -51,18 +62,7 @@ ut: ut-mcast-join-leave
 
 cscope:
 	@cscope -bk -I$(MINGWPSDKINCLUDE)
+
+.PHONY: clean
 clean:
-	$(RM) ex-perf-counter \
- ex-perf-counter.o \
- ut-circular-buffer-uint8 \
- ut-circular-buffer-uint8.exe \
- ut-circular-buffer-uint8.o \
- circular-buffer-uint8.o \
- mcast-setup-linux.o \
- mcast-sender-linux.o \
- mcast-receiver-linux.o \
- debug_helpers.o \
- platform-sockets.o \
- resolve.o \
- mcast-sender \
- mcast_utils.o 
+	$(RM) $(OBJECTS) $(DEPENDS)
