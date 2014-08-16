@@ -21,6 +21,7 @@ SOURCES:=\
  mcast-setup-linux.c\
  mcast_utils.c \
  mcast_setup.c \
+ debug-ipv4.c \
  platform-sockets.c\
  resolve.c\
  ut-circular-buffer-uint8.c\
@@ -35,7 +36,7 @@ DEPENDS:=$(SOURCES:%.c=$(BUILD_ROOT)%.d)
 
 -include $(DEPENDS)
 
-$(BUILD_ROOT)ut-mcast-join-leave: $(addprefix $(BUILD_ROOT),ut-mcast-join-leave.o mcast_utils.o mcast_setup.o debug_helpers.o platform-sockets.o resolve.o)
+$(BUILD_ROOT)ut-mcast-join-leave: $(addprefix $(BUILD_ROOT),ut-mcast-join-leave.o mcast_utils.o mcast_setup.o debug_helpers.o platform-sockets.o resolve.o debug-ipv4.o)
 	$(CC) $(CFLAGS) -o $(@) $(^)
 
 $(BUILD_ROOT)ut-circular-buffer-uint8: $(addprefix $(BUILD_ROOT),ut-circular-buffer-uint8.o circular-buffer-uint8.o)
