@@ -57,7 +57,7 @@ static void dump_addrinfo(struct addrinfo const* p_info, const char* file, unsig
                    p_info->ai_canonname, host, p_info->ai_next);
 }
 
-static int set_reuse_addr(SOCKET s)
+int set_reuse_addr(SOCKET s)
 {
     int optval, rc;
     optval = 1;

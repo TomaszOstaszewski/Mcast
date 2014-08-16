@@ -19,7 +19,8 @@ SOURCES:=\
  mcast-receiver-linux.c\
  mcast-sender-linux.c\
  mcast-setup-linux.c\
- mcast_utils.c\
+ mcast_utils.c \
+ mcast_setup.c \
  platform-sockets.c\
  resolve.c\
  ut-circular-buffer-uint8.c\
@@ -34,7 +35,7 @@ DEPENDS:=$(SOURCES:%.c=$(BUILD_ROOT)%.d)
 
 -include $(DEPENDS)
 
-$(BUILD_ROOT)ut-mcast-join-leave: $(addprefix $(BUILD_ROOT),ut-mcast-join-leave.o mcast_utils.o debug_helpers.o platform-sockets.o resolve.o)
+$(BUILD_ROOT)ut-mcast-join-leave: $(addprefix $(BUILD_ROOT),ut-mcast-join-leave.o mcast_utils.o mcast_setup.o debug_helpers.o platform-sockets.o resolve.o)
 	$(CC) $(CFLAGS) -o $(@) $(^)
 
 $(BUILD_ROOT)ut-circular-buffer-uint8: $(addprefix $(BUILD_ROOT),ut-circular-buffer-uint8.o circular-buffer-uint8.o)
@@ -66,3 +67,4 @@ cscope:
 .PHONY: clean
 clean:
 	$(RM) $(OBJECTS) $(DEPENDS)
+	$(RM) -r $(BUILD_ROOT)
