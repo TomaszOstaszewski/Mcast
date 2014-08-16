@@ -1,7 +1,7 @@
 /**
  * @file ut-mcast-join-leave.c
- * @brief 1
- * @details 2
+ * @brief Unit/Functional test for sending data over Multicast
+ * @details
  * @author Tomasz Ostaszewski (ato013)
  * @date 2014-Aug-08
  * @par History
@@ -101,20 +101,14 @@ static void testJoinMcastIpv4(const char* pItfAddr, const char* pMcastGroupAddr,
     fillDefaultAddrInfo(&anItfInfo, pItfAddr);
     fillDefaultAddrInfo(&anMcastGroupInfo, pMcastGroupAddr);
 
-    fprintf(stdout, "\n%p %p %*s %u\n", &anMcastGroupInfo.addrInfo_,
-            anMcastGroupInfo.addrInfo_.ai_addr, 16,
-            inet_ntoa(((struct sockaddr_in*)anMcastGroupInfo.addrInfo_.ai_addr)->sin_addr),
-            htons(((struct sockaddr_in*)anMcastGroupInfo.addrInfo_.ai_addr)->sin_port));
-
-    fprintf(stdout, "%p %p %*s %u\n", &anItfInfo, anItfInfo.addrInfo_.ai_addr, 16,
-            inet_ntoa(((struct sockaddr_in*)anItfInfo.addrInfo_.ai_addr)->sin_addr),
-            htons(((struct sockaddr_in*)anItfInfo.addrInfo_.ai_addr)->sin_port));
-
     char aBuffer[256] = { 0 };
-    size_t nBuffer = sizeof(aBuffer);
-    char * pBufferBegin = &aBuffer[0];
+    size_t nBuffer;
+    char* pBufferBegin;
+    pBufferBegin = &aBuffer[0], nBuffer = sizeof(aBuffer);
     dumpAddrInfo(&pBufferBegin, &nBuffer, &anItfInfo.addrInfo_);
-
+    fprintf(stdout, "%s\n", &aBuffer[0]);
+    pBufferBegin = &aBuffer[0], nBuffer = sizeof(aBuffer);
+    dumpAddrInfo(&pBufferBegin, &nBuffer, &anMcastGroupInfo.addrInfo_);
     fprintf(stdout, "%s\n", &aBuffer[0]);
 
     set_reuse_addr(s);

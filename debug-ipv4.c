@@ -64,7 +64,6 @@ void dumpAddrInfo(char** ppBuffer, size_t* pBufferSize, struct addrinfo const* p
     char* pTmpBuffer = pTmpBufferBegin;
     /* Log ai_addr member to a temporary buffer */
     do {
-        fprintf(stderr, "%4.4u %s : %u \n", __LINE__, __func__, nBufferSize);
         dumpSockAddr(&pTmpBuffer, &nBufferSize, pInfo->ai_addr, pInfo->ai_addrlen);
         if (nBufferSize != nOldSize) {
             break;
@@ -83,10 +82,11 @@ void dumpAddrInfo(char** ppBuffer, size_t* pBufferSize, struct addrinfo const* p
                                       "(list 'ai_protocol  %d) "
                                       "(list 'ai_addrlen  %d) "
                                       "(list 'ai_addr %s) "
-                                      "(list 'ai_canonname \"%s\") "
-                                      "(list 'ai_next %p) ) ",
+             "(list 'ai_canonname \"%s\") )",
+
              pInfo->ai_flags, pInfo->ai_family, pInfo->ai_socktype, pInfo->ai_protocol,
-             pInfo->ai_addrlen, pTmpBufferBegin, pInfo->ai_canonname, pInfo->ai_next);
+             pInfo->ai_addrlen, pTmpBufferBegin,
+             NULL == pInfo->ai_canonname ? "nil" : pInfo->ai_canonname);
 
     free(pTmpBufferBegin);
 
